@@ -3,47 +3,62 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
 import { OtpPurpose } from '@prisma/client';
 import { VerifyOtpDto } from '../dto/verify-otp.dto';
+import { OtpResponseDto } from '../dto/otp-response.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class VendorAuthService {
   constructor(
+    private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly otpService: OtpService,
   ) {}
 
-  async requestOtp(phone: string): Promise<{ message: string }> {
+  async requestOtp(phone: string): Promise<OtpResponseDto> {
     await this.otpService.generateOtp(phone, OtpPurpose.VENDOR_LOGIN);
-    return { message: 'OTP sent successfully' };
+    return { success: true, message: 'OTP sent successfully',  expiresIn: 30 };
   }
 
   async verifyOtpAndCreateVendor(
     dto: VerifyOtpDto,
-  ): Promise<{ message: string; vendor?: any }> {
+  ): Promise<{ token: string, expiresIn:number; vendor?: any }> {
+
+    const { phone, code } = dto;
+
     await this.otpService.verifyOtp(
-      dto.phone,
-      dto.code,
+      phone,
+      code,
       OtpPurpose.VENDOR_LOGIN,
     );
 
-    // Ensure phone uniqueness
-    const existingVendor = await this.prisma.vendor.findUnique({
-      where: { phone: dto.phone },
-    });
-    if (existingVendor) {
-      throw new BadRequestException(
-        'Vendor with this phone number already exists',
-      );
-    }
+    const vendor = await this.prisma.vendor.upsert({
+        where: { phone },
+        update: {
+          updated_at: new Date(),
+        },
+        create: {
+          phone,
+          name: ``,
+          is_active: true,
+        }
+      });
 
-    const vendor = await this.prisma.vendor.create({
-      data: {
-        name: "",
-        phone: dto.phone,
-        email: "",
-        address: "",
-      },
-    });
 
-    return { message: 'Vendor created successfully', vendor };
+     // Generate JWT token
+      const payload = {
+        sub: vendor.id.toString(),
+        phone: vendor.phone,
+        role: 'vendor',
+        businessName: vendor.name,
+      };
+
+      const token = this.jwtService.sign(payload);
+      const expiresIn = 36000; // 10 hour
+
+      return {
+        token,
+        vendor: vendor,
+        expiresIn,
+      };
   }
 }
