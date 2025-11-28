@@ -44,7 +44,9 @@ describe('VendorService', () => {
         service_radius_m: 5000,
         delivery_time_msg: '30 mins',
       };
-      jest.spyOn(prisma.vendor, 'findUnique').mockResolvedValue(mockVendor as any);
+      jest
+        .spyOn(prisma.vendor, 'findUnique')
+        .mockResolvedValue(mockVendor as any);
 
       const result = await service.getVendorProfile('123');
 
@@ -68,14 +70,20 @@ describe('VendorService', () => {
     it('should throw BadRequestException if vendor not found', async () => {
       jest.spyOn(prisma.vendor, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.getVendorProfile('123')).rejects.toThrow(BadRequestException);
+      await expect(service.getVendorProfile('123')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('updateVendorProfile', () => {
     it('should update vendor profile', async () => {
       const dto = { name: 'Updated Name', phone: '+1234567890' };
-      const mockUpdated = { id: '123', name: 'Updated Name', phone: '+1234567890' };
+      const mockUpdated = {
+        id: '123',
+        name: 'Updated Name',
+        phone: '+1234567890',
+      };
       jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
       const result = await service.updateVendorProfile('123', dto);
@@ -91,14 +99,20 @@ describe('VendorService', () => {
     it('should validate phone E.164', async () => {
       const dto = { phone: 'invalid' };
 
-      await expect(service.updateVendorProfile('123', dto)).rejects.toThrow(BadRequestException);
+      await expect(service.updateVendorProfile('123', dto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('updateAvailability', () => {
     it('should update availability', async () => {
       const dto = { is_active: false, is_available_today: true };
-      const mockUpdated = { id: '123', is_active: false, is_available_today: true };
+      const mockUpdated = {
+        id: '123',
+        is_active: false,
+        is_available_today: true,
+      };
       jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
       const result = await service.updateAvailability('123', dto);

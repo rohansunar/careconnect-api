@@ -1,4 +1,12 @@
-import { Controller, Get, Put, Post, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
@@ -39,7 +47,10 @@ export class VendorController {
    */
   @UseGuards(JwtAuthGuard)
   @Post('me/availability')
-  async updateAvailability(@Req() req: any, @Body() dto: UpdateAvailabilityDto) {
+  async updateAvailability(
+    @Req() req: any,
+    @Body() dto: UpdateAvailabilityDto,
+  ) {
     const vendorId = req.user.vendorId;
     return this.vendorService.updateAvailability(vendorId, dto);
   }

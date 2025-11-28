@@ -31,8 +31,11 @@
     "@nestjs/jwt": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-fastify": "^11.1.9",
+    "@nestjs/swagger": "^11.2.3",
     "@prisma/client": "^6.17.0",
     "@types/passport-jwt": "^4.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.3",
     "fastify": "^5.6.2",
     "fastify-compress": "^4.0.1",
     "fastify-multipart": "^5.3.1",
@@ -75,7 +78,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"

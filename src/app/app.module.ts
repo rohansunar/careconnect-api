@@ -12,7 +12,7 @@ import { VendorModule } from '../vendor/vendor.module';
       envFilePath: '.env',
     }),
     PrismaModule,
-    VendorModule
+    VendorModule,
   ],
   controllers: [AppController],
   providers: [AppService],

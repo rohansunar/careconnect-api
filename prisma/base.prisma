@@ -47,3 +47,10 @@ enum NotificationStatus {
   READ
   FAILED
 }
+
+enum OtpPurpose {
+  VENDOR_LOGIN
+  CUSTOMER_LOGIN
+  DELIVERY_VERIFICATION
+  PASSWORD_RESET
+}

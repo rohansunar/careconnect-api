@@ -1,21 +1,15 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../common/database/prisma.module';
+import { OtpModule } from '../otp/otp.module';
 import { VendorController } from './controllers/vendor.controller';
 import { VendorService } from './services/vendor.service';
-import { PrismaModule } from '../common/database/prisma.module';
-import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { VendorAuthController } from './controllers/vendor-auth.controller';
+import { VendorAuthService } from './services/vendor-auth.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-    PassportModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
-      signOptions: { expiresIn: '60m' },
-    }),
-  ],
-  controllers: [VendorController],
-  providers: [VendorService, JwtStrategy],
+  imports: [PrismaModule, OtpModule],
+  controllers: [VendorController, VendorAuthController],
+  providers: [VendorService, VendorAuthService],
+  exports: [VendorService],
 })
 export class VendorModule {}

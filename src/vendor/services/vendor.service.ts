@@ -28,14 +28,17 @@ export class VendorService {
     return vendor;
   }
 
-  async updateProfile(vendorId: string, data: {
-    name?: string;
-    phone?: string;
-    email?: string;
-    address?: any;
-    delivery_time_msg?: string;
-    service_radius_m?: number;
-  }) {
+  async updateProfile(
+    vendorId: string,
+    data: {
+      name?: string;
+      phone?: string;
+      email?: string;
+      address?: any;
+      delivery_time_msg?: string;
+      service_radius_m?: number;
+    },
+  ) {
     const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
       data,
@@ -55,10 +58,13 @@ export class VendorService {
     return vendor;
   }
 
-  async updateAvailability(vendorId: string, data: {
-    is_active?: boolean;
-    is_available_today?: boolean;
-  }) {
+  async updateAvailability(
+    vendorId: string,
+    data: {
+      is_active?: boolean;
+      is_available_today?: boolean;
+    },
+  ) {
     const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
       data,

@@ -45,7 +45,9 @@ describe('VendorController', () => {
         service_radius_m: 5000,
         delivery_time_msg: '30 mins',
       };
-      jest.spyOn(service, 'getVendorProfile').mockResolvedValue(mockProfile as any);
+      jest
+        .spyOn(service, 'getVendorProfile')
+        .mockResolvedValue(mockProfile as any);
 
       const result = await controller.getProfile(mockReq as any);
 
@@ -59,7 +61,9 @@ describe('VendorController', () => {
       const mockReq = { user: { vendorId: '123' } };
       const dto: UpdateProfileDto = { name: 'Updated Name' };
       const mockUpdated = { id: '123', name: 'Updated Name' };
-      jest.spyOn(service, 'updateVendorProfile').mockResolvedValue(mockUpdated as any);
+      jest
+        .spyOn(service, 'updateVendorProfile')
+        .mockResolvedValue(mockUpdated as any);
 
       const result = await controller.updateProfile(mockReq as any, dto);
 
@@ -73,7 +77,9 @@ describe('VendorController', () => {
       const mockReq = { user: { vendorId: '123' } };
       const dto: UpdateAvailabilityDto = { is_active: false };
       const mockUpdated = { id: '123', is_active: false };
-      jest.spyOn(service, 'updateAvailability').mockResolvedValue(mockUpdated as any);
+      jest
+        .spyOn(service, 'updateAvailability')
+        .mockResolvedValue(mockUpdated as any);
 
       const result = await controller.updateAvailability(mockReq as any, dto);
 
