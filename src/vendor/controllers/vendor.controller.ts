@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
 
-@Controller('vendor')
+@Controller('vendors')
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 

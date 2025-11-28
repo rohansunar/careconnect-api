@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { VendorController } from './controllers/vendor.controller';
 import { VendorService } from './services/vendor.service';
-import { PrismaModule } from '../../prisma/prisma.module';
+import { PrismaModule } from '../common/database/prisma.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
