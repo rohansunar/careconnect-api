@@ -1,0 +1,17 @@
+model Subscription {
+  id                  String   @id @default(uuid())
+  customer_id         String?
+  customer            Customer? @relation(fields: [customer_id], references: [id])
+  vendor_id           String?
+  vendor              Vendor? @relation(fields: [vendor_id], references: [id])
+  product_id          String?
+  product             Product? @relation(fields: [product_id], references: [id])
+  vendor_products     VendorProduct? @relation(fields: [vendor_product_id], references: [id])
+  vendor_product_id   String?
+  jars_per_delivery   Int
+  frequency           String
+  next_delivery_date  DateTime? @db.Date
+  status              SubscriptionStatus @default(ACTIVE)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now())
+}

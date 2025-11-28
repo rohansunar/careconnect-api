@@ -1,0 +1,16 @@
+model CustomerAddress {
+  id          String   @id @default(uuid())
+  customer_id String
+  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+  label       String?
+  address     String?
+  city_id     String?
+  city        City?    @relation(fields: [city_id], references: [id])
+  location    Unsupported("geometry(POINT, 4326)")
+  pincode     String?
+  created_at  DateTime @default(now())
+
+  orders      Order[]
+
+  @@map("cities")
+}

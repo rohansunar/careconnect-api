@@ -1,0 +1,11 @@
+model Product {
+  id        String   @id @default(uuid())
+  name      String
+  type      String?
+  image_url String?
+  description String?
+  created_at DateTime @default(now())
+
+  vendorProducts VendorProduct[]
+  subscriptions Subscription[]
+}

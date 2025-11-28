@@ -1,0 +1,12 @@
+model Notification {
+  id          String   @id @default(uuid())
+  customer_id String?
+  customer    Customer? @relation(fields: [customer_id], references: [id])
+  vendor_id   String?
+  vendor      Vendor? @relation(fields: [vendor_id], references: [id])
+  type        String
+  message     String
+  sent_via    String
+  status      NotificationStatus @default(SENT)
+  created_at  DateTime @default(now())
+}

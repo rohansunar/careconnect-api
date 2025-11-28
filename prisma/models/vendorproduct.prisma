@@ -1,0 +1,17 @@
+model VendorProduct {
+  id        String   @id @default(uuid())
+  vendor_id String
+  vendor    Vendor   @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
+  name      String
+  description String?
+  price     Decimal  @db.Decimal(10, 2)
+  image_url String?
+  product_id String
+  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  is_active Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  subscriptions Subscription[]
+  orders Order[]
+}

@@ -1,0 +1,12 @@
+model City {
+  id        String   @id @default(uuid())
+  name      String
+  state     String?
+  country   String?
+  bbox      Unsupported("geometry")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt()
+
+  vendors   Vendor[]
+  customer_addresses CustomerAddress[]
+}

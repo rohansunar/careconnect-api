@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // or whatever
+  url      = env("DATABASE_URL")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  PENDING
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum MonthlyBillStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentLinkStatus {
+  ACTIVE
+  EXPIRED
+  USED
+}
+
+enum NotificationStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
