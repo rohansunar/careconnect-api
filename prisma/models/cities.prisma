@@ -3,10 +3,11 @@ model City {
   name      String
   state     String?
   country   String?
-  bbox      Unsupported("geometry")
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
 
   vendors   Vendor[]
   customer_addresses CustomerAddress[]
 }
+
+// bbox      Unsupported("geometry")

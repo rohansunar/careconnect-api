@@ -53,13 +53,13 @@ model City {
   name      String
   state     String?
   country   String?
-  bbox      Unsupported("geometry")
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
-
+  
   vendors   Vendor[]
   customer_addresses CustomerAddress[]
 }
+
 
 model Customer {
   id        String   @id @default(uuid())
@@ -89,7 +89,6 @@ model CustomerAddress {
   address     String?
   city_id     String?
   city        City?    @relation(fields: [city_id], references: [id])
-  location    Unsupported("geometry(POINT, 4326)")
   pincode     String?
   created_at  DateTime @default(now())
 
@@ -97,6 +96,8 @@ model CustomerAddress {
 
   @@map("cities")
 }
+
+// location    Unsupported("geometry(POINT, 4326)")
 
 model MonthlyBill {
   id            String   @id @default(uuid())
