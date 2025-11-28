@@ -10,7 +10,7 @@ import { PrismaModule } from '../../prisma/prisma.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    PrismaModule
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

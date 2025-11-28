@@ -10,6 +10,9 @@ model Vendor {
   pincode   String?
   location  String?
   is_active Boolean  @default(true)
+  is_available_today Boolean @default(true)
+  service_radius_m Int?
+  delivery_time_msg String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 

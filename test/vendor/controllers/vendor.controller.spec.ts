@@ -1,0 +1,84 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { VendorController } from '../../../../src/app/vendor/vendor.controller';
+import { VendorService } from '../../../../src/app/vendor/vendor.service';
+import { UpdateProfileDto } from '../../../../src/app/vendor/update-profile.dto';
+import { UpdateAvailabilityDto } from '../../../../src/app/vendor/update-availability.dto';
+
+describe('VendorController', () => {
+  let controller: VendorController;
+  let service: VendorService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [VendorController],
+      providers: [
+        {
+          provide: VendorService,
+          useValue: {
+            getVendorProfile: jest.fn(),
+            updateVendorProfile: jest.fn(),
+            updateAvailability: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<VendorController>(VendorController);
+    service = module.get<VendorService>(VendorService);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('getProfile', () => {
+    it('should return vendor profile', async () => {
+      const mockReq = { user: { vendorId: '123' } };
+      const mockProfile = {
+        id: '123',
+        name: 'Test Vendor',
+        phone: '+1234567890',
+        email: 'test@example.com',
+        address: 'Test Address',
+        is_active: true,
+        is_available_today: true,
+        service_radius_m: 5000,
+        delivery_time_msg: '30 mins',
+      };
+      jest.spyOn(service, 'getVendorProfile').mockResolvedValue(mockProfile as any);
+
+      const result = await controller.getProfile(mockReq as any);
+
+      expect(result).toEqual(mockProfile);
+      expect(service.getVendorProfile).toHaveBeenCalledWith('123');
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('should update vendor profile', async () => {
+      const mockReq = { user: { vendorId: '123' } };
+      const dto: UpdateProfileDto = { name: 'Updated Name' };
+      const mockUpdated = { id: '123', name: 'Updated Name' };
+      jest.spyOn(service, 'updateVendorProfile').mockResolvedValue(mockUpdated as any);
+
+      const result = await controller.updateProfile(mockReq as any, dto);
+
+      expect(result).toEqual(mockUpdated);
+      expect(service.updateVendorProfile).toHaveBeenCalledWith('123', dto);
+    });
+  });
+
+  describe('updateAvailability', () => {
+    it('should update vendor availability', async () => {
+      const mockReq = { user: { vendorId: '123' } };
+      const dto: UpdateAvailabilityDto = { is_active: false };
+      const mockUpdated = { id: '123', is_active: false };
+      jest.spyOn(service, 'updateAvailability').mockResolvedValue(mockUpdated as any);
+
+      const result = await controller.updateAvailability(mockReq as any, dto);
+
+      expect(result).toEqual(mockUpdated);
+      expect(service.updateAvailability).toHaveBeenCalledWith('123', dto);
+    });
+  });
+});

@@ -55,11 +55,12 @@ model City {
   country   String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
-  
+
   vendors   Vendor[]
   customer_addresses CustomerAddress[]
 }
 
+// bbox      Unsupported("geometry")
 
 model Customer {
   id        String   @id @default(uuid())
@@ -242,6 +243,9 @@ model Vendor {
   pincode   String?
   location  String?
   is_active Boolean  @default(true)
+  is_available_today Boolean @default(true)
+  service_radius_m Int?
+  delivery_time_msg String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
