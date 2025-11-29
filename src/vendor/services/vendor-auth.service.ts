@@ -14,18 +14,30 @@ export class VendorAuthService {
     private readonly otpService: OtpService,
   ) {}
 
+  /**
+   * Requests an OTP for vendor login authentication.
+   * @param phone - The phone number to send the OTP to.
+   * @returns A response indicating success and OTP expiration time.
+   */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
     await this.otpService.generateOtp(phone, OtpPurpose.VENDOR_LOGIN);
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }
 
+  /**
+   * Verifies the OTP and creates or updates the vendor record, then generates a JWT token.
+   * @param dto - The data transfer object containing phone and OTP code.
+   * @returns A response with the JWT token, vendor details, and expiration time.
+   */
   async verifyOtpAndCreateVendor(
     dto: VerifyOtpDto,
   ): Promise<VerifyOtpResponseDto> {
     const { phone, code } = dto;
 
+    // Verify the OTP code for vendor login
     await this.otpService.verifyOtp(phone, code, OtpPurpose.VENDOR_LOGIN);
 
+    // Create or update the vendor record (upsert: update if exists, create if not)
     const vendor = await this.prisma.vendor.upsert({
       where: { phone },
       update: {
@@ -38,7 +50,7 @@ export class VendorAuthService {
       },
     });
 
-    // Generate JWT token
+    // Generate JWT token with vendor information
     const payload = {
       sub: vendor.id.toString(),
       phone: vendor.phone,
@@ -47,7 +59,7 @@ export class VendorAuthService {
     };
 
     const token = this.jwtService.sign(payload);
-    const expiresIn = 36000; // 10 hour
+    const expiresIn = 36000; // 10 hours
 
     return {
       token,

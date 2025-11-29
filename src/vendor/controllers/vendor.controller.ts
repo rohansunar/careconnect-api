@@ -1,59 +1,77 @@
-import {
-  Controller,
-  Get,
-  Put,
-  Post,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Put, Body, Req, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
+@ApiTags('Vendor Profile')
 @Controller('vendors/me')
+@UseGuards(JwtAuthGuard)
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 
   /**
-   * Business logic rationale: Allow vendors to view their profile and settings.
-   * Security consideration: JWT authentication ensures only authenticated vendors access their data.
-   * Design decision: Use 'me' endpoint for self-referential access.
+   * Business logic rationale: Allow vendors to view their profile information.
+   * Security consideration: JWT authentication ensures only authenticated vendors access their profile.
+   * Design decision: Cached endpoint for performance.
    */
-  @UseGuards(JwtAuthGuard)
-  @Get('')
+  @ApiOperation({
+    summary: 'Get vendor profile',
+    description: 'Allow vendors to view their profile information.',
+  })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Get('me')
   async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
-    console.log(vendor);
-    const vendorId = req.user.vendorId;
+    const { vendorId } = vendor;
     return this.vendorService.getProfile(vendorId);
   }
 
   /**
-   * Business logic rationale: Enable vendors to update their profile information.
-   * Security consideration: Ownership check via JWT, input validation in service.
-   * Design decision: Partial updates allowed, phone validated as E.164.
+   * Business logic rationale: Enable vendors to update their profile details.
+   * Security consideration: Ownership check via JWT, validation in service.
+   * Design decision: Partial updates allowed, atomic operations.
    */
-  @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Update vendor profile',
+    description: 'Enable vendors to update their profile details.',
+  })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Put('')
-  async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
-    const vendorId = req.user.vendorId;
+  async updateProfile(
+    @Req() req: any,
+    @Body() dto: UpdateProfileDto,
+    @CurrentVendor() vendor: any,
+  ) {
+    const { vendorId } = vendor;
     return this.vendorService.updateProfile(vendorId, dto);
   }
 
   /**
-   * Business logic rationale: Allow vendors to toggle availability, affecting order assignments.
-   * Security consideration: Ownership check ensures vendors only update their status.
-   * Design decision: Updates DB and triggers notifications if needed.
+   * Business logic rationale: Allow vendors to update their availability status.
+   * Security consideration: Ownership check via JWT.
+   * Design decision: Separate endpoint for availability to allow fine-grained control.
    */
-  @UseGuards(JwtAuthGuard)
-  @Post('/availability')
+  @ApiOperation({
+    summary: 'Update vendor availability',
+    description: 'Allow vendors to update their availability status.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Availability updated successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Put('availability')
   async updateAvailability(
     @Req() req: any,
     @Body() dto: UpdateAvailabilityDto,
+    @CurrentVendor() vendor: any,
   ) {
-    const vendorId = req.user.vendorId;
+    const { vendorId } = vendor;
     return this.vendorService.updateAvailability(vendorId, dto);
   }
 }

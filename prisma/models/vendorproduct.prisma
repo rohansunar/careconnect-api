@@ -5,6 +5,7 @@ model VendorProduct {
   name      String
   description String?
   price     Decimal  @db.Decimal(10, 2)
+  deposit   Decimal? @db.Decimal(10, 2)
   image_url String?
   product_id String
   product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { VendorService } from '../../../src/app/vendor/vendor.service';
-import { PrismaService } from '../../../../prisma/prisma.service';
+import { VendorService } from '../../../src/vendor/services/vendor.service';
+import { PrismaService } from '../../../src/common/database/prisma.service';
 import { BadRequestException } from '@nestjs/common';
 
 describe('VendorService', () => {
@@ -31,7 +31,7 @@ describe('VendorService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getVendorProfile', () => {
+  describe('getProfile', () => {
     it('should return vendor profile', async () => {
       const mockVendor = {
         id: '123',
@@ -48,7 +48,7 @@ describe('VendorService', () => {
         .spyOn(prisma.vendor, 'findUnique')
         .mockResolvedValue(mockVendor as any);
 
-      const result = await service.getVendorProfile('123');
+      const result = await service.getProfile('123');
 
       expect(result).toEqual(mockVendor);
       expect(prisma.vendor.findUnique).toHaveBeenCalledWith({
@@ -70,13 +70,13 @@ describe('VendorService', () => {
     it('should throw BadRequestException if vendor not found', async () => {
       jest.spyOn(prisma.vendor, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.getVendorProfile('123')).rejects.toThrow(
+      await expect(service.getProfile('123')).rejects.toThrow(
         BadRequestException,
       );
     });
   });
 
-  describe('updateVendorProfile', () => {
+  describe('updateProfile', () => {
     it('should update vendor profile', async () => {
       const dto = { name: 'Updated Name', phone: '+1234567890' };
       const mockUpdated = {
@@ -86,7 +86,7 @@ describe('VendorService', () => {
       };
       jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
-      const result = await service.updateVendorProfile('123', dto);
+      const result = await service.updateProfile('123', dto);
 
       expect(result).toEqual(mockUpdated);
       expect(prisma.vendor.update).toHaveBeenCalledWith({
@@ -99,7 +99,7 @@ describe('VendorService', () => {
     it('should validate phone E.164', async () => {
       const dto = { phone: 'invalid' };
 
-      await expect(service.updateVendorProfile('123', dto)).rejects.toThrow(
+      await expect(service.updateProfile('123', dto)).rejects.toThrow(
         BadRequestException,
       );
     });
