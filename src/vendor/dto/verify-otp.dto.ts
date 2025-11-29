@@ -18,3 +18,17 @@ export class VerifyOtpDto {
   @IsNotEmpty()
   code: string;
 }
+
+export class VerifyOtpResponseDto {
+  @ApiProperty({
+    description: 'Authentication Token for Vendor',
+  })
+  token: string;
+
+  @ApiProperty({
+    description: 'Vendor Details',
+  })
+  vendor: any;
+
+  expiresIn:number;
+}

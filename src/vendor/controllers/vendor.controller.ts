@@ -12,7 +12,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
 
-@Controller('vendors')
+@Controller('vendors/me')
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 
@@ -22,7 +22,7 @@ export class VendorController {
    * Design decision: Use 'me' endpoint for self-referential access.
    */
   @UseGuards(JwtAuthGuard)
-  @Get('me')
+  @Get('')
   async getProfile(@Req() req: any) {
     const vendorId = req.user.vendorId;
     return this.vendorService.getProfile(vendorId);
@@ -34,7 +34,7 @@ export class VendorController {
    * Design decision: Partial updates allowed, phone validated as E.164.
    */
   @UseGuards(JwtAuthGuard)
-  @Put('me')
+  @Put('')
   async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
     const vendorId = req.user.vendorId;
     return this.vendorService.updateProfile(vendorId, dto);
@@ -46,7 +46,7 @@ export class VendorController {
    * Design decision: Updates DB and triggers notifications if needed.
    */
   @UseGuards(JwtAuthGuard)
-  @Post('me/availability')
+  @Post('/availability')
   async updateAvailability(
     @Req() req: any,
     @Body() dto: UpdateAvailabilityDto,

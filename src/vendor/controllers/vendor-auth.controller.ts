@@ -1,9 +1,8 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { VendorAuthService } from '../services/vendor-auth.service';
-import { RequestOtpDto } from '../dto/request-otp.dto';
-import { VerifyOtpDto } from '../dto/verify-otp.dto';
-import { OtpResponseDto } from '../dto/otp-response.dto';
+import { RequestOtpDto, OtpResponseDto } from '../dto/request-otp.dto';
+import { VerifyOtpDto, VerifyOtpResponseDto } from '../dto/verify-otp.dto';
 
 @ApiTags('Vendor Authentication')
 @Controller('vendors/auth')
@@ -67,6 +66,41 @@ export class VendorAuthController {
   }
 
   @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verify OTP and authenticate vendor',
+    description: 'Verify the OTP code and authenticate the vendor if valid',
+  })
+  @ApiBody({ type: VerifyOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP verified successfully, vendor authenticated',
+    type: VerifyOtpResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid OTP format',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'OTP must be exactly 6 digits' },
+        error: { type: 'string', example: 'Bad Request' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid OTP or vendor not found',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid OTP' },
+        error: { type: 'string', example: 'Unauthorized' },
+      },
+    },
+  })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
     return this.vendorAuthService.verifyOtpAndCreateVendor(dto);
   }

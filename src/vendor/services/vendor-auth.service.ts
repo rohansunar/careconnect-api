@@ -2,8 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
 import { OtpPurpose } from '@prisma/client';
-import { VerifyOtpDto } from '../dto/verify-otp.dto';
-import { OtpResponseDto } from '../dto/otp-response.dto';
+import { VerifyOtpDto , VerifyOtpResponseDto} from '../dto/verify-otp.dto';
+import { OtpResponseDto } from '../dto/request-otp.dto';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class VendorAuthService {
 
   async verifyOtpAndCreateVendor(
     dto: VerifyOtpDto,
-  ): Promise<{ token: string, expiresIn:number; vendor?: any }> {
+  ): Promise<VerifyOtpResponseDto> {
 
     const { phone, code } = dto;
 
