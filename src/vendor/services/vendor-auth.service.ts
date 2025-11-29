@@ -55,4 +55,25 @@ export class VendorAuthService {
       expiresIn,
     };
   }
+
+  // async refreshTokens(userId: number, refreshToken: string) {
+  //   const user = await this.prisma.vendor.findFirst(userId);
+  //   if (!user || !user.currentHashedRefreshToken) {
+  //     throw new UnauthorizedException('No refresh token stored. Please login again.');
+  //   }
+
+  //   const isMatch = await bcrypt.compare(refreshToken, user.currentHashedRefreshToken);
+  //   if (!isMatch) {
+  //     // token mismatch -> possible reuse -> revoke
+  //     await this.usersService.removeRefreshToken(userId);
+  //     throw new UnauthorizedException('Refresh token invalid');
+  //   }
+
+  //   // rotate: issue new tokens and replace stored hashed refresh token
+  //   const tokens = await this.getTokens(user.id, user.email);
+  //   const hashedRefresh = await bcrypt.hash(tokens.refreshToken, 10);
+  //   await this.usersService.setCurrentRefreshToken(user.id, hashedRefresh);
+
+  //   return tokens;
+  // }
 }
