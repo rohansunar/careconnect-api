@@ -4,8 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CreateVendorProductDto } from '../dto/create-vendor-product.dto';
-import { UpdateVendorProductDto } from '../dto/update-vendor-product.dto';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
 export class VendorProductsService {
@@ -17,8 +17,8 @@ export class VendorProductsService {
    * @returns A list of vendor products with their details.
    */
   async getProducts(vendorId: string) {
-    const products = await this.prisma.vendorProduct.findMany({
-      where: { vendor_id: vendorId },
+    const products = await this.prisma.product.findMany({
+      where: { vendorId: vendorId },
       select: {
         id: true,
         name: true,
@@ -26,7 +26,6 @@ export class VendorProductsService {
         price: true,
         deposit: true,
         image_url: true,
-        product_id: true,
         is_active: true,
         created_at: true,
         updated_at: true,
@@ -43,40 +42,46 @@ export class VendorProductsService {
    * @param dto - The data transfer object containing product details (product_id, price, deposit).
    * @returns The created vendor product details.
    */
-  async createProduct(vendorId: string, dto: CreateVendorProductDto) {
-    // Check if the base product exists in the database
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.product_id },
-    });
+  async createProduct(vendorId: string, dto: CreateProductDto) {
+    
 
-    if (!product) {
-      throw new BadRequestException('Product not found');
-    }
+    
 
     // Check if vendor_product already exists for this product and vendor
-    const existing = await this.prisma.vendorProduct.findFirst({
+    const existing = await this.prisma.product.findFirst({
       where: {
-        vendor_id: vendorId,
-        product_id: dto.product_id,
+        vendorId: vendorId,
+        name: dto.name,
       },
     });
 
     if (existing) {
       throw new BadRequestException(
-        'Vendor product already exists for this product',
+        'Product already exists for this product name',
       );
     }
 
+    // check if category exists
+    const category = await this.prisma.categories.findFirst({
+      where: {
+        id: dto.categoryId,
+      },
+    });
+
+    if (!category) {
+      throw new BadRequestException('Category does not exist');
+    }
+    
+
     // Create the vendor product with data from the base product and DTO
-    const vendorProduct = await this.prisma.vendorProduct.create({
+    const vendorProduct = await this.prisma.product.create({
       data: {
-        vendor_id: vendorId,
-        product_id: dto.product_id,
-        name: product.name,
-        description: product.description,
+        vendorId: vendorId,
+        name: dto.name,
+        description: dto.description,
         price: dto.price,
         deposit: dto.deposit,
-        image_url: product.image_url,
+        categoryId: dto.categoryId,
       },
       select: {
         id: true,
@@ -85,7 +90,6 @@ export class VendorProductsService {
         price: true,
         deposit: true,
         image_url: true,
-        product_id: true,
         is_active: true,
         created_at: true,
         updated_at: true,
@@ -105,12 +109,12 @@ export class VendorProductsService {
   async updateProduct(
     vendorId: string,
     productId: string,
-    dto: UpdateVendorProductDto,
+    dto: UpdateProductDto,
   ) {
-    const vendorProduct = await this.prisma.vendorProduct.findFirst({
+    const vendorProduct = await this.prisma.product.findFirst({
       where: {
         id: productId,
-        vendor_id: vendorId,
+        vendorId: vendorId,
       },
     });
 
@@ -118,21 +122,9 @@ export class VendorProductsService {
       throw new NotFoundException('Vendor product not found');
     }
 
-    const updated = await this.prisma.vendorProduct.update({
+    const updated = await this.prisma.product.update({
       where: { id: productId },
       data: dto,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        deposit: true,
-        image_url: true,
-        product_id: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
-      },
     });
 
     return updated;
@@ -145,10 +137,10 @@ export class VendorProductsService {
    * @returns A success message indicating deactivation.
    */
   async deleteProduct(vendorId: string, productId: string) {
-    const vendorProduct = await this.prisma.vendorProduct.findFirst({
+    const vendorProduct = await this.prisma.product.findFirst({
       where: {
         id: productId,
-        vendor_id: vendorId,
+        vendorId: vendorId,
       },
     });
 
@@ -157,7 +149,7 @@ export class VendorProductsService {
     }
 
     // Soft delete by setting is_active to false
-    await this.prisma.vendorProduct.update({
+    await this.prisma.product.update({
       where: { id: productId },
       data: { is_active: false },
     });

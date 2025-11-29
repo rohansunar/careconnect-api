@@ -1,6 +1,6 @@
 import { IsNumber, IsOptional, IsBoolean } from 'class-validator';
 
-export class UpdateVendorProductDto {
+export class UpdateProductDto {
   @IsOptional()
   @IsNumber()
   price?: number;

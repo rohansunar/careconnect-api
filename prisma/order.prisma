@@ -1,13 +1,13 @@
 model Order {
   id                  String   @id @default(uuid())
   customer_id         String?
-  customer            Customer? @relation(fields: [customer_id], references: [id])
+  customer            Customer? @relation("orders", fields: [customer_id], references: [id])
   vendor_id           String?
-  vendor              Vendor? @relation(fields: [vendor_id], references: [id])
+  vendor              Vendor? @relation("orders", fields: [vendor_id], references: [id])
   address_id          String?
-  address             CustomerAddress? @relation(fields: [address_id], references: [id])
+  address             CustomerAddress? @relation("orders", fields: [address_id], references: [id])
   product_id          String?
-  product             VendorProduct? @relation(fields: [product_id], references: [id])
+  product             Product? @relation("orders", fields: [product_id], references: [id])
   qty                 Int
   total_amount        Decimal  @db.Decimal(10, 2)
   status              OrderStatus @default(PENDING)

@@ -7,13 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  INACTIVE
-  CANCELLED
-  PENDING
-}
-
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -41,16 +34,4 @@ enum PaymentLinkStatus {
   USED
 }
 
-enum NotificationStatus {
-  SENT
-  DELIVERED
-  READ
-  FAILED
-}
 
-enum OtpPurpose {
-  VENDOR_LOGIN
-  CUSTOMER_LOGIN
-  DELIVERY_VERIFICATION
-  PASSWORD_RESET
-}

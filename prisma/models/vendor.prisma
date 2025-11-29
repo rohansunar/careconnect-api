@@ -1,25 +1,30 @@
 model Vendor {
-  id        String   @id @default(uuid())
-  name      String
-  owner_name String?
-  phone     String   @unique
-  email     String?
-  address   Json?
-  city_id   String?
-  city      City?    @relation(fields: [city_id], references: [id])
-  pincode   String?
-  location  String?
-  is_active Boolean  @default(true)
-  is_available_today Boolean @default(true)
-  service_radius_m Int?
-  delivery_time_msg String?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+  id                 String   @id @default(uuid())
+  name               String
+  owner_name         String?
+  phone              String   @unique
+  email              String?
+  address            Json?
+  ///  city_id   String?
+  ///  city      City?    @relation(fields: [city_id], references: [id])
+  pincode            String?
+  location           String?
+  is_active          Boolean  @default(true)
+  is_available_today Boolean  @default(true)
+  service_radius_m   Int?
+  delivery_time_msg  String?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @default(now())
 
-  vendor_products VendorProduct[]
+  ///  subscriptions Subscription[]
+  ///  monthly_bills MonthlyBill[]
+  ///  payments Payment[]
+  ///  notifications Notification[]
+  ///  products Product[] @relation("products")
+  ///  orders Order[] @relation("orders")
+  products      Product[]
+  city          City?          @relation(fields: [cityId], references: [id])
+  cityId        String?
   subscriptions Subscription[]
-  orders Order[]
-  monthly_bills MonthlyBill[]
-  payments Payment[]
   notifications Notification[]
 }

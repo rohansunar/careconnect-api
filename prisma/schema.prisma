@@ -7,13 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  INACTIVE
-  CANCELLED
-  PENDING
-}
-
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -41,12 +34,88 @@ enum PaymentLinkStatus {
   USED
 }
 
+
+
+
+model Categories {
+  id         String    @id @default(uuid())
+  name       String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @default(now())
+  products   Product[]
+
+  /// Constraints & indexes
+  @@unique([name])
+}
+
+
+model City {
+  id         String   @id @default(uuid())
+  name       String
+  state      String?
+  country    String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt()
+
+  vendors           Vendor[]
+  customerAddresses CustomerAddress[]
+}
+
+// bbox      Unsupported("geometry")
+
+
+model Customer {
+  id         String   @id @default(uuid())
+  name       String
+  phone      String   @unique
+  email      String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  ///  notifications Notification[]
+  customer_addresses CustomerAddress[]
+  notifications      Notification[]
+}
+
+
+model CustomerAddress {
+  id         String   @id @default(uuid())
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label      String?
+  address    String?
+  cityId     String?
+  city       City?    @relation(fields: [cityId], references: [id])
+  pincode    String?
+  created_at DateTime @default(now())
+
+  /// orders      Order[] @relation("orders")
+  subscriptions Subscription[]
+}
+
+// location    Unsupported("geometry(POINT, 4326)")
+
+
 enum NotificationStatus {
   SENT
   DELIVERED
   READ
   FAILED
 }
+
+model Notification {
+  id          String             @id @default(uuid())
+  customer_id String?
+  customer    Customer?          @relation(fields: [customer_id], references: [id])
+  vendor_id   String?
+  vendor      Vendor?            @relation(fields: [vendor_id], references: [id])
+  type        String
+  message     String
+  sent_via    String
+  status      NotificationStatus @default(SENT)
+  created_at  DateTime           @default(now())
+}
+
 
 enum OtpPurpose {
   VENDOR_LOGIN
@@ -55,245 +124,100 @@ enum OtpPurpose {
   PASSWORD_RESET
 }
 
-
-model City {
-  id        String   @id @default(uuid())
-  name      String
-  state     String?
-  country   String?
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt()
-
-  vendors   Vendor[]
-  customer_addresses CustomerAddress[]
-}
-
-// bbox      Unsupported("geometry")
-
-model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
-  email     String?
-  address   Json?
-  city      String?
-  pincode   String?
-  location  String?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  subscriptions Subscription[]
-  orders Order[]
-  monthly_bills MonthlyBill[]
-  payments Payment[]
-  notifications Notification[]
-  customer_addresses CustomerAddress[]
-}
-
-model CustomerAddress {
-  id          String   @id @default(uuid())
-  customer_id String
-  customer    Customer @relation(fields: [customer_id], references: [id], onDelete: Cascade)
-  label       String?
-  address     String?
-  city_id     String?
-  city        City?    @relation(fields: [city_id], references: [id])
-  pincode     String?
-  created_at  DateTime @default(now())
-
-  orders      Order[]
-
-  @@map("cities")
-}
-
-// location    Unsupported("geometry(POINT, 4326)")
-
-model MonthlyBill {
-  id            String   @id @default(uuid())
-  customer_id   String?
-  customer      Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id     String?
-  vendor        Vendor? @relation(fields: [vendor_id], references: [id])
-  month         String
-  total_amount  Decimal  @db.Decimal(10, 2)
-  paid_amount   Decimal  @db.Decimal(10, 2) @default(0)
-  status        MonthlyBillStatus @default(PENDING)
-  generated_at  DateTime @default(now())
-  updated_at    DateTime @default(now())
-
-  payments Payment[]
-  payment_links PaymentLink[]
-}
-
-model Notification {
-  id          String   @id @default(uuid())
-  customer_id String?
-  customer    Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id   String?
-  vendor      Vendor? @relation(fields: [vendor_id], references: [id])
-  type        String
-  message     String
-  sent_via    String
-  status      NotificationStatus @default(SENT)
-  created_at  DateTime @default(now())
-}
-
-model Order {
-  id                  String   @id @default(uuid())
-  customer_id         String?
-  customer            Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id           String?
-  vendor              Vendor? @relation(fields: [vendor_id], references: [id])
-  address_id          String?
-  address             CustomerAddress? @relation(fields: [address_id], references: [id])
-  product_id          String?
-  product             VendorProduct? @relation(fields: [product_id], references: [id])
-  qty                 Int
-  total_amount        Decimal  @db.Decimal(10, 2)
-  status              OrderStatus @default(PENDING)
-  assigned_rider_phone String?
-  delivery_address    Json?
-  created_at          DateTime @default(now())
-  updated_at          DateTime @default(now())
-
-  payments Payment[]
-}
-
 model OtpCode {
-  id        String      @id @default(uuid())
+  id        String     @id @default(uuid())
   phone     String
   code      String
   purpose   OtpPurpose
   expiresAt DateTime
-  attempts  Int         @default(0)
-  isUsed    Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  attempts  Int        @default(0)
+  isUsed    Boolean    @default(false)
+  createdAt DateTime   @default(now())
   usedAt    DateTime?
 
   @@unique([phone, purpose])
 }
 
-model Payment {
-  id                    String   @id @default(uuid())
-  bill_id               String?
-  bill                  MonthlyBill? @relation(fields: [bill_id], references: [id])
-  order_id              String?
-  order                 Order? @relation(fields: [order_id], references: [id])
-  customer_id           String?
-  customer              Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id             String?
-  vendor                Vendor? @relation(fields: [vendor_id], references: [id])
-  amount                Decimal  @db.Decimal(12, 2)
-  currency              String   @default("INR")
-  payment_mode          String
-  provider              String?
-  provider_payment_id   String?
-  provider_payload      Json?
-  status                PaymentStatus @default(PENDING)
-  initiated_at          DateTime @default(now())
-  completed_at          DateTime?
-  reconciled            Boolean  @default(false)
-  metadata              Json?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now())
-}
-
-model PaymentLink {
-  id                String   @id @default(uuid())
-  bill_id           String
-  bill              MonthlyBill @relation(fields: [bill_id], references: [id], onDelete: Cascade)
-  provider          String?
-  link_url          String?
-  provider_link_id  String?
-  expires_at        DateTime?
-  status            PaymentLinkStatus @default(ACTIVE)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @default(now())
-}
-
-model PlatformFee {
-  id           String   @id @default(uuid())
-  related_type String
-  related_id   String
-  amount       Decimal
-  fee_type     String?
-  collected    Boolean  @default(false)
-  note         String?
-  created_at   DateTime @default(now())
-  collected_at DateTime?
-}
 
 model Product {
-  id        String   @id @default(uuid())
-  name      String
-  type      String?
-  image_url String?
-  description String?
-  created_at DateTime @default(now())
+  id         String @id @default(uuid())
+  name       String
+  categoryId String
 
-  vendorProducts VendorProduct[]
+  /// Relation to Categories (on delete -> CASCADE)
+  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  image_url   String?
+  description String?
+  created_at  DateTime   @default(now())
+  vendorId     String
+  vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  price       Decimal  @db.Decimal(10, 2)  
+  deposit     Decimal?  @db.Decimal(10, 2) 
+  is_active   Boolean    @default(true)
+  updated_at  DateTime   @default(now())
+
+  /// subscriptions Subscription[]
   subscriptions Subscription[]
+
+  @@index([categoryId])
+}
+
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  PENDING
 }
 
 model Subscription {
-  id                  String   @id @default(uuid())
-  customer_id         String?
-  customer            Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id           String?
-  vendor              Vendor? @relation(fields: [vendor_id], references: [id])
-  product_id          String?
-  product             Product? @relation(fields: [product_id], references: [id])
-  vendor_products     VendorProduct? @relation(fields: [vendor_product_id], references: [id])
-  vendor_product_id   String?
-  jars_per_delivery   Int
-  frequency           String
-  next_delivery_date  DateTime? @db.Date
-  status              SubscriptionStatus @default(ACTIVE)
-  created_at          DateTime @default(now())
-  updated_at          DateTime @default(now())
+  id                 String             @id @default(uuid())
+  customerAddressId  String?
+  customerAddress    CustomerAddress?   @relation(fields: [customerAddressId], references: [id])
+  vendorId           String?
+  vendor             Vendor?            @relation(fields: [vendorId], references: [id])
+  productId          String?
+  product            Product?           @relation(fields: [productId], references: [id])
+  jars_per_delivery  Int
+  frequency          String
+  next_delivery_date DateTime?
+  status             SubscriptionStatus @default(ACTIVE)
+  created_at         DateTime           @default(now())
+  updated_at         DateTime           @default(now())
+
+  @@index([customerAddressId])
+  @@index([vendorId])
+  @@index([productId])
 }
+
 
 model Vendor {
-  id        String   @id @default(uuid())
-  name      String
-  owner_name String?
-  phone     String   @unique
-  email     String?
-  address   Json?
-  city_id   String?
-  city      City?    @relation(fields: [city_id], references: [id])
-  pincode   String?
-  location  String?
-  is_active Boolean  @default(true)
-  is_available_today Boolean @default(true)
-  service_radius_m Int?
-  delivery_time_msg String?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
+  id                 String   @id @default(uuid())
+  name               String
+  owner_name         String?
+  phone              String   @unique
+  email              String?
+  address            Json?
+  ///  city_id   String?
+  ///  city      City?    @relation(fields: [city_id], references: [id])
+  pincode            String?
+  location           String?
+  is_active          Boolean  @default(true)
+  is_available_today Boolean  @default(true)
+  service_radius_m   Int?
+  delivery_time_msg  String?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @default(now())
 
-  vendor_products VendorProduct[]
+  ///  subscriptions Subscription[]
+  ///  monthly_bills MonthlyBill[]
+  ///  payments Payment[]
+  ///  notifications Notification[]
+  ///  products Product[] @relation("products")
+  ///  orders Order[] @relation("orders")
+  products      Product[]
+  city          City?          @relation(fields: [cityId], references: [id])
+  cityId        String?
   subscriptions Subscription[]
-  orders Order[]
-  monthly_bills MonthlyBill[]
-  payments Payment[]
   notifications Notification[]
-}
-
-model VendorProduct {
-  id        String   @id @default(uuid())
-  vendor_id String
-  vendor    Vendor   @relation(fields: [vendor_id], references: [id], onDelete: Cascade)
-  name      String
-  description String?
-  price     Decimal  @db.Decimal(10, 2)
-  deposit   Decimal? @db.Decimal(10, 2)
-  image_url String?
-  product_id String
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
-  is_active Boolean  @default(true)
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now())
-
-  subscriptions Subscription[]
-  orders Order[]
 }

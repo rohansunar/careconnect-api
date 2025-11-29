@@ -22,40 +22,79 @@ describe('Products CRUD', () => {
   beforeEach(async () => {
     // Clean up products table before each test
     await prisma.product.deleteMany();
+    // Clean up related tables
+    await prisma.vendor.deleteMany();
+    await prisma.order.deleteMany();
   });
 
   describe('Create', () => {
     it('should create a product with valid data', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+
+      const category = await prisma.categories.create({
+        data: {
+          name: 'Test Category',
+        },
+      });
+
       const productData = {
         name: 'Test Product',
-        type: 'Beverage',
+        category_id: category.id,
         image_url: 'http://example.com/image.jpg',
         description: 'A test product',
+        vendor_id: vendor.id,
+        price: 100.50,
+        deposit: 10.00,
+        is_active: true,
       };
 
       const product = await prisma.product.create({ data: productData });
 
       expect(product).toHaveProperty('id');
       expect(product.name).toBe('Test Product');
-      expect(product.type).toBe('Beverage');
+      expect(product.category_id).toBe(category.id);
       expect(product.image_url).toBe('http://example.com/image.jpg');
       expect(product.description).toBe('A test product');
+      expect(product.vendor_id).toBe(vendor.id);
+      expect(product.price).toBe(100.50);
+      expect(product.deposit).toBe(10.00);
+      expect(product.is_active).toBe(true);
       expect(product.created_at).toBeInstanceOf(Date);
+      expect(product.updated_at).toBeInstanceOf(Date);
     });
 
     it('should create a product with minimal data', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+
       const productData = {
         name: 'Minimal Product',
+        vendor_id: vendor.id,
+        price: 50.00,
       };
 
       const product = await prisma.product.create({ data: productData });
 
       expect(product).toHaveProperty('id');
       expect(product.name).toBe('Minimal Product');
-      expect(product.type).toBeNull();
+      expect(product.category_id).toBeNull();
       expect(product.image_url).toBeNull();
       expect(product.description).toBeNull();
+      expect(product.vendor_id).toBe(vendor.id);
+      expect(product.price).toBe(50.00);
+      expect(product.deposit).toBeNull();
+      expect(product.is_active).toBe(true);
       expect(product.created_at).toBeInstanceOf(Date);
+      expect(product.updated_at).toBeInstanceOf(Date);
     });
 
     it('should throw error for null name', async () => {
@@ -73,10 +112,17 @@ describe('Products CRUD', () => {
     let productId: string;
 
     beforeEach(async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
       const product = await prisma.product.create({
         data: {
           name: 'Test Product',
-          type: 'Beverage',
+          vendor_id: vendor.id,
+          price: 25.00,
         },
       });
       productId = product.id;
@@ -103,10 +149,17 @@ describe('Products CRUD', () => {
     let productId: string;
 
     beforeEach(async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
       const product = await prisma.product.create({
         data: {
           name: 'Update Product',
-          type: 'Beverage',
+          vendor_id: vendor.id,
+          price: 30.00,
         },
       });
       productId = product.id;
@@ -124,11 +177,12 @@ describe('Products CRUD', () => {
     it('should update optional fields', async () => {
       const updatedProduct = await prisma.product.update({
         where: { id: productId },
-        data: { type: 'Updated Type', description: 'Updated description' },
+        data: { deposit: 15.00, description: 'Updated description', is_active: false },
       });
 
-      expect(updatedProduct.type).toBe('Updated Type');
+      expect(updatedProduct.deposit).toBe(15.00);
       expect(updatedProduct.description).toBe('Updated description');
+      expect(updatedProduct.is_active).toBe(false);
     });
 
     it('should throw error for null name on update', async () => {
@@ -145,9 +199,17 @@ describe('Products CRUD', () => {
     let productId: string;
 
     beforeEach(async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
       const product = await prisma.product.create({
         data: {
           name: 'Delete Product',
+          vendor_id: vendor.id,
+          price: 20.00,
         },
       });
       productId = product.id;
@@ -170,6 +232,243 @@ describe('Products CRUD', () => {
           where: { id: 'non-existent-id' },
         }),
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+    });
+  });
+
+  describe('vendor_id', () => {
+    it('should create product with vendor_id', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      expect(product.vendor_id).toBe(vendor.id);
+    });
+
+    it('should throw error for invalid vendor_id', async () => {
+      await expect(
+        prisma.product.create({
+          data: {
+            name: 'Test Product',
+            vendor_id: 'invalid-vendor-id',
+            price: 10.00,
+          },
+        }),
+      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+    });
+  });
+
+  describe('price', () => {
+    it('should have price', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.50,
+        },
+      });
+      expect(product.price).toBe(10.50);
+    });
+  });
+
+  describe('deposit', () => {
+    it('should have deposit when provided', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+          deposit: 5.00,
+        },
+      });
+      expect(product.deposit).toBe(5.00);
+    });
+
+    it('should be null when not provided', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      expect(product.deposit).toBeNull();
+    });
+  });
+
+  describe('is_active', () => {
+    it('should default to true', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      expect(product.is_active).toBe(true);
+    });
+
+    it('should be settable', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+          is_active: false,
+        },
+      });
+      expect(product.is_active).toBe(false);
+    });
+  });
+
+  describe('updated_at', () => {
+    it('should be Date', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      expect(product.updated_at).toBeInstanceOf(Date);
+    });
+  });
+
+  describe('category_id', () => {
+    it('should be settable', async () => {
+      const category = await prisma.categories.create({
+        data: {
+          name: 'Test Category',
+        },
+      });
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+          category_id: category.id,
+        },
+      });
+      expect(product.category_id).toBe(category.id);
+    });
+
+    it('should be null when not provided', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      expect(product.category_id).toBeNull();
+    });
+  });
+
+  describe('vendor relation', () => {
+    it('should include vendor', async () => {
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+        },
+      });
+      const productWithVendor = await prisma.product.findUnique({
+        where: { id: product.id },
+        include: { vendor: true },
+      });
+      expect(productWithVendor?.vendor?.name).toBe('Test Vendor');
+    });
+  });
+
+  describe('category relation', () => {
+    it('should include category', async () => {
+      const category = await prisma.categories.create({
+        data: {
+          name: 'Test Category',
+        },
+      });
+      const vendor = await prisma.vendor.create({
+        data: {
+          name: 'Test Vendor',
+          phone: '1234567890',
+        },
+      });
+      const product = await prisma.product.create({
+        data: {
+          name: 'Test Product',
+          vendor_id: vendor.id,
+          price: 10.00,
+          category_id: category.id,
+        },
+      });
+      const productWithCategory = await prisma.product.findUnique({
+        where: { id: product.id },
+        include: { category: true },
+      });
+      expect(productWithCategory?.category?.name).toBe('Test Category');
     });
   });
 });

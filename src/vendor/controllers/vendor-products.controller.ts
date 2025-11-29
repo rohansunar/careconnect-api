@@ -12,8 +12,8 @@ import {
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { VendorProductsService } from '../services/vendor-products.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { CreateVendorProductDto } from '../dto/create-vendor-product.dto';
-import { UpdateVendorProductDto } from '../dto/update-vendor-product.dto';
+import { CreateProductDto } from '../dto/create-product.dto';
+import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
 @ApiTags('Vendor Products')
@@ -49,14 +49,14 @@ export class VendorProductsController {
     summary: 'Create vendor product',
     description: 'Enable vendors to add new products to their catalog.',
   })
-  @ApiBody({ type: CreateVendorProductDto })
+  @ApiBody({ type: CreateProductDto })
   @ApiResponse({ status: 201, description: 'Product created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('')
   async createProduct(
     @Req() req: any,
-    @Body() dto: CreateVendorProductDto,
+    @Body() dto: CreateProductDto,
     @CurrentVendor() vendor: any,
   ) {
     const { vendorId } = vendor;
@@ -73,7 +73,7 @@ export class VendorProductsController {
     description:
       'Allow vendors to update product pricing, deposit, or availability.',
   })
-  @ApiBody({ type: UpdateVendorProductDto })
+  @ApiBody({ type: UpdateProductDto })
   @ApiResponse({ status: 200, description: 'Product updated successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -81,7 +81,7 @@ export class VendorProductsController {
   async updateProduct(
     @Req() req: any,
     @Param('productId') productId: string,
-    @Body() dto: UpdateVendorProductDto,
+    @Body() dto: UpdateProductDto,
     @CurrentVendor() vendor: any,
   ) {
     const { vendorId } = vendor;

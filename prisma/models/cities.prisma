@@ -1,13 +1,13 @@
 model City {
-  id        String   @id @default(uuid())
-  name      String
-  state     String?
-  country   String?
+  id         String   @id @default(uuid())
+  name       String
+  state      String?
+  country    String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
 
-  vendors   Vendor[]
-  customer_addresses CustomerAddress[]
+  vendors           Vendor[]
+  customerAddresses CustomerAddress[]
 }
 
 // bbox      Unsupported("geometry")

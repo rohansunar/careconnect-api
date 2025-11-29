@@ -1,19 +1,12 @@
 model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
-  email     String?
-  address   Json?
-  city      String?
-  pincode   String?
-  location  String?
+  id         String   @id @default(uuid())
+  name       String
+  phone      String   @unique
+  email      String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  subscriptions Subscription[]
-  orders Order[]
-  monthly_bills MonthlyBill[]
-  payments Payment[]
-  notifications Notification[]
+  ///  notifications Notification[]
   customer_addresses CustomerAddress[]
+  notifications      Notification[]
 }

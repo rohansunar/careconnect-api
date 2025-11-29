@@ -1,11 +1,22 @@
 model Product {
-  id        String   @id @default(uuid())
-  name      String
-  type      String?
-  image_url String?
-  description String?
-  created_at DateTime @default(now())
+  id         String @id @default(uuid())
+  name       String
+  categoryId String
 
-  vendorProducts VendorProduct[]
+  /// Relation to Categories (on delete -> CASCADE)
+  categories  Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  image_url   String?
+  description String?
+  created_at  DateTime   @default(now())
+  vendorId     String
+  vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  price       Decimal  @db.Decimal(10, 2)  
+  deposit     Decimal?  @db.Decimal(10, 2) 
+  is_active   Boolean    @default(true)
+  updated_at  DateTime   @default(now())
+
+  /// subscriptions Subscription[]
   subscriptions Subscription[]
+
+  @@index([categoryId])
 }

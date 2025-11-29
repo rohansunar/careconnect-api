@@ -1,12 +1,19 @@
+enum OtpPurpose {
+  VENDOR_LOGIN
+  CUSTOMER_LOGIN
+  DELIVERY_VERIFICATION
+  PASSWORD_RESET
+}
+
 model OtpCode {
-  id        String      @id @default(uuid())
+  id        String     @id @default(uuid())
   phone     String
   code      String
   purpose   OtpPurpose
   expiresAt DateTime
-  attempts  Int         @default(0)
-  isUsed    Boolean     @default(false)
-  createdAt DateTime    @default(now())
+  attempts  Int        @default(0)
+  isUsed    Boolean    @default(false)
+  createdAt DateTime   @default(now())
   usedAt    DateTime?
 
   @@unique([phone, purpose])
