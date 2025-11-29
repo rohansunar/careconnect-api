@@ -8,7 +8,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secret',
+      secretOrKey: process.env.JWT_VENDOR_SECRET || 'vendor-jwt-secret-key',
     });
   }
 
@@ -16,9 +16,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // Business logic rationale: Ensure only vendors with 'vendor' role can access these endpoints.
     // Security consideration: Validate JWT claims to prevent unauthorized access.
     // Design decision: Extract vendor_id from JWT payload for ownership checks.
-    if (payload.role !== 'vendor' || !payload.vendor_id) {
+    if (payload.role !== 'vendor' || !payload.sub) {
       throw new UnauthorizedException('Invalid token for vendor access');
     }
-    return { vendorId: payload.vendor_id, role: payload.role };
+    return { vendorId: payload.sub, role: payload.role };
   }
 }

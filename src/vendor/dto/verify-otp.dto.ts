@@ -30,5 +30,5 @@ export class VerifyOtpResponseDto {
   })
   vendor: any;
 
-  expiresIn:number;
+  expiresIn: number;
 }

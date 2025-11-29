@@ -11,6 +11,7 @@ import { VendorService } from '../services/vendor.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
+import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
 @Controller('vendors/me')
 export class VendorController {
@@ -23,7 +24,8 @@ export class VendorController {
    */
   @UseGuards(JwtAuthGuard)
   @Get('')
-  async getProfile(@Req() req: any) {
+  async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
+    console.log(vendor);
     const vendorId = req.user.vendorId;
     return this.vendorService.getProfile(vendorId);
   }

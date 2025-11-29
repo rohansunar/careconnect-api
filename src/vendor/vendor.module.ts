@@ -7,24 +7,25 @@ import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { VendorAuthService } from './services/vendor-auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
-  imports: [PrismaModule, OtpModule,
+  imports: [
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret:
-          configService.get<string>('JWT_VENDOR_SECRET') ||
-          'vendor-jwt-secret-key',
-        signOptions: {
-          expiresIn: '24h',
-        },
+        secret: configService.get<string>('JWT_VENDOR_SECRET'),
+        signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
     }),
+    PrismaModule,
+    OtpModule,
   ],
   controllers: [VendorController, VendorAuthController],
-  providers: [VendorService, VendorAuthService],
-  exports: [VendorService],
+  providers: [VendorService, VendorAuthService, JwtStrategy],
+  exports: [VendorService, JwtStrategy],
 })
 export class VendorModule {}
