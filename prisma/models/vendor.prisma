@@ -16,12 +16,6 @@ model Vendor {
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
 
-  ///  subscriptions Subscription[]
-  ///  monthly_bills MonthlyBill[]
-  ///  payments Payment[]
-  ///  notifications Notification[]
-  ///  products Product[] @relation("products")
-  ///  orders Order[] @relation("orders")
   products      Product[]
   city          City?          @relation(fields: [cityId], references: [id])
   cityId        String?

@@ -1,9 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomerAuthController } from '../src/auth/controllers/customer-auth.controller';
 import { CustomerAuthService } from '../src/auth/services/customer-auth.service';
-import { RequestOtpDto, OtpResponseDto } from '../src/auth/dtos/request-otp.dto';
-import { VerifyOtpDto, VerifyOtpResponseDto } from '../src/auth/dtos/verify-otp.dto';
-import { BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  RequestOtpDto,
+  OtpResponseDto,
+} from '../src/auth/dtos/request-otp.dto';
+import {
+  VerifyOtpDto,
+  VerifyOtpResponseDto,
+} from '../src/auth/dtos/verify-otp.dto';
+import {
+  BadRequestException,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 /**
  * Unit tests for CustomerAuthController.
@@ -60,18 +70,26 @@ describe('CustomerAuthController', () => {
       const result = await controller.requestOtp(dto);
 
       expect(result).toEqual(expectedResponse);
-      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(dto.phone);
+      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(
+        dto.phone,
+      );
       expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException for invalid phone number or rate limit exceeded', async () => {
       // Rationale: Validates error handling for bad requests, such as invalid phone formats or rate limiting, ensuring the controller propagates service exceptions correctly.
-      const error = new BadRequestException('Too many OTP requests. Please try again later.');
+      const error = new BadRequestException(
+        'Too many OTP requests. Please try again later.',
+      );
 
       mockCustomerAuthService.requestOtp.mockRejectedValue(error);
 
-      await expect(controller.requestOtp(dto)).rejects.toThrow(BadRequestException);
-      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(dto.phone);
+      await expect(controller.requestOtp(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(
+        dto.phone,
+      );
     });
 
     it('should throw UnauthorizedException if customer not found', async () => {
@@ -80,8 +98,12 @@ describe('CustomerAuthController', () => {
 
       mockCustomerAuthService.requestOtp.mockRejectedValue(error);
 
-      await expect(controller.requestOtp(dto)).rejects.toThrow(UnauthorizedException);
-      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(dto.phone);
+      await expect(controller.requestOtp(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(
+        dto.phone,
+      );
     });
 
     it('should throw ForbiddenException if account is inactive', async () => {
@@ -90,8 +112,12 @@ describe('CustomerAuthController', () => {
 
       mockCustomerAuthService.requestOtp.mockRejectedValue(error);
 
-      await expect(controller.requestOtp(dto)).rejects.toThrow(ForbiddenException);
-      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(dto.phone);
+      await expect(controller.requestOtp(dto)).rejects.toThrow(
+        ForbiddenException,
+      );
+      expect(mockCustomerAuthService.requestOtp).toHaveBeenCalledWith(
+        dto.phone,
+      );
     });
   });
 
@@ -107,33 +133,51 @@ describe('CustomerAuthController', () => {
         expiresIn: 36000,
       };
 
-      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockResolvedValue(expectedResponse);
+      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockResolvedValue(
+        expectedResponse,
+      );
 
       const result = await controller.verifyOtp(dto);
 
       expect(result).toEqual(expectedResponse);
-      expect(mockCustomerAuthService.verifyOtpAndCreateCustomer).toHaveBeenCalledWith(dto);
-      expect(mockCustomerAuthService.verifyOtpAndCreateCustomer).toHaveBeenCalledTimes(1);
+      expect(
+        mockCustomerAuthService.verifyOtpAndCreateCustomer,
+      ).toHaveBeenCalledWith(dto);
+      expect(
+        mockCustomerAuthService.verifyOtpAndCreateCustomer,
+      ).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException for invalid OTP format', async () => {
       // Rationale: Ensures input validation for OTP codes, rejecting malformed requests to maintain data integrity.
       const error = new BadRequestException('OTP must be exactly 6 digits');
 
-      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockRejectedValue(error);
+      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockRejectedValue(
+        error,
+      );
 
-      await expect(controller.verifyOtp(dto)).rejects.toThrow(BadRequestException);
-      expect(mockCustomerAuthService.verifyOtpAndCreateCustomer).toHaveBeenCalledWith(dto);
+      await expect(controller.verifyOtp(dto)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(
+        mockCustomerAuthService.verifyOtpAndCreateCustomer,
+      ).toHaveBeenCalledWith(dto);
     });
 
     it('should throw UnauthorizedException for invalid OTP or customer not found', async () => {
       // Rationale: Protects against invalid authentication attempts, ensuring only verified users can access the system.
       const error = new UnauthorizedException('Invalid OTP');
 
-      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockRejectedValue(error);
+      mockCustomerAuthService.verifyOtpAndCreateCustomer.mockRejectedValue(
+        error,
+      );
 
-      await expect(controller.verifyOtp(dto)).rejects.toThrow(UnauthorizedException);
-      expect(mockCustomerAuthService.verifyOtpAndCreateCustomer).toHaveBeenCalledWith(dto);
+      await expect(controller.verifyOtp(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(
+        mockCustomerAuthService.verifyOtpAndCreateCustomer,
+      ).toHaveBeenCalledWith(dto);
     });
   });
 });
