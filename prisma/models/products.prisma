@@ -1,21 +1,20 @@
 model Product {
-  id         String @id @default(uuid())
-  name       String
-  categoryId String
+  id          String @id @default(uuid())
+  name        String
+  categoryId  String
 
   /// Relation to Categories (on delete -> CASCADE)
   categories  Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  image_url   String?
+  images      String[]
   description String?
   created_at  DateTime   @default(now())
-  vendorId     String
+  vendorId    String
   vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   price       Decimal  @db.Decimal(10, 2)  
   deposit     Decimal?  @db.Decimal(10, 2) 
   is_active   Boolean    @default(true)
   updated_at  DateTime   @default(now())
 
-  /// subscriptions Subscription[]
   subscriptions Subscription[]
 
   @@index([categoryId])

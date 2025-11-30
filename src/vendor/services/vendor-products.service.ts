@@ -25,7 +25,6 @@ export class VendorProductsService {
         description: true,
         price: true,
         deposit: true,
-        image_url: true,
         is_active: true,
         created_at: true,
         updated_at: true,
@@ -43,10 +42,6 @@ export class VendorProductsService {
    * @returns The created vendor product details.
    */
   async createProduct(vendorId: string, dto: CreateProductDto) {
-    
-
-    
-
     // Check if vendor_product already exists for this product and vendor
     const existing = await this.prisma.product.findFirst({
       where: {
@@ -71,7 +66,6 @@ export class VendorProductsService {
     if (!category) {
       throw new BadRequestException('Category does not exist');
     }
-    
 
     // Create the vendor product with data from the base product and DTO
     const vendorProduct = await this.prisma.product.create({
@@ -89,7 +83,6 @@ export class VendorProductsService {
         description: true,
         price: true,
         deposit: true,
-        image_url: true,
         is_active: true,
         created_at: true,
         updated_at: true,

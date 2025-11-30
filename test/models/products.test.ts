@@ -48,8 +48,8 @@ describe('Products CRUD', () => {
         image_url: 'http://example.com/image.jpg',
         description: 'A test product',
         vendor_id: vendor.id,
-        price: 100.50,
-        deposit: 10.00,
+        price: 100.5,
+        deposit: 10.0,
         is_active: true,
       };
 
@@ -61,8 +61,8 @@ describe('Products CRUD', () => {
       expect(product.image_url).toBe('http://example.com/image.jpg');
       expect(product.description).toBe('A test product');
       expect(product.vendor_id).toBe(vendor.id);
-      expect(product.price).toBe(100.50);
-      expect(product.deposit).toBe(10.00);
+      expect(product.price).toBe(100.5);
+      expect(product.deposit).toBe(10.0);
       expect(product.is_active).toBe(true);
       expect(product.created_at).toBeInstanceOf(Date);
       expect(product.updated_at).toBeInstanceOf(Date);
@@ -79,7 +79,7 @@ describe('Products CRUD', () => {
       const productData = {
         name: 'Minimal Product',
         vendor_id: vendor.id,
-        price: 50.00,
+        price: 50.0,
       };
 
       const product = await prisma.product.create({ data: productData });
@@ -90,7 +90,7 @@ describe('Products CRUD', () => {
       expect(product.image_url).toBeNull();
       expect(product.description).toBeNull();
       expect(product.vendor_id).toBe(vendor.id);
-      expect(product.price).toBe(50.00);
+      expect(product.price).toBe(50.0);
       expect(product.deposit).toBeNull();
       expect(product.is_active).toBe(true);
       expect(product.created_at).toBeInstanceOf(Date);
@@ -122,7 +122,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 25.00,
+          price: 25.0,
         },
       });
       productId = product.id;
@@ -159,7 +159,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Update Product',
           vendor_id: vendor.id,
-          price: 30.00,
+          price: 30.0,
         },
       });
       productId = product.id;
@@ -177,10 +177,14 @@ describe('Products CRUD', () => {
     it('should update optional fields', async () => {
       const updatedProduct = await prisma.product.update({
         where: { id: productId },
-        data: { deposit: 15.00, description: 'Updated description', is_active: false },
+        data: {
+          deposit: 15.0,
+          description: 'Updated description',
+          is_active: false,
+        },
       });
 
-      expect(updatedProduct.deposit).toBe(15.00);
+      expect(updatedProduct.deposit).toBe(15.0);
       expect(updatedProduct.description).toBe('Updated description');
       expect(updatedProduct.is_active).toBe(false);
     });
@@ -209,7 +213,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Delete Product',
           vendor_id: vendor.id,
-          price: 20.00,
+          price: 20.0,
         },
       });
       productId = product.id;
@@ -247,7 +251,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       expect(product.vendor_id).toBe(vendor.id);
@@ -259,7 +263,7 @@ describe('Products CRUD', () => {
           data: {
             name: 'Test Product',
             vendor_id: 'invalid-vendor-id',
-            price: 10.00,
+            price: 10.0,
           },
         }),
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
@@ -278,10 +282,10 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.50,
+          price: 10.5,
         },
       });
-      expect(product.price).toBe(10.50);
+      expect(product.price).toBe(10.5);
     });
   });
 
@@ -297,11 +301,11 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
-          deposit: 5.00,
+          price: 10.0,
+          deposit: 5.0,
         },
       });
-      expect(product.deposit).toBe(5.00);
+      expect(product.deposit).toBe(5.0);
     });
 
     it('should be null when not provided', async () => {
@@ -315,7 +319,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       expect(product.deposit).toBeNull();
@@ -334,7 +338,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       expect(product.is_active).toBe(true);
@@ -351,7 +355,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
           is_active: false,
         },
       });
@@ -371,7 +375,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       expect(product.updated_at).toBeInstanceOf(Date);
@@ -395,7 +399,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
           category_id: category.id,
         },
       });
@@ -413,7 +417,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       expect(product.category_id).toBeNull();
@@ -432,7 +436,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
         },
       });
       const productWithVendor = await prisma.product.findUnique({
@@ -460,7 +464,7 @@ describe('Products CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
           category_id: category.id,
         },
       });

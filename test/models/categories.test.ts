@@ -165,7 +165,9 @@ describe('Categories CRUD', () => {
           name: 'Test Category',
         },
       });
-      expect(category.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+      expect(category.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
     });
   });
 
@@ -220,7 +222,7 @@ describe('Categories CRUD', () => {
         data: {
           name: 'Test Product',
           vendor_id: vendor.id,
-          price: 10.00,
+          price: 10.0,
           category_id: category.id,
         },
       });
