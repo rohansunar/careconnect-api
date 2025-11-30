@@ -14,7 +14,7 @@ import {
   UploadProductImagesDto,
   DeleteProductImageDto,
   ReorderProductImagesDto,
-} from '../../product/dto/product-image.dto';
+} from '../dto/product-image.dto';
 
 interface UploadedFile {
   buffer: Buffer;

@@ -21,8 +21,8 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
-@ApiTags('Products')
-@Controller('products')
+@ApiTags('Product')
+@Controller('product')
 @UseGuards(AdminVendorGuard)
 export class ProductController {
   constructor(

@@ -19,20 +19,20 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductImageService } from '../services/products-image.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../vendor/guards/jwt-auth.guard';
 import {
   UploadProductImagesDto,
   UploadProductImagesResponseDto,
   DeleteProductImageDto,
   ReorderProductImagesDto,
   ProductImageResponseDto,
-} from '../../product/dto/product-image.dto';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
+} from '../dto/product-image.dto';
+import { CurrentVendor } from '../../vendor/decorators/current-vendor.decorator';
 
-@ApiTags('Vendor Product Images')
-@Controller('vendors/products/images')
+@ApiTags('Product Image')
+@Controller('product/image')
 @UseGuards(JwtAuthGuard)
-export class VendorProductImagesController {
+export class ProductImageController {
   constructor(
     private readonly productImageService: ProductImageService,
   ) {}

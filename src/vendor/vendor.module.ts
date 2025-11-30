@@ -5,14 +5,11 @@ import { VendorController } from './controllers/vendor.controller';
 import { VendorService } from './services/vendor.service';
 import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { VendorAuthService } from './services/vendor-auth.service';
-import { VendorProductImagesController } from './controllers/vendor-product-images.controller';
-import { ProductImageService } from './services/products-image.service';
+
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { ImageProcessingService } from '../common/services/image-processing.service';
-import { S3Service } from '../common/services/s3.service';
 
 @Module({
   imports: [
@@ -31,15 +28,11 @@ import { S3Service } from '../common/services/s3.service';
   controllers: [
     VendorController,
     VendorAuthController,
-    VendorProductImagesController,
   ],
   providers: [
     VendorService,
     VendorAuthService,
-    ProductImageService,
     JwtStrategy,
-    ImageProcessingService,
-    S3Service,
   ],
   exports: [VendorService, JwtStrategy],
 })
