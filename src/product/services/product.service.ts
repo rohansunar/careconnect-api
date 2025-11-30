@@ -8,7 +8,7 @@ import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 
 @Injectable()
-export class VendorProductsService {
+export class ProductService {
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -25,6 +25,7 @@ export class VendorProductsService {
         description: true,
         price: true,
         deposit: true,
+        images:true,
         is_active: true,
         created_at: true,
         updated_at: true,
@@ -47,12 +48,13 @@ export class VendorProductsService {
       where: {
         vendorId: vendorId,
         name: dto.name,
+        categoryId: dto.categoryId,
       },
     });
 
     if (existing) {
       throw new BadRequestException(
-        'Product already exists for this product name',
+        'Product already exists for this product name and Category',
       );
     }
 
@@ -80,12 +82,7 @@ export class VendorProductsService {
       select: {
         id: true,
         name: true,
-        description: true,
-        price: true,
-        deposit: true,
-        is_active: true,
         created_at: true,
-        updated_at: true,
       },
     });
 

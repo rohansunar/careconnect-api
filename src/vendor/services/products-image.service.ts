@@ -14,7 +14,7 @@ import {
   UploadProductImagesDto,
   DeleteProductImageDto,
   ReorderProductImagesDto,
-} from '../dto/product-image.dto';
+} from '../../product/dto/product-image.dto';
 
 interface UploadedFile {
   buffer: Buffer;
@@ -42,12 +42,12 @@ export class ProductImageService {
     baseQuery: any,
     user: { id: string; role: string; vendorId?: string },
   ): any {
-    const { role, vendorId } = user;
+    const { role, id } = user;
     if (role === 'vendor') {
-      if (!vendorId) {
+      if (!id) {
         throw new BadRequestException('Vendor ID not found for user');
       }
-      baseQuery.vendorId = BigInt(vendorId);
+      baseQuery.vendorId = id;
     }
     return baseQuery;
   }
@@ -59,7 +59,7 @@ export class ProductImageService {
     productId: string,
     user: { id: string; role: string; vendorId?: string },
   ): Promise<Product> {
-    const query = this.buildRoleBasedQuery({ id: BigInt(productId) }, user);
+    const query = this.buildRoleBasedQuery({ id: productId }, user);
     const product = await this.prisma.product.findFirst({ where: query });
 
     if (!product) {
@@ -83,11 +83,11 @@ export class ProductImageService {
    * Validates input for image upload
    */
   private async validateUploadImagesInput(
-    user: { id: string; role: string; vendorId?: string },
+    user: { id: string; role: string; },
     productId: string,
     files: UploadedFile[],
   ): Promise<{ product: Product; normalizedFiles: UploadedFile[] }> {
-    const { id: userId } = user;
+    const { id } = user;
 
     // Validate product ownership
     const product = await this.validateProductOwnership(productId, user);

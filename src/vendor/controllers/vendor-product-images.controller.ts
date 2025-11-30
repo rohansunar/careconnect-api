@@ -26,7 +26,7 @@ import {
   DeleteProductImageDto,
   ReorderProductImagesDto,
   ProductImageResponseDto,
-} from '../dto/product-image.dto';
+} from '../../product/dto/product-image.dto';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
 @ApiTags('Vendor Product Images')
@@ -144,10 +144,10 @@ export class VendorProductImagesController {
   async deleteProductImage(
     @Param('productId') productId: string,
     @Body() deleteImageDto: DeleteProductImageDto,
-    @CurrentVendor() currentUser: any,
+    @CurrentVendor() vendor: any,
   ): Promise<{ message: string; remainingImages: number }> {
-    const vendorId = currentUser.role === 'vendor' ? currentUser.id : undefined;
-    const user = { id: currentUser.id, role: currentUser.role, vendorId };
+    const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
+    const user = { id: vendor.vendorId, role: vendor.role, vendorId };
 
     return this.productImageService.deleteProductImage(
       user,

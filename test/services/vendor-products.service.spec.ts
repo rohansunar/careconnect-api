@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { VendorProductsService } from '../../src/vendor/services/vendor-products.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { CreateProductDto } from '../../src/vendor/dto/create-product.dto';
-import { UpdateProductDto } from '../../src/vendor/dto/update-product.dto';
+import { CreateProductDto } from '../../src/product/dto/create-product.dto';
+import { UpdateProductDto } from '../../src/product/dto/update-product.dto';
 
 describe('VendorProductsService', () => {
   let service: VendorProductsService;

@@ -15,18 +15,18 @@ import {
   ApiBody,
   ApiResponse,
 } from '@nestjs/swagger';
-import { VendorProductsService } from '../services/vendor-products.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { ProductService } from '../services/product.service';
+import { AdminVendorGuard } from '../guards/admin-vendor.guard';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentVendor } from '../decorators/current-vendor.decorator';
 
-@ApiTags('Vendor Products')
-@Controller('vendors/products')
-@UseGuards(JwtAuthGuard)
-export class VendorProductsController {
+@ApiTags('Products')
+@Controller('products')
+@UseGuards(AdminVendorGuard)
+export class ProductController {
   constructor(
-    private readonly vendorProductsService: VendorProductsService,
+    private readonly productService: ProductService,
   ) {}
 
   /**
@@ -44,7 +44,7 @@ export class VendorProductsController {
   @Get('')
   async getProducts(@Req() req: any, @CurrentVendor() vendor: any) {
     const { vendorId } = vendor;
-    return this.vendorProductsService.getProducts(vendorId);
+    return this.productService.getProducts(vendorId);
   }
 
   /**
@@ -67,7 +67,7 @@ export class VendorProductsController {
     @CurrentVendor() vendor: any,
   ) {
     const { vendorId } = vendor;
-    return this.vendorProductsService.createProduct(vendorId, dto);
+    return this.productService.createProduct(vendorId, dto);
   }
 
   /**
@@ -92,7 +92,7 @@ export class VendorProductsController {
     @CurrentVendor() vendor: any,
   ) {
     const { vendorId } = vendor;
-    return this.vendorProductsService.updateProduct(vendorId, productId, dto);
+    return this.productService.updateProduct(vendorId, productId, dto);
   }
 
   /**
@@ -113,6 +113,6 @@ export class VendorProductsController {
     @CurrentVendor() vendor: any,
   ) {
     const { vendorId } = vendor;
-    return this.vendorProductsService.deleteProduct(vendorId, productId);
+    return this.productService.deleteProduct(vendorId, productId);
   }
 }
