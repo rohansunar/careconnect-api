@@ -25,6 +25,6 @@ export class VendorJwtStrategy extends PassportStrategy(
     if (payload.role !== 'vendor' || !payload.sub) {
       throw new UnauthorizedException('Invalid token for vendor access');
     }
-    return { vendorId: payload.sub, email: payload.email, role: payload.role };
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

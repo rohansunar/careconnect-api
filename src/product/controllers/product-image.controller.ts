@@ -19,8 +19,9 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductImageService } from '../services/products-image.service';
-import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { AdminVendorGuard } from 'src/auth/guards/admin-vendor.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 import {
   UploadProductImagesDto,
   UploadProductImagesResponseDto,
@@ -28,8 +29,7 @@ import {
   ReorderProductImagesDto,
   ProductImageResponseDto,
 } from '../dto/product-image.dto';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { CurrentVendor } from 'src/auth/decorators/current-vendor.decorator';
 
 @ApiTags('Product Image')
 @UseGuards(AdminVendorGuard, RolesGuard)

@@ -25,8 +25,8 @@ export class VendorController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Get('')
   async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
-    const { vendorId } = vendor;
-    return this.vendorService.getProfile(vendorId);
+    const { id } = vendor;
+    return this.vendorService.getProfile(id);
   }
 
   /**
@@ -47,8 +47,8 @@ export class VendorController {
     @Body() dto: UpdateProfileDto,
     @CurrentVendor() vendor: any,
   ) {
-    const { vendorId } = vendor;
-    return this.vendorService.updateProfile(vendorId, dto);
+    const { id } = vendor;
+    return this.vendorService.updateProfile(id, dto);
   }
 
   /**
@@ -71,7 +71,7 @@ export class VendorController {
     @Body() dto: UpdateAvailabilityDto,
     @CurrentVendor() vendor: any,
   ) {
-    const { vendorId } = vendor;
-    return this.vendorService.updateAvailability(vendorId, dto);
+    const { id } = vendor;
+    return this.vendorService.updateAvailability(id, dto);
   }
 }
