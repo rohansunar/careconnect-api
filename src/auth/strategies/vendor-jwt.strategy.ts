@@ -4,13 +4,16 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class VendorJwtStrategy extends PassportStrategy(Strategy, 'vendor-jwt') {
-
+export class VendorJwtStrategy extends PassportStrategy(
+  Strategy,
+  'vendor-jwt',
+) {
   constructor(private config: ConfigService) {
-   super({
+    super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('VENDOR_JWT_SECRET') || 'vendor-jwt-secret-key',
+      secretOrKey:
+        config.get<string>('VENDOR_JWT_SECRET') || 'vendor-jwt-secret-key',
       passReqToCallback: false,
     });
   }
@@ -22,6 +25,6 @@ export class VendorJwtStrategy extends PassportStrategy(Strategy, 'vendor-jwt') 
     if (payload.role !== 'vendor' || !payload.sub) {
       throw new UnauthorizedException('Invalid token for vendor access');
     }
-    return { vendorId: payload.sub, role: payload.role };
+    return { vendorId: payload.sub, email: payload.email, role: payload.role };
   }
 }

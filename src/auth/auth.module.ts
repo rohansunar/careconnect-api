@@ -9,23 +9,34 @@ import { PrismaService } from '../common/database/prisma.service';
 import { OtpService } from '../otp/services/otp.service';
 import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { VendorAuthGuard } from './guards/vendor-auth.guard';
-
+import { AdminVendorGuard } from './guards/admin-vendor.guard';
+import { RolesGuard } from './guards/roles.guard';
+import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
 
 @Module({
   imports: [
-    PassportModule.register({ defaultStrategy: 'vendor-jwt' }),
+    ConfigModule, // ensure ConfigService is available
+    PassportModule.register({ defaultStrategy: 'admin-jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
-        secret: cfg.get<string>('VENDOR_JWT_SECRET') || 'vendor-jwt-secret-key',
-        signOptions: { expiresIn:  '7d' },
+        secret: cfg.get<string>('ADMIN_JWT_SECRET') || 'JWT_ADMIN_SECRET',
+        signOptions: { expiresIn: '7d' },
       }),
     }),
-    ConfigModule, // ensure ConfigService is available
   ],
-  providers: [VendorJwtStrategy, VendorAuthGuard, VendorAuthService, PrismaService, OtpService],
+  providers: [
+    VendorAuthService,
+    PrismaService,
+    OtpService,
+    VendorJwtStrategy,
+    VendorAuthGuard,
+    AdminJwtStrategy,
+    AdminVendorGuard,
+    RolesGuard
+  ],
   controllers: [VendorAuthController],
-  exports: [VendorAuthGuard],
+  exports: [VendorAuthGuard, AdminVendorGuard, RolesGuard],
 })
 export class AuthModule {}

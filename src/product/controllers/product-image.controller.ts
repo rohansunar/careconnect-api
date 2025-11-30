@@ -19,7 +19,8 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductImageService } from '../services/products-image.service';
-// import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import {
   UploadProductImagesDto,
   UploadProductImagesResponseDto,
@@ -28,14 +29,13 @@ import {
   ProductImageResponseDto,
 } from '../dto/product-image.dto';
 import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @ApiTags('Product Image')
+@UseGuards(AdminVendorGuard, RolesGuard)
 @Controller('product/image')
-// @UseGuards(AdminVendorGuard)
 export class ProductImageController {
-  constructor(
-    private readonly productImageService: ProductImageService,
-  ) {}
+  constructor(private readonly productImageService: ProductImageService) {}
 
   @Post(':productId')
   @HttpCode(HttpStatus.CREATED)
@@ -111,6 +111,7 @@ export class ProductImageController {
   }
 
   @Delete(':productId')
+  @Roles('admin')  // only admin allowed to delete
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete product image',
@@ -146,6 +147,7 @@ export class ProductImageController {
     @Body() deleteImageDto: DeleteProductImageDto,
     @CurrentVendor() vendor: any,
   ): Promise<{ message: string; remainingImages: number }> {
+    console.log(vendor);
     const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
     const user = { id: vendor.vendorId, role: vendor.role, vendorId };
 

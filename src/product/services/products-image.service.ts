@@ -83,7 +83,7 @@ export class ProductImageService {
    * Validates input for image upload
    */
   private async validateUploadImagesInput(
-    user: { id: string; role: string; },
+    user: { id: string; role: string },
     productId: string,
     files: UploadedFile[],
   ): Promise<{ product: Product; normalizedFiles: UploadedFile[] }> {

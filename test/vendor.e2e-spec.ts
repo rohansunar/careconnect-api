@@ -257,6 +257,4 @@ describe('VendorController (e2e)', () => {
       });
     });
   });
-
-
 });

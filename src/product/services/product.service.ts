@@ -25,7 +25,7 @@ export class ProductService {
         description: true,
         price: true,
         deposit: true,
-        images:true,
+        images: true,
         is_active: true,
         created_at: true,
         updated_at: true,

@@ -5,7 +5,10 @@ import { OtpService } from '../../src/otp/services/otp.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { OtpPurpose } from '@prisma/client';
-import { VerifyOtpDto, VerifyOtpResponseDto } from '../../src/auth/dtos/verify-otp.dto';
+import {
+  VerifyOtpDto,
+  VerifyOtpResponseDto,
+} from '../../src/auth/dtos/verify-otp.dto';
 import { OtpResponseDto } from '../../src/auth/dtos/request-otp.dto';
 
 describe('VendorAuthService', () => {
@@ -69,7 +72,10 @@ describe('VendorAuthService', () => {
       const result = await service.requestOtp(phone);
 
       expect(result).toEqual(expectedResponse);
-      expect(mockOtpService.generateOtp).toHaveBeenCalledWith(phone, OtpPurpose.VENDOR_LOGIN);
+      expect(mockOtpService.generateOtp).toHaveBeenCalledWith(
+        phone,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(mockOtpService.generateOtp).toHaveBeenCalledTimes(1);
     });
 
@@ -80,7 +86,10 @@ describe('VendorAuthService', () => {
       mockOtpService.generateOtp.mockRejectedValue(error);
 
       await expect(service.requestOtp(phone)).rejects.toThrow(error);
-      expect(mockOtpService.generateOtp).toHaveBeenCalledWith(phone, OtpPurpose.VENDOR_LOGIN);
+      expect(mockOtpService.generateOtp).toHaveBeenCalledWith(
+        phone,
+        OtpPurpose.VENDOR_LOGIN,
+      );
     });
   });
 
@@ -112,7 +121,11 @@ describe('VendorAuthService', () => {
       const result = await service.verifyOtpAndCreateVendor(dto);
 
       expect(result).toEqual(expectedResponse);
-      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(dto.phone, dto.code, OtpPurpose.VENDOR_LOGIN);
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(
+        dto.phone,
+        dto.code,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(mockPrismaService.vendor.upsert).toHaveBeenCalledWith({
         where: { phone: dto.phone },
         update: {
@@ -137,8 +150,14 @@ describe('VendorAuthService', () => {
 
       mockOtpService.verifyOtp.mockRejectedValue(error);
 
-      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(UnauthorizedException);
-      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(dto.phone, dto.code, OtpPurpose.VENDOR_LOGIN);
+      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(
+        dto.phone,
+        dto.code,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(mockPrismaService.vendor.upsert).not.toHaveBeenCalled();
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
@@ -149,8 +168,14 @@ describe('VendorAuthService', () => {
       mockOtpService.verifyOtp.mockResolvedValue(true);
       mockPrismaService.vendor.upsert.mockRejectedValue(error);
 
-      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(error);
-      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(dto.phone, dto.code, OtpPurpose.VENDOR_LOGIN);
+      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(
+        error,
+      );
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(
+        dto.phone,
+        dto.code,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(mockPrismaService.vendor.upsert).toHaveBeenCalledWith({
         where: { phone: dto.phone },
         update: {
@@ -174,8 +199,14 @@ describe('VendorAuthService', () => {
         throw error;
       });
 
-      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(error);
-      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(dto.phone, dto.code, OtpPurpose.VENDOR_LOGIN);
+      await expect(service.verifyOtpAndCreateVendor(dto)).rejects.toThrow(
+        error,
+      );
+      expect(mockOtpService.verifyOtp).toHaveBeenCalledWith(
+        dto.phone,
+        dto.code,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(mockPrismaService.vendor.upsert).toHaveBeenCalledWith({
         where: { phone: dto.phone },
         update: {

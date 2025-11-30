@@ -9,12 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiBody,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
 // import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
 import { CreateProductDto } from '../dto/create-product.dto';
@@ -25,9 +20,7 @@ import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
 @Controller('product')
 // @UseGuards(AdminVendorGuard)
 export class ProductController {
-  constructor(
-    private readonly productService: ProductService,
-  ) {}
+  constructor(private readonly productService: ProductService) {}
 
   /**
    * Business logic rationale: Allow vendors to view their product offerings with pricing and deposit information.

@@ -1,4 +1,8 @@
-import { Injectable, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
@@ -7,7 +11,6 @@ export class VendorAuthGuard extends AuthGuard('vendor-jwt') {
   // canActivate(context: ExecutionContext) {
   //   return super.canActivate(context) as boolean | Promise<boolean>;
   // }
-
   // // Normalize Passport results into Nest exceptions
   // handleRequest(err: any, user: any, info: any) {
   //   if (err) {
