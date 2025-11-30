@@ -133,29 +133,9 @@ describe('VendorController (e2e)', () => {
       expect(response.body).toHaveProperty('vendor');
     });
   });
-
-  describe('Vendor Products (e2e)', () => {
+  describe('Vendor Profile (e2e)', () => {
     let token: string;
     let vendorId: string;
-    let productId: string;
-
-    beforeAll(async () => {
-      // Create a test product
-      const product = await prisma.product.create({
-        data: {
-          name: 'Test Product',
-          description: 'Test Description',
-          image_url: 'test.jpg',
-        },
-      });
-      productId = product.id;
-    });
-
-    afterAll(async () => {
-      // Clean up
-      await prisma.vendorProduct.deleteMany();
-      await prisma.product.deleteMany();
-    });
 
     beforeEach(async () => {
       // Create vendor and get token
@@ -176,202 +156,107 @@ describe('VendorController (e2e)', () => {
       vendorId = verifyResponse.body.vendor.id;
     });
 
-    afterEach(async () => {
-      await prisma.vendorProduct.deleteMany();
-      await prisma.vendor.deleteMany();
-      await prisma.otpCode.deleteMany();
-    });
-
-    describe('GET /vendors/products', () => {
-      it('should return vendor products successfully', async () => {
+    describe('GET /vendors/me', () => {
+      it('should return vendor profile successfully', async () => {
         const response = await request(app.getHttpServer())
-          .get(`/vendors/products`)
+          .get('/vendors/me')
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
 
-        expect(Array.isArray(response.body)).toBe(true);
+        expect(response.body).toHaveProperty('id', vendorId);
+        expect(response.body).toHaveProperty('phone');
+        expect(response.body).toHaveProperty('is_active');
+        expect(response.body).toHaveProperty('is_available_today');
+        expect(response.body).toHaveProperty('service_radius_m');
+        expect(response.body).toHaveProperty('delivery_time_msg');
       });
 
       it('should return 401 without authentication', async () => {
-        await request(app.getHttpServer()).get(`/vendors/products`).expect(401);
+        await request(app.getHttpServer()).get('/vendors/me').expect(401);
       });
     });
 
-    describe('POST /vendors/products', () => {
-      it('should create vendor product successfully', async () => {
-        const createDto = {
-          product_id: productId,
-          price: 100,
-          deposit: 10,
-        };
-
-        const response = await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(201);
-
-        expect(response.body).toHaveProperty('id');
-        expect(response.body).toHaveProperty('name', 'Test Product');
-        expect(response.body).toHaveProperty('price');
-        expect(response.body.price).toBe('100');
-        expect(response.body).toHaveProperty('deposit');
-        expect(response.body.deposit).toBe('10');
-      });
-
-      it('should return 400 for invalid product id', async () => {
-        const createDto = {
-          product_id: 'invalid-id',
-          price: 100,
-        };
-
-        await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(400);
-      });
-
-      it('should return 400 for duplicate product', async () => {
-        const createDto = {
-          product_id: productId,
-          price: 100,
-        };
-
-        // Create first
-        await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(201);
-
-        // Try duplicate
-        await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(400);
-      });
-
-      it('should return 401 without authentication', async () => {
-        const createDto = {
-          product_id: productId,
-          price: 100,
-        };
-
-        await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .send(createDto)
-          .expect(401);
-      });
-    });
-
-    describe('PUT /vendors/products/:vendor_product_id', () => {
-      let vendorProductId: string;
-
-      beforeEach(async () => {
-        // Create a vendor product first
-        const createDto = {
-          product_id: productId,
-          price: 100,
-          deposit: 10,
-        };
-
-        const response = await request(app.getHttpServer())
-          .post(`/vendors/products`)
-          .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(201);
-
-        vendorProductId = response.body.id;
-      });
-
-      it('should update vendor product successfully', async () => {
+    describe('PUT /vendors/me', () => {
+      it('should update vendor profile successfully with valid data', async () => {
         const updateDto = {
-          price: 150,
-          deposit: 15,
+          name: 'Updated Vendor Name',
+          email: 'vendor@example.com',
+          address: '123 Main St',
+          delivery_time_msg: '30 mins',
+          service_radius_m: 5000,
         };
 
         const response = await request(app.getHttpServer())
-          .put(`/vendors/products/${vendorProductId}`)
+          .put('/vendors/me')
           .set('Authorization', `Bearer ${token}`)
           .send(updateDto)
           .expect(200);
 
-        expect(response.body).toHaveProperty('price');
-        expect(response.body.price).toBe('150');
-        expect(response.body).toHaveProperty('deposit');
-        expect(response.body.deposit).toBe('15');
+        expect(response.body).toHaveProperty('id', vendorId);
+        expect(response.body).toHaveProperty('name', 'Updated Vendor Name');
+        expect(response.body).toHaveProperty('email', 'vendor@example.com');
+        expect(response.body).toHaveProperty('address', '123 Main St');
+        expect(response.body).toHaveProperty('delivery_time_msg', '30 mins');
+        expect(response.body).toHaveProperty('service_radius_m', 5000);
       });
 
-      it('should return 404 for non-existent product', async () => {
+      it('should return 400 for invalid data', async () => {
         const updateDto = {
-          price: 150,
+          phone: 'invalid-phone',
         };
 
-        await request(app.getHttpServer())
-          .put(`/vendors/products/non-existent-id`)
+        const response = await request(app.getHttpServer())
+          .put('/vendors/me')
           .set('Authorization', `Bearer ${token}`)
           .send(updateDto)
-          .expect(404);
+          .expect(400);
+
+        expect(response.body).toHaveProperty('statusCode', 400);
+        expect(response.body).toHaveProperty('message');
       });
 
       it('should return 401 without authentication', async () => {
         const updateDto = {
-          price: 150,
+          name: 'New Name',
         };
 
         await request(app.getHttpServer())
-          .put(`/vendors/products/${vendorProductId}`)
+          .put('/vendors/me')
           .send(updateDto)
           .expect(401);
       });
     });
 
-    describe('DELETE /vendors/products/:vendor_product_id', () => {
-      let vendorProductId: string;
-
-      beforeEach(async () => {
-        // Create a vendor product first
-        const createDto = {
-          product_id: productId,
-          price: 100,
-          deposit: 10,
+    describe('PUT /vendors/me/availability', () => {
+      it('should update vendor availability successfully', async () => {
+        const updateDto = {
+          is_active: false,
+          is_available_today: true,
         };
 
         const response = await request(app.getHttpServer())
-          .post(`/vendors/products`)
+          .put('/vendors/me/availability')
           .set('Authorization', `Bearer ${token}`)
-          .send(createDto)
-          .expect(201);
-
-        vendorProductId = response.body.id;
-      });
-
-      it('should delete vendor product successfully', async () => {
-        const response = await request(app.getHttpServer())
-          .delete(`/vendors/products/${vendorProductId}`)
-          .set('Authorization', `Bearer ${token}`)
+          .send(updateDto)
           .expect(200);
 
-        expect(response.body).toHaveProperty(
-          'message',
-          'Vendor product deactivated',
-        );
-      });
-
-      it('should return 404 for non-existent product', async () => {
-        await request(app.getHttpServer())
-          .delete(`/vendors/products/non-existent-id`)
-          .set('Authorization', `Bearer ${token}`)
-          .expect(404);
+        expect(response.body).toHaveProperty('id', vendorId);
+        expect(response.body).toHaveProperty('is_active', false);
+        expect(response.body).toHaveProperty('is_available_today', true);
       });
 
       it('should return 401 without authentication', async () => {
+        const updateDto = {
+          is_active: true,
+        };
+
         await request(app.getHttpServer())
-          .delete(`/vendors/products/${vendorProductId}`)
+          .put('/vendors/me/availability')
+          .send(updateDto)
           .expect(401);
       });
     });
   });
+
+
 });
