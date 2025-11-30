@@ -1,14 +1,14 @@
 import { Controller, Get, Put, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorService } from '../services/vendor.service';
-import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
 
 @ApiTags('Vendor Profile')
-@Controller('vendors/me')
-@UseGuards(JwtAuthGuard)
+@Controller('vendor/me')
+@UseGuards(VendorAuthGuard)
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 
@@ -23,7 +23,7 @@ export class VendorController {
   })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @Get('me')
+  @Get('')
   async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
     const { vendorId } = vendor;
     return this.vendorService.getProfile(vendorId);

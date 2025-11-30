@@ -5,8 +5,8 @@ import { OtpService } from '../../src/otp/services/otp.service';
 import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException } from '@nestjs/common';
 import { OtpPurpose } from '@prisma/client';
-import { VerifyOtpDto, VerifyOtpResponseDto } from '../../src/vendor/dto/verify-otp.dto';
-import { OtpResponseDto } from '../../src/vendor/dto/request-otp.dto';
+import { VerifyOtpDto, VerifyOtpResponseDto } from '../../src/auth/dtos/verify-otp.dto';
+import { OtpResponseDto } from '../../src/auth/dtos/request-otp.dto';
 
 describe('VendorAuthService', () => {
   let service: VendorAuthService;

@@ -1,8 +1,8 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Vendor } from '../interfaces/vendor.interface';
+import { User } from '../../common/interfaces/user.interface';
 
 export const CurrentVendor = createParamDecorator(
-  (data: unknown, ctx: ExecutionContext): Vendor => {
+  (data: unknown, ctx: ExecutionContext): User => {
     const request = ctx.switchToHttp().getRequest();
     return request.user;
   },

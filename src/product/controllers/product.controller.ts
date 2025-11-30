@@ -16,14 +16,14 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
-import { AdminVendorGuard } from '../guards/admin-vendor.guard';
+// import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
-import { CurrentVendor } from '../decorators/current-vendor.decorator';
+import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
 
 @ApiTags('Product')
 @Controller('product')
-@UseGuards(AdminVendorGuard)
+// @UseGuards(AdminVendorGuard)
 export class ProductController {
   constructor(
     private readonly productService: ProductService,

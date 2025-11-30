@@ -2,8 +2,8 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
 import { OtpPurpose } from '@prisma/client';
-import { VerifyOtpDto, VerifyOtpResponseDto } from '../dto/verify-otp.dto';
-import { OtpResponseDto } from '../dto/request-otp.dto';
+import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
+import { OtpResponseDto } from '../dtos/request-otp.dto';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()

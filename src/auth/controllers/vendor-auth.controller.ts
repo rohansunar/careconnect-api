@@ -1,11 +1,11 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { VendorAuthService } from '../services/vendor-auth.service';
-import { RequestOtpDto, OtpResponseDto } from '../dto/request-otp.dto';
-import { VerifyOtpDto, VerifyOtpResponseDto } from '../dto/verify-otp.dto';
+import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
+import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 
 @ApiTags('Vendor Authentication')
-@Controller('vendors/auth')
+@Controller('auth/vendor')
 export class VendorAuthController {
   constructor(private readonly vendorAuthService: VendorAuthService) {}
 
