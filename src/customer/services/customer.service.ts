@@ -6,18 +6,15 @@ export class CustomerService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Retrieves the profile information for a specific vendor.
-   * @param customerId - The unique identifier of the vendor.
+   * Retrieves the profile information for a specific customer.
+   * @param customerId - The unique identifier of the customer.
    * @returns The customer's profile data including id, name, phone, email.
    */
   async getProfile(customerId: string) {
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
+      include:{
+        addresses:true
       },
     });
 
@@ -29,8 +26,8 @@ export class CustomerService {
   }
 
   /**
-   * Updates the profile information for a specific vendor with validation.
-   * @param customerId - The unique identifier of the vendor.
+   * Updates the profile information for a specific customer with validation.
+   * @param customerId - The unique identifier of the customer.
    * @param data - The fields to update (name, phone, email).
    * @returns The updated customer's profile data.
    */
@@ -61,5 +58,3 @@ export class CustomerService {
     return customer;
   }
 }
-
-

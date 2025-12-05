@@ -11,6 +11,8 @@ model CustomerAddress {
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
+  @@index([customerId])
+
 }
 
 // location    Unsupported("geometry(POINT, 4326)")

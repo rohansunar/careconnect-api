@@ -17,7 +17,8 @@ import { CustomerModule } from '../customer/customer.module';
     PrismaModule,
     VendorModule,
     ProductModule,
-    AuthModule,CustomerModule
+    AuthModule,
+    CustomerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

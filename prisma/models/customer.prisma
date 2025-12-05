@@ -6,7 +6,6 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  ///  notifications Notification[]
-  customer_addresses CustomerAddress[]
-  notifications      Notification[]
+  addresses CustomerAddress[]
+  notifications  Notification[]
 }

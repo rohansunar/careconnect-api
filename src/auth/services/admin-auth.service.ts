@@ -6,6 +6,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/database/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * AdminAuthService handles authentication for admin users using email and password.
@@ -26,6 +27,7 @@ export class AdminAuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -67,10 +69,12 @@ export class AdminAuthService {
       role: 'admin',
     };
 
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload, {
+      secret: this.config.get('VENDOR_JWT_SECRET'),
+    });
     const expiresIn = 36000; // 10 hours
 
-    const { password_hash,updated_at, ...sanitizedAdmin } = admin;
+    const { password_hash, updated_at, ...sanitizedAdmin } = admin;
 
     return {
       token,

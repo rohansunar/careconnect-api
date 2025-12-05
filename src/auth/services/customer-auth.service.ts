@@ -5,6 +5,7 @@ import { OtpPurpose } from '@prisma/client';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 import { OtpResponseDto } from '../dtos/request-otp.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 /**
  * CustomerAuthService handles authentication for customers using OTP-based login.
@@ -23,6 +24,7 @@ export class CustomerAuthService {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly otpService: OtpService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -68,7 +70,9 @@ export class CustomerAuthService {
       name: customer.name,
     };
 
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload, {
+      secret: this.config.get('CUSTOMER_JWT_SECRET'),
+    });
     const expiresIn = 36000; // 10 hours
 
     return {

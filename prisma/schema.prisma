@@ -92,9 +92,8 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  ///  notifications Notification[]
-  customer_addresses CustomerAddress[]
-  notifications      Notification[]
+  addresses CustomerAddress[]
+  notifications  Notification[]
 }
 
 
@@ -111,6 +110,8 @@ model CustomerAddress {
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
+  @@index([customerId])
+
 }
 
 // location    Unsupported("geometry(POINT, 4326)")
