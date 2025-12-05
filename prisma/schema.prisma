@@ -57,6 +57,26 @@ model Admin {
 }
 
 
+model BankAccount {
+  id                String   @id @default(uuid())
+  vendorId          String
+  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  accountNumber      String
+  ifscCode           String
+  bankName           String
+  accountHolderName  String
+  upiId             String?
+  isDefault          Boolean  @default(false)
+  isVerified         Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @default(now())
+
+  /// Constraints & indexes
+  @@index([vendorId])
+  @@unique([accountNumber])
+}
+
+
 model Categories {
   id         String    @id @default(uuid())
   name       String
@@ -236,4 +256,5 @@ model Vendor {
   cityId        String?
   subscriptions Subscription[]
   notifications Notification[]
+  bankAccounts  BankAccount[]
 }

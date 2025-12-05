@@ -27,7 +27,6 @@ export class AdminAuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -69,9 +68,7 @@ export class AdminAuthService {
       role: 'admin',
     };
 
-    const token = this.jwtService.sign(payload, {
-      secret: this.config.get('VENDOR_JWT_SECRET'),
-    });
+    const token = this.jwtService.sign(payload);
     const expiresIn = 36000; // 10 hours
 
     const { password_hash, updated_at, ...sanitizedAdmin } = admin;

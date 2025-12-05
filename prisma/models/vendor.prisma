@@ -21,4 +21,5 @@ model Vendor {
   cityId        String?
   subscriptions Subscription[]
   notifications Notification[]
+  bankAccounts  BankAccount[]
 }

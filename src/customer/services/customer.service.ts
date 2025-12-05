@@ -13,8 +13,8 @@ export class CustomerService {
   async getProfile(customerId: string) {
     const customer = await this.prisma.customer.findUnique({
       where: { id: customerId },
-      include:{
-        addresses:true
+      include: {
+        addresses: true,
       },
     });
 

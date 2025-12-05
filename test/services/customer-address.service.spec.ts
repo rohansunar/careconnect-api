@@ -62,29 +62,40 @@ describe('CustomerAddressService', () => {
 
     it('should set address as default successfully', async () => {
       // Mock the existing address check
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
+      );
 
       // Mock the updateMany to reset other addresses
-      mockPrismaService.customerAddress.updateMany.mockResolvedValue({ count: 0 });
+      mockPrismaService.customerAddress.updateMany.mockResolvedValue({
+        count: 0,
+      });
 
       // Mock the final update to set the address as default
-      mockPrismaService.customerAddress.update.mockResolvedValue(mockUpdatedAddress);
+      mockPrismaService.customerAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
 
-      const result = await service.setDefaultAddress(mockCustomerId, mockAddressId);
+      const result = await service.setDefaultAddress(
+        mockCustomerId,
+        mockAddressId,
+      );
 
       expect(result).toEqual(mockUpdatedAddress);
       expect(result.isDefault).toBe(true);
 
       // Verify that updateMany was called to reset other addresses
-      expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalledWith({
-        where: {
-          customerId: mockCustomerId,
-          id: { not: mockAddressId },
+      expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            customerId: mockCustomerId,
+            id: { not: mockAddressId },
+          },
+          data: {
+            isDefault: false,
+          },
         },
-        data: {
-          isDefault: false,
-        },
-      });
+      );
 
       // Verify that update was called to set the selected address as default
       expect(mockPrismaService.customerAddress.update).toHaveBeenCalledWith({
@@ -101,9 +112,9 @@ describe('CustomerAddressService', () => {
     it('should throw NotFoundException when address does not exist', async () => {
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.setDefaultAddress(mockCustomerId, mockAddressId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.setDefaultAddress(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(NotFoundException);
       expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockAddressId,
@@ -112,7 +123,9 @@ describe('CustomerAddressService', () => {
       });
 
       // Ensure no updates were attempted
-      expect(mockPrismaService.customerAddress.updateMany).not.toHaveBeenCalled();
+      expect(
+        mockPrismaService.customerAddress.updateMany,
+      ).not.toHaveBeenCalled();
       expect(mockPrismaService.customerAddress.update).not.toHaveBeenCalled();
     });
 
@@ -127,12 +140,14 @@ describe('CustomerAddressService', () => {
 
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.setDefaultAddress(mockCustomerId, mockAddressId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.setDefaultAddress(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(NotFoundException);
 
       // Ensure no updates were attempted
-      expect(mockPrismaService.customerAddress.updateMany).not.toHaveBeenCalled();
+      expect(
+        mockPrismaService.customerAddress.updateMany,
+      ).not.toHaveBeenCalled();
       expect(mockPrismaService.customerAddress.update).not.toHaveBeenCalled();
     });
 
@@ -150,33 +165,48 @@ describe('CustomerAddressService', () => {
         isDefault: false,
       };
 
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
-      mockPrismaService.customerAddress.updateMany.mockResolvedValue({ count: 2 }); // 2 addresses reset
-      mockPrismaService.customerAddress.update.mockResolvedValue(mockUpdatedAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
+      );
+      mockPrismaService.customerAddress.updateMany.mockResolvedValue({
+        count: 2,
+      }); // 2 addresses reset
+      mockPrismaService.customerAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
 
-      const result = await service.setDefaultAddress(mockCustomerId, mockAddressId);
+      const result = await service.setDefaultAddress(
+        mockCustomerId,
+        mockAddressId,
+      );
 
       expect(result.isDefault).toBe(true);
 
       // Verify updateMany was called to reset other addresses
-      expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalledWith({
-        where: {
-          customerId: mockCustomerId,
-          id: { not: mockAddressId },
+      expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            customerId: mockCustomerId,
+            id: { not: mockAddressId },
+          },
+          data: {
+            isDefault: false,
+          },
         },
-        data: {
-          isDefault: false,
-        },
-      });
+      );
     });
 
     it('should handle error when updateMany fails', async () => {
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
-      mockPrismaService.customerAddress.updateMany.mockRejectedValue(new Error('Database error'));
-
-      await expect(service.setDefaultAddress(mockCustomerId, mockAddressId)).rejects.toThrow(
-        Error,
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
       );
+      mockPrismaService.customerAddress.updateMany.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.setDefaultAddress(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(Error);
 
       // Ensure updateMany was called but update was not
       expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalled();
@@ -184,13 +214,19 @@ describe('CustomerAddressService', () => {
     });
 
     it('should handle error when final update fails', async () => {
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
-      mockPrismaService.customerAddress.updateMany.mockResolvedValue({ count: 0 });
-      mockPrismaService.customerAddress.update.mockRejectedValue(new Error('Database error'));
-
-      await expect(service.setDefaultAddress(mockCustomerId, mockAddressId)).rejects.toThrow(
-        Error,
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
       );
+      mockPrismaService.customerAddress.updateMany.mockResolvedValue({
+        count: 0,
+      });
+      mockPrismaService.customerAddress.update.mockRejectedValue(
+        new Error('Database error'),
+      );
+
+      await expect(
+        service.setDefaultAddress(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(Error);
 
       // Ensure both updateMany and update were called
       expect(mockPrismaService.customerAddress.updateMany).toHaveBeenCalled();
@@ -227,7 +263,9 @@ describe('CustomerAddressService', () => {
       };
 
       mockPrismaService.city.findUnique.mockResolvedValue(mockCity);
-      mockPrismaService.customerAddress.create.mockResolvedValue(mockCreatedAddress);
+      mockPrismaService.customerAddress.create.mockResolvedValue(
+        mockCreatedAddress,
+      );
 
       const result = await service.create(mockCustomerId, mockData);
 
@@ -284,7 +322,9 @@ describe('CustomerAddressService', () => {
         },
       ];
 
-      mockPrismaService.customerAddress.findMany.mockResolvedValue(mockAddresses);
+      mockPrismaService.customerAddress.findMany.mockResolvedValue(
+        mockAddresses,
+      );
 
       const result = await service.findAll(mockCustomerId);
 
@@ -315,7 +355,9 @@ describe('CustomerAddressService', () => {
         isDefault: true,
       };
 
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockAddress,
+      );
 
       const result = await service.findOne(mockCustomerId, mockAddressId);
 
@@ -337,9 +379,9 @@ describe('CustomerAddressService', () => {
 
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.findOne(mockCustomerId, mockAddressId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.findOne(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -366,10 +408,18 @@ describe('CustomerAddressService', () => {
         ...mockData,
       };
 
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
-      mockPrismaService.customerAddress.update.mockResolvedValue(mockUpdatedAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
+      );
+      mockPrismaService.customerAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
 
-      const result = await service.update(mockCustomerId, mockAddressId, mockData);
+      const result = await service.update(
+        mockCustomerId,
+        mockAddressId,
+        mockData,
+      );
 
       expect(result).toEqual(mockUpdatedAddress);
       expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
@@ -396,9 +446,9 @@ describe('CustomerAddressService', () => {
 
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.update(mockCustomerId, mockAddressId, mockData)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(mockCustomerId, mockAddressId, mockData),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -417,12 +467,18 @@ describe('CustomerAddressService', () => {
         isDefault: false,
       };
 
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockExistingAddress);
-      mockPrismaService.customerAddress.delete.mockResolvedValue(mockExistingAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockExistingAddress,
+      );
+      mockPrismaService.customerAddress.delete.mockResolvedValue(
+        mockExistingAddress,
+      );
 
       const result = await service.delete(mockCustomerId, mockAddressId);
 
-      expect(result).toEqual({ message: 'Customer address deleted successfully' });
+      expect(result).toEqual({
+        message: 'Customer address deleted successfully',
+      });
       expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
         where: {
           id: mockAddressId,
@@ -440,9 +496,9 @@ describe('CustomerAddressService', () => {
 
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.delete(mockCustomerId, mockAddressId)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.delete(mockCustomerId, mockAddressId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
