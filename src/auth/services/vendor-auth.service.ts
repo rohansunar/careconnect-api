@@ -5,6 +5,7 @@ import { OtpPurpose } from '@prisma/client';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 import { OtpResponseDto } from '../dtos/request-otp.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class VendorAuthService {
@@ -12,6 +13,7 @@ export class VendorAuthService {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly otpService: OtpService,
+    private readonly config:ConfigService
   ) {}
 
   /**
@@ -58,7 +60,9 @@ export class VendorAuthService {
       businessName: vendor.name,
     };
 
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign(payload, {
+      secret: this.config.get('VENDOR_JWT_SECRET'),
+    });
     const expiresIn = 36000; // 10 hours
 
     return {

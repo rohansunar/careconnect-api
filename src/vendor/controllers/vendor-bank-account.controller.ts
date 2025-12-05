@@ -25,7 +25,7 @@ import { UpdateBankAccountDto } from '../dto/update-bank-account.dto';
 import { BankAccountResponseDto } from '../dto/bank-account-response.dto';
 
 @ApiTags('Vendor Bank Accounts')
-@Controller('vendor/me/bank-accounts')
+@Controller('vendor/bank-accounts')
 @UseGuards(VendorAuthGuard)
 export class VendorBankAccountController {
   constructor(

@@ -8,20 +8,7 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { CreateBankAccountDto } from '../dto/create-bank-account.dto';
 import { UpdateBankAccountDto } from '../dto/update-bank-account.dto';
 import { BankAccountResponseDto } from '../dto/bank-account-response.dto';
-
-interface BankAccount {
-  id: any;
-  vendorId: any;
-  accountNumber: any;
-  ifscCode: any;
-  bankName: any;
-  accountHolderName: any;
-  upiId: any;
-  isDefault: any;
-  isVerified: any;
-  createdAt: any;
-  updatedAt: any;
-}
+import { BankAccountInterface } from '../interfaces/bankAccount';
 
 @Injectable()
 export class VendorBankAccountService {
@@ -50,7 +37,7 @@ export class VendorBankAccountService {
     });
 
     // Map to response DTO
-    return bankAccounts.map((account: BankAccount) => ({
+    return bankAccounts.map((account: BankAccountInterface) => ({
       id: account.id,
       vendorId: account.vendorId,
       accountNumber: account.accountNumber,
