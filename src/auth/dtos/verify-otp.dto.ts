@@ -4,7 +4,7 @@ import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 export class VerifyOtpDto {
   @ApiProperty({
     description: 'Vendor phone number',
-    example: '+91-9876543210',
+    example: '+91-9832012345',
   })
   @IsString()
   @IsNotEmpty()

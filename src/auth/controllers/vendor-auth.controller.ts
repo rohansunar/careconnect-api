@@ -4,7 +4,7 @@ import { VendorAuthService } from '../services/vendor-auth.service';
 import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 
-@ApiTags('Vendor Authentication')
+@ApiTags('Auth')
 @Controller('auth/vendor')
 export class VendorAuthController {
   constructor(private readonly vendorAuthService: VendorAuthService) {}

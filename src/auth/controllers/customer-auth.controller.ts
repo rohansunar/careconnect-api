@@ -18,7 +18,7 @@ import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
  *   promotes code consistency across the application, reduces cognitive load for developers, and simplifies
  *   maintenance by establishing predictable patterns for similar functionality.
  */
-@ApiTags('Customer Authentication')
+@ApiTags('Auth')
 @Controller('auth/customer')
 export class CustomerAuthController {
   constructor(private readonly customerAuthService: CustomerAuthService) {}

@@ -111,7 +111,7 @@ export class ProductImageController {
   }
 
   @Delete(':productId')
-  @Roles('admin') // only admin allowed to delete
+  // @Roles('admin') // only admin allowed to delete
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete product image',

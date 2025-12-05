@@ -41,7 +41,7 @@ async function bootstrap() {
 
   // Swagger/OpenAPI Documentation Setup
   const config = new DocumentBuilder()
-    .setTitle('Water Jar Delivery Platform API')
+    .setTitle('Water Jar API')
     .setDescription(
       `Comprehensive API for the Water Jar Delivery Platform.
        This API provides endpoints for user authentication, order management, delivery tracking, vendor operations, and administrative functions.
@@ -49,7 +49,8 @@ async function bootstrap() {
     )
     .setVersion('1.0.0')
     .addBearerAuth()
-    .addTag('Vendors', 'Vendor operations and product management')
+    // .addTag('Vendors', 'Vendor operations and product management')
+    .addTag('Auth')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

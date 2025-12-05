@@ -24,7 +24,7 @@ import { AdminLoginDto } from '../dtos/admin-login.dto';
  * - Swagger documentation: Comprehensive API documentation ensures clarity for frontend developers and API consumers,
  *   reducing integration errors and improving maintainability.
  */
-@ApiTags('Admin Auth')
+@ApiTags('Auth')
 @Controller('auth/admin')
 export class AdminAuthController {
   constructor(private readonly adminAuthService: AdminAuthService) {}

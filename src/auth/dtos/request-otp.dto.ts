@@ -5,7 +5,7 @@ export class RequestOtpDto {
   @IsString()
   @ApiProperty({
     description: 'Vendor phone number',
-    example: '+1234567890',
+    example: '+91-9832012345',
   })
   @IsPhoneNumber('IN', { message: 'Invalid phone number' })
   @IsNotEmpty()

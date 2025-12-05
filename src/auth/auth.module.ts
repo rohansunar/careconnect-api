@@ -14,6 +14,8 @@ import { RolesGuard } from './guards/roles.guard';
 import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { AdminAuthService } from './services/admin-auth.service';
+import { CustomerAuthController } from './controllers/customer-auth.controller';
+import { CustomerAuthService } from './services/customer-auth.service';
 
 @Module({
   imports: [
@@ -31,6 +33,7 @@ import { AdminAuthService } from './services/admin-auth.service';
   providers: [
     VendorAuthService,
     AdminAuthService,
+    CustomerAuthService,
     PrismaService,
     OtpService,
     VendorJwtStrategy,
@@ -39,7 +42,7 @@ import { AdminAuthService } from './services/admin-auth.service';
     AdminVendorGuard,
     RolesGuard,
   ],
-  controllers: [VendorAuthController, AdminAuthController],
+  controllers: [VendorAuthController, AdminAuthController, CustomerAuthController],
   exports: [VendorAuthGuard, AdminVendorGuard, RolesGuard],
 })
 export class AuthModule {}
