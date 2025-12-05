@@ -98,4 +98,20 @@ export class CustomerAddressController {
   async delete(@Param('id') id: string, @CurrentVendor() customer: any) {
     return this.customerAddressService.delete(customer.id, id);
   }
+
+  @Put(':id/set-default')
+  @ApiOperation({
+    summary: 'Set a customer address as default',
+    description: 'Set an existing address as the default for the authenticated customer.',
+  })
+  @ApiParam({ name: 'id', description: 'Address ID' })
+  @ApiResponse({ status: 200, description: 'Address set as default successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Address not found.' })
+  async setDefaultAddress(
+    @Param('id') id: string,
+    @CurrentVendor() customer: any,
+  ) {
+    return this.customerAddressService.setDefaultAddress(customer.id, id);
+  }
 }

@@ -165,4 +165,48 @@ export class CustomerAddressService {
 
     return { message: 'Customer address deleted successfully' };
   }
+
+  /**
+   * Sets a customer address as the default for the authenticated customer.
+   * @param customerId - The unique identifier of the customer.
+   * @param addressId - The unique identifier of the address.
+   * @returns The updated customer address with city relation.
+   */
+  async setDefaultAddress(customerId: string, addressId: string) {
+    // Check if address exists and belongs to customer
+    const existingAddress = await this.prisma.customerAddress.findFirst({
+      where: {
+        id: addressId,
+        customerId,
+      },
+    });
+
+    if (!existingAddress) {
+      throw new NotFoundException('Customer address not found');
+    }
+
+    // First, reset all other addresses to non-default for this customer
+    await this.prisma.customerAddress.updateMany({
+      where: {
+        customerId,
+        id: { not: addressId },
+      },
+      data: {
+        isDefault: false,
+      } as any,
+    });
+
+    // Then set the selected address as default
+    const updatedAddress = await this.prisma.customerAddress.update({
+      where: { id: addressId },
+      data: {
+        isDefault: true,
+      } as any,
+      include: {
+        city: true,
+      },
+    });
+
+    return updatedAddress;
+  }
 }
