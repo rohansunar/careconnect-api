@@ -9,6 +9,7 @@ model CustomerAddress {
   pincode    String?
   created_at DateTime @default(now())
   isDefault Boolean   @default(false)
+  isActive   Boolean   @default(true)
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]

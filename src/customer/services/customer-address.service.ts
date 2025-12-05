@@ -48,13 +48,16 @@ export class CustomerAddressService {
   }
 
   /**
-   * Retrieves all addresses for a specific customer.
+   * Retrieves all active addresses for a specific customer.
    * @param customerId - The unique identifier of the customer.
    * @returns A list of customer addresses with city relations.
    */
   async findAll(customerId: string) {
     const addresses = await this.prisma.customerAddress.findMany({
-      where: { customerId },
+      where: {
+        customerId,
+        isActive: true,
+      },
       include: {
         city: true,
       },
@@ -67,7 +70,7 @@ export class CustomerAddressService {
   }
 
   /**
-   * Retrieves a specific customer address by ID for the authenticated customer.
+   * Retrieves a specific active customer address by ID for the authenticated customer.
    * @param customerId - The unique identifier of the customer.
    * @param addressId - The unique identifier of the address.
    * @returns The customer address with city relation.
@@ -77,7 +80,8 @@ export class CustomerAddressService {
       where: {
         id: addressId,
         customerId,
-      },
+        isActive: true,
+      } as any,
       include: {
         city: true,
       },
@@ -112,7 +116,8 @@ export class CustomerAddressService {
       where: {
         id: addressId,
         customerId,
-      },
+        isActive: true,
+      } as any,
     });
 
     if (!existingAddress) {
@@ -141,7 +146,7 @@ export class CustomerAddressService {
   }
 
   /**
-   * Deletes a customer address for the authenticated customer.
+   * Deletes a customer address for the authenticated customer (soft delete).
    * @param customerId - The unique identifier of the customer.
    * @param addressId - The unique identifier of the address.
    * @returns A success message.
@@ -159,8 +164,10 @@ export class CustomerAddressService {
       throw new NotFoundException('Customer address not found');
     }
 
-    await this.prisma.customerAddress.delete({
+    // Soft delete by setting is_active to false
+    await this.prisma.customerAddress.update({
       where: { id: addressId },
+      data: { isActive: false } as any,
     });
 
     return { message: 'Customer address deleted successfully' };
@@ -178,19 +185,21 @@ export class CustomerAddressService {
       where: {
         id: addressId,
         customerId,
-      },
+        isActive: true,
+      } as any,
     });
 
     if (!existingAddress) {
       throw new NotFoundException('Customer address not found');
     }
 
-    // First, reset all other addresses to non-default for this customer
+    // First, reset all other active addresses to non-default for this customer
     await this.prisma.customerAddress.updateMany({
       where: {
         customerId,
         id: { not: addressId },
-      },
+        isActive: true,
+      } as any,
       data: {
         isDefault: false,
       } as any,
