@@ -132,12 +132,11 @@ describe('CartController', () => {
         quantity: 1,
       };
 
-      mockCartService.addToCart.mockRejectedValue(new BadRequestException('Customer not found'));
+      mockCartService.addToCart.mockRejectedValue(
+        new BadRequestException('Customer not found'),
+      );
 
-      await request(app.getHttpServer())
-        .post('/cart')
-        .send(dto)
-        .expect(400);
+      await request(app.getHttpServer()).post('/cart').send(dto).expect(400);
 
       expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
     });
@@ -149,12 +148,11 @@ describe('CartController', () => {
         quantity: 1,
       };
 
-      mockCartService.addToCart.mockRejectedValue(new BadRequestException('Product not found or unavailable'));
+      mockCartService.addToCart.mockRejectedValue(
+        new BadRequestException('Product not found or unavailable'),
+      );
 
-      await request(app.getHttpServer())
-        .post('/cart')
-        .send(dto)
-        .expect(400);
+      await request(app.getHttpServer()).post('/cart').send(dto).expect(400);
 
       expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
     });
@@ -199,7 +197,9 @@ describe('CartController', () => {
         quantity: 3,
       };
 
-      mockCartService.updateQuantity.mockRejectedValue(new NotFoundException('Cart item not found'));
+      mockCartService.updateQuantity.mockRejectedValue(
+        new NotFoundException('Cart item not found'),
+      );
 
       await request(app.getHttpServer())
         .put(`/cart/${cartItemId}`)
@@ -246,7 +246,9 @@ describe('CartController', () => {
     it('should throw 404 Not Found for non-existent cart item', async () => {
       const cartItemId = '999';
 
-      mockCartService.removeFromCart.mockRejectedValue(new NotFoundException('Cart item not found'));
+      mockCartService.removeFromCart.mockRejectedValue(
+        new NotFoundException('Cart item not found'),
+      );
 
       await request(app.getHttpServer())
         .delete(`/cart/${cartItemId}`)
@@ -279,28 +281,20 @@ describe('CartController', () => {
 
       mockCartService.addToCart.mockResolvedValue({} as any);
 
-      await request(app.getHttpServer())
-        .post('/cart')
-        .send(dto)
-        .expect(201);
+      await request(app.getHttpServer()).post('/cart').send(dto).expect(201);
     });
 
     it('should require authentication for PUT /cart/:id', async () => {
       const dto: UpdateCartItemDto = { quantity: 2 };
       mockCartService.updateQuantity.mockResolvedValue({} as any);
 
-      await request(app.getHttpServer())
-        .put('/cart/1')
-        .send(dto)
-        .expect(200);
+      await request(app.getHttpServer()).put('/cart/1').send(dto).expect(200);
     });
 
     it('should require authentication for DELETE /cart/:id', async () => {
       mockCartService.removeFromCart.mockResolvedValue({ message: 'Removed' });
 
-      await request(app.getHttpServer())
-        .delete('/cart/1')
-        .expect(200);
+      await request(app.getHttpServer()).delete('/cart/1').expect(200);
     });
   });
 });

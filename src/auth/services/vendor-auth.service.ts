@@ -13,7 +13,7 @@ export class VendorAuthService {
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
     private readonly otpService: OtpService,
-    private readonly config:ConfigService
+    private readonly config: ConfigService,
   ) {}
 
   /**

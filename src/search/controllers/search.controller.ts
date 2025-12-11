@@ -1,8 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from '../services/search.service';
 import { SearchQueryDto } from '../dto/search-query.dto';
@@ -81,5 +77,4 @@ export class SearchController {
   async searchProducts(@Query() queryDto: SearchQueryDto) {
     return this.searchService.searchProducts(queryDto);
   }
-
 }

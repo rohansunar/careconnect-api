@@ -80,7 +80,9 @@ describe('CartItems CRUD', () => {
         deposit: product.deposit,
       };
 
-      const cartItem = await (prisma as any).cartItem.create({ data: cartItemData });
+      const cartItem = await (prisma as any).cartItem.create({
+        data: cartItemData,
+      });
 
       expect(cartItem).toHaveProperty('id');
       expect(cartItem.customerId).toBe(customer.id);
@@ -131,7 +133,9 @@ describe('CartItems CRUD', () => {
         deposit: product.deposit,
       };
 
-      const cartItem = await (prisma as any).cartItem.create({ data: cartItemData });
+      const cartItem = await (prisma as any).cartItem.create({
+        data: cartItemData,
+      });
 
       expect(cartItem).toHaveProperty('id');
       expect(cartItem.customerId).toBe(customer.id);
@@ -332,7 +336,9 @@ describe('CartItems CRUD', () => {
         deposit: product.deposit,
       };
 
-      const cartItem = await (prisma as any).cartItem.create({ data: cartItemData });
+      const cartItem = await (prisma as any).cartItem.create({
+        data: cartItemData,
+      });
 
       expect(cartItem.quantity).toBe(0);
     });

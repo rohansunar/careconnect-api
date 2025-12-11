@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
@@ -13,9 +17,9 @@ export class CartService {
    * @param dto - The cart item creation data
    * @returns The created or updated cart item
    */
-  async addToCart(dto: CreateCartItemDto) {
+  async addToCart(dto: CreateCartItemDto, customerId: string) {
     // Validate customer exists
-    await this.validateCustomer(dto.customerId);
+    await this.validateCustomer(customerId);
 
     // Validate product exists and get current pricing
     const product = await this.validateProduct(dto.productId);
@@ -23,7 +27,7 @@ export class CartService {
     // Check if item already exists in cart
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
-        customerId: dto.customerId,
+        customerId: customerId,
         productId: dto.productId,
         addressId: dto.addressId,
       },
@@ -47,7 +51,7 @@ export class CartService {
     // Create new cart item
     return this.prisma.cartItem.create({
       data: {
-        customerId: dto.customerId,
+        customerId: customerId,
         productId: dto.productId,
         quantity: dto.quantity,
         addressId: dto.addressId,

@@ -11,14 +11,14 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
-// import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
 
 @ApiTags('Product')
 @Controller('product')
-// @UseGuards(AdminVendorGuard)
+@UseGuards(AdminVendorGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
@@ -36,8 +36,8 @@ export class ProductController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Get('')
   async getProducts(@Req() req: any, @CurrentVendor() vendor: any) {
-    const { vendorId } = vendor;
-    return this.productService.getProducts(vendorId);
+    const { id } = vendor;
+    return this.productService.getProducts(id);
   }
 
   /**

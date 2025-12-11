@@ -19,16 +19,8 @@ export class ProductService {
   async getProducts(vendorId: string) {
     const products = await this.prisma.product.findMany({
       where: { vendorId: vendorId },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        price: true,
-        deposit: true,
-        images: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
+      include: {
+        vendor: true,
       },
     });
 

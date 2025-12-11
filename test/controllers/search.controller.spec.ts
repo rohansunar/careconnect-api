@@ -57,6 +57,4 @@ describe('SearchController', () => {
       expect(mockSearchService.searchProducts).toHaveBeenCalledWith(queryDto);
     });
   });
-
-
 });

@@ -194,7 +194,9 @@ describe('CartService', () => {
       mockPrismaService.cartItem.findFirst.mockResolvedValue(null);
       mockPrismaService.cartItem.create.mockResolvedValue(expectedCartItem);
 
-      const result = await service.addToCart(dtoWithoutAddress as CreateCartItemDto);
+      const result = await service.addToCart(
+        dtoWithoutAddress as CreateCartItemDto,
+      );
 
       expect(result).toEqual(expectedCartItem);
       expect(mockPrismaService.cartItem.create).toHaveBeenCalledWith({
@@ -289,7 +291,9 @@ describe('CartService', () => {
     it('should throw NotFoundException for non-existent cart item', async () => {
       mockPrismaService.cartItem.findUnique.mockResolvedValue(null);
 
-      await expect(service.updateQuantity(cartItemId, dto)).rejects.toThrow(NotFoundException);
+      await expect(service.updateQuantity(cartItemId, dto)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockPrismaService.cartItem.update).not.toHaveBeenCalled();
     });
   });
@@ -321,7 +325,9 @@ describe('CartService', () => {
     it('should throw NotFoundException for non-existent cart item', async () => {
       mockPrismaService.cartItem.findUnique.mockResolvedValue(null);
 
-      await expect(service.removeFromCart(cartItemId)).rejects.toThrow(NotFoundException);
+      await expect(service.removeFromCart(cartItemId)).rejects.toThrow(
+        NotFoundException,
+      );
       expect(mockPrismaService.cartItem.delete).not.toHaveBeenCalled();
     });
   });
@@ -350,14 +356,18 @@ describe('CartService', () => {
     it('should throw BadRequestException for non-existent product', async () => {
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.validateProduct(productId)).rejects.toThrow(BadRequestException);
+      await expect(service.validateProduct(productId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for inactive product', async () => {
       const inactiveProduct = { ...validProduct, is_active: false };
       mockPrismaService.product.findUnique.mockResolvedValue(inactiveProduct);
 
-      await expect(service.validateProduct(productId)).rejects.toThrow(BadRequestException);
+      await expect(service.validateProduct(productId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -381,7 +391,9 @@ describe('CartService', () => {
     it('should throw BadRequestException for non-existent customer', async () => {
       mockPrismaService.customer.findUnique.mockResolvedValue(null);
 
-      await expect(service.validateCustomer(customerId)).rejects.toThrow(BadRequestException);
+      await expect(service.validateCustomer(customerId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

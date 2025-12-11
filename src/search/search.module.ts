@@ -6,10 +6,7 @@ import { ProductService } from '../product/services/product.service';
 @Module({
   imports: [],
   controllers: [SearchController],
-  providers: [
-    SearchService,
-    ProductService,
-  ],
+  providers: [SearchService, ProductService],
   exports: [SearchService],
 })
 export class SearchModule {}

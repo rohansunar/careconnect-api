@@ -1,7 +1,4 @@
-import {
-  IsNumber,
-  Min,
-} from 'class-validator';
+import { IsNumber, Min } from 'class-validator';
 
 /**
  * Data Transfer Object for updating cart item quantity

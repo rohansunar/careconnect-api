@@ -7,11 +7,18 @@ import {
   Param,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+} from '@nestjs/swagger';
 import { CartService } from '../services/cart.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
+import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
 
 @ApiTags('Cart')
 @Controller('cart')
@@ -30,11 +37,18 @@ export class CartController {
   })
   @ApiBody({ type: CreateCartItemDto })
   @ApiResponse({ status: 201, description: 'Item added to cart successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid data or product/customer not found.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid data or product/customer not found.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('')
-  async addToCart(@Body() dto: CreateCartItemDto) {
-    return this.cartService.addToCart(dto);
+  async addToCart(
+    @Body() dto: CreateCartItemDto,
+    @CurrentVendor() customer: any,
+  ) {
+    const { id } = customer;
+    return this.cartService.addToCart(dto, id);
   }
 
   /**
@@ -44,11 +58,15 @@ export class CartController {
    */
   @ApiOperation({
     summary: 'Update cart item quantity',
-    description: 'Enable customers to update the quantity of items in their cart.',
+    description:
+      'Enable customers to update the quantity of items in their cart.',
   })
   @ApiParam({ name: 'id', description: 'Cart item ID' })
   @ApiBody({ type: UpdateCartItemDto })
-  @ApiResponse({ status: 200, description: 'Cart item quantity updated successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cart item quantity updated successfully.',
+  })
   @ApiResponse({ status: 400, description: 'Bad request - invalid quantity.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Cart item not found.' })

@@ -11,13 +11,6 @@ import {
  */
 export class CreateCartItemDto {
   /**
-   * Unique identifier of the customer
-   */
-  @IsString()
-  @IsNotEmpty()
-  customerId: string;
-
-  /**
    * Unique identifier of the product
    */
   @IsString()
