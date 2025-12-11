@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CustomerService } from '../services/customer.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Customer Profile')
 @Controller('customer/me')
@@ -23,7 +23,7 @@ export class CustomerController {
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Get('')
-  async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
+  async getProfile(@Req() req: any, @CurrentUser() vendor: any) {
     const { id } = vendor;
     return this.customerService.getProfile(id);
   }
@@ -44,7 +44,7 @@ export class CustomerController {
   async updateProfile(
     @Req() req: any,
     @Body() dto: UpdateProfileDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
     return this.customerService.updateProfile(id, dto);

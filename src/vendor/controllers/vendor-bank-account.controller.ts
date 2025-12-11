@@ -18,7 +18,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { VendorBankAccountService } from '../services/vendor-bank-account.service';
 import { CreateBankAccountDto } from '../dto/create-bank-account.dto';
 import { UpdateBankAccountDto } from '../dto/update-bank-account.dto';
@@ -54,7 +54,7 @@ export class VendorBankAccountController {
     status: 404,
     description: 'Vendor not found',
   })
-  async getBankAccounts(@CurrentVendor() vendor: any) {
+  async getBankAccounts(@CurrentUser() vendor: any) {
     return this.vendorBankAccountService.getBankAccounts(vendor.id);
   }
 
@@ -86,7 +86,7 @@ export class VendorBankAccountController {
     description: 'Vendor not found',
   })
   async createBankAccount(
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
     @Body() createBankAccountDto: CreateBankAccountDto,
   ) {
     return this.vendorBankAccountService.createBankAccount(
@@ -131,7 +131,7 @@ export class VendorBankAccountController {
     description: 'Bank account or vendor not found',
   })
   async updateBankAccount(
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
     @Param('id') bankAccountId: string,
     @Body() updateBankAccountDto: UpdateBankAccountDto,
   ) {
@@ -177,7 +177,7 @@ export class VendorBankAccountController {
     description: 'Bank account or vendor not found',
   })
   async deleteBankAccount(
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
     @Param('id') bankAccountId: string,
   ) {
     return this.vendorBankAccountService.deleteBankAccount(

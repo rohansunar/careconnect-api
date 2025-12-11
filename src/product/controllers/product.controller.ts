@@ -14,7 +14,7 @@ import { ProductService } from '../services/product.service';
 import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Product')
 @Controller('product')
@@ -35,7 +35,7 @@ export class ProductController {
   @ApiResponse({ status: 200, description: 'Products retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Get('')
-  async getProducts(@Req() req: any, @CurrentVendor() vendor: any) {
+  async getProducts(@Req() req: any, @CurrentUser() vendor: any) {
     const { id } = vendor;
     return this.productService.getProducts(id);
   }
@@ -57,7 +57,7 @@ export class ProductController {
   async createProduct(
     @Req() req: any,
     @Body() dto: CreateProductDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { vendorId } = vendor;
     return this.productService.createProduct(vendorId, dto);
@@ -82,7 +82,7 @@ export class ProductController {
     @Req() req: any,
     @Param('productId') productId: string,
     @Body() dto: UpdateProductDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { vendorId } = vendor;
     return this.productService.updateProduct(vendorId, productId, dto);
@@ -103,7 +103,7 @@ export class ProductController {
   async deleteProduct(
     @Req() req: any,
     @Param('productId') productId: string,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { vendorId } = vendor;
     return this.productService.deleteProduct(vendorId, productId);

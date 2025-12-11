@@ -29,7 +29,7 @@ import {
   ReorderProductImagesDto,
   ProductImageResponseDto,
 } from '../dto/product-image.dto';
-import { CurrentVendor } from 'src/auth/decorators/current-vendor.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('Product Image')
 @UseGuards(AdminVendorGuard, RolesGuard)
@@ -80,7 +80,7 @@ export class ProductImageController {
   async uploadProductImages(
     @Param('productId') productId: string,
     @Req() req: FastifyRequest,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ): Promise<UploadProductImagesResponseDto> {
     const files: any[] = [];
 
@@ -145,7 +145,7 @@ export class ProductImageController {
   async deleteProductImage(
     @Param('productId') productId: string,
     @Body() deleteImageDto: DeleteProductImageDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ): Promise<{ message: string; remainingImages: number }> {
     console.log(vendor);
     const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
@@ -211,7 +211,7 @@ export class ProductImageController {
   async reorderProductImages(
     @Param('productId') productId: string,
     @Body() reorderDto: ReorderProductImagesDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
     const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
     const user = { id: vendor.vendorId, role: vendor.role, vendorId };

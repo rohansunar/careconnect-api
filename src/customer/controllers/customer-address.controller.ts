@@ -11,7 +11,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { CustomerAddressService } from '../services/customer-address.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 
@@ -33,7 +33,7 @@ export class CustomerAddressController {
     description: 'Addresses retrieved successfully.',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  async findAll(@CurrentVendor() customer: any) {
+  async findAll(@CurrentUser() customer: any) {
     return this.customerAddressService.findAll(customer.id);
   }
 
@@ -47,7 +47,7 @@ export class CustomerAddressController {
   @ApiResponse({ status: 200, description: 'Address retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  async findOne(@Param('id') id: string, @CurrentVendor() customer: any) {
+  async findOne(@Param('id') id: string, @CurrentUser() customer: any) {
     return this.customerAddressService.findOne(customer.id, id);
   }
 
@@ -62,7 +62,7 @@ export class CustomerAddressController {
   async create(
     @Body()
     createDto: CreateCustomerAddressDto,
-    @CurrentVendor() customer: any,
+    @CurrentUser() customer: any,
   ) {
     return this.customerAddressService.create(customer.id, createDto);
   }
@@ -81,7 +81,7 @@ export class CustomerAddressController {
     @Param('id') id: string,
     @Body()
     updateDto: UpdateCustomerAddressDto,
-    @CurrentVendor() customer: any,
+    @CurrentUser() customer: any,
   ) {
     return this.customerAddressService.update(customer.id, id, updateDto);
   }
@@ -95,7 +95,7 @@ export class CustomerAddressController {
   @ApiResponse({ status: 200, description: 'Address deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  async delete(@Param('id') id: string, @CurrentVendor() customer: any) {
+  async delete(@Param('id') id: string, @CurrentUser() customer: any) {
     return this.customerAddressService.delete(customer.id, id);
   }
 
@@ -114,7 +114,7 @@ export class CustomerAddressController {
   @ApiResponse({ status: 404, description: 'Address not found.' })
   async setDefaultAddress(
     @Param('id') id: string,
-    @CurrentVendor() customer: any,
+    @CurrentUser() customer: any,
   ) {
     return this.customerAddressService.setDefaultAddress(customer.id, id);
   }

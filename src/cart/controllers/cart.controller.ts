@@ -18,7 +18,7 @@ import { CartService } from '../services/cart.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Cart')
 @Controller('cart')
@@ -45,7 +45,7 @@ export class CartController {
   @Post('')
   async addToCart(
     @Body() dto: CreateCartItemDto,
-    @CurrentVendor() customer: any,
+    @CurrentUser() customer: any,
   ) {
     const { id } = customer;
     return this.cartService.addToCart(dto, id);

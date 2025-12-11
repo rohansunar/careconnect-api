@@ -4,7 +4,7 @@ import { VendorService } from '../services/vendor.service';
 import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
-import { CurrentVendor } from '../../auth/decorators/current-vendor.decorator';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Vendor Profile')
 @Controller('vendor/me')
@@ -24,7 +24,7 @@ export class VendorController {
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Get('')
-  async getProfile(@Req() req: any, @CurrentVendor() vendor: any) {
+  async getProfile(@Req() req: any, @CurrentUser() vendor: any) {
     const { id } = vendor;
     return this.vendorService.getProfile(id);
   }
@@ -45,7 +45,7 @@ export class VendorController {
   async updateProfile(
     @Req() req: any,
     @Body() dto: UpdateProfileDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
     return this.vendorService.updateProfile(id, dto);
@@ -69,7 +69,7 @@ export class VendorController {
   async updateAvailability(
     @Req() req: any,
     @Body() dto: UpdateAvailabilityDto,
-    @CurrentVendor() vendor: any,
+    @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
     return this.vendorService.updateAvailability(id, dto);
