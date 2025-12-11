@@ -37,6 +37,47 @@ enum PaymentLinkStatus {
 
 
 
+model CartItem {
+  /// Unique identifier for the cart item (auto-incrementing)
+  id          Int      @id @default(autoincrement())
+
+  /// Reference to the customer who owns this cart item
+  customerId  String
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  /// Reference to the product in the cart
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quantity of the product in cart (must be > 0)
+  quantity    Int      @default(1)
+
+  /// Price of the product at time of adding to cart (snapshotted)
+  price       Decimal  @db.Decimal(10, 2)
+
+  /// Deposit amount for the product at time of adding to cart (snapshotted)
+  deposit     Decimal? @db.Decimal(10, 2)
+
+  /// Optional reference to delivery address for this cart item
+  addressId   String?
+  address     CustomerAddress? @relation(fields: [addressId], references: [id])
+
+  /// Timestamp when item was added to cart
+  createdAt   DateTime @default(now())
+
+  /// Timestamp when item was last updated
+  updatedAt   DateTime @default(now())
+
+  /// Prevent duplicate items in cart (same customer, product, and address)
+  @@unique([customerId, productId, addressId])
+
+  /// Index for efficient customer cart queries
+  @@index([customerId])
+
+  /// Index for efficient product-based queries
+  @@index([productId])
+}
+
 enum admin_role {
   admin
   super_admin
@@ -114,6 +155,7 @@ model Customer {
 
   addresses CustomerAddress[]
   notifications  Notification[]
+  cartItems CartItem[]
 }
 
 
@@ -132,6 +174,7 @@ model CustomerAddress {
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
+  cartItems CartItem[]
   @@index([customerId])
 
 }
@@ -200,6 +243,7 @@ model Product {
   updated_at  DateTime   @default(now())
 
   subscriptions Subscription[]
+  cartItems CartItem[]
 
   @@index([categoryId])
 }

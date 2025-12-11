@@ -8,4 +8,5 @@ model Customer {
 
   addresses CustomerAddress[]
   notifications  Notification[]
+  cartItems CartItem[]
 }

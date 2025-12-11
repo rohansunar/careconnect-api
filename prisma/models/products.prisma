@@ -16,6 +16,7 @@ model Product {
   updated_at  DateTime   @default(now())
 
   subscriptions Subscription[]
+  cartItems CartItem[]
 
   @@index([categoryId])
 }

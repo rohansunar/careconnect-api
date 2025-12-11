@@ -13,6 +13,7 @@ model CustomerAddress {
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
+  cartItems CartItem[]
   @@index([customerId])
 
 }
