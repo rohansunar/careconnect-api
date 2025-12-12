@@ -203,6 +203,27 @@ model Notification {
 }
 
 
+model Order {
+  id                  String   @id @default(uuid())
+  customer_id         String?
+  customer            Customer? @relation("orders", fields: [customer_id], references: [id])
+  vendor_id           String?
+  vendor              Vendor? @relation("orders", fields: [vendor_id], references: [id])
+  address_id          String?
+  address             CustomerAddress? @relation("orders", fields: [address_id], references: [id])
+  product_id          String?
+  product             Product? @relation("orders", fields: [product_id], references: [id])
+  qty                 Int
+  total_amount        Decimal  @db.Decimal(10, 2)
+  status              String   @db.VarChar(32) @default("PENDING")
+  payment_status      String   @db.VarChar(32) @default("PENDING")
+  assigned_rider_phone String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @default(now())
+
+  payments Payment[]
+}
+
 enum OtpPurpose {
   VENDOR_LOGIN
   CUSTOMER_LOGIN

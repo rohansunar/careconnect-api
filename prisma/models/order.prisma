@@ -10,9 +10,9 @@ model Order {
   product             Product? @relation("orders", fields: [product_id], references: [id])
   qty                 Int
   total_amount        Decimal  @db.Decimal(10, 2)
-  status              OrderStatus @default(PENDING)
+  status              String   @db.VarChar(32) @default("PENDING")
+  payment_status      String   @db.VarChar(32) @default("PENDING")
   assigned_rider_phone String?
-  delivery_address    Json?
   created_at          DateTime @default(now())
   updated_at          DateTime @default(now())
 
