@@ -5,8 +5,8 @@ model Vendor {
   phone              String   @unique
   email              String?
   address            Json?
-  ///  city_id   String?
-  ///  city      City?    @relation(fields: [city_id], references: [id])
+  cityId             String?
+  city      City?    @relation(fields: [city_id], references: [id])
   pincode            String?
   location           String?
   is_active          Boolean  @default(true)
@@ -16,10 +16,11 @@ model Vendor {
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
 
-  products      Product[]
-  city          City?          @relation(fields: [cityId], references: [id])
-  cityId        String?
-  subscriptions Subscription[]
-  notifications Notification[]
-  bankAccounts  BankAccount[]
+  products           Product[]
+  subscriptions      Subscription[]
+  notifications      Notification[]
+  bankAccounts       BankAccount[]
+  orders             Order[] @relation("orders")
+  monthlyBills       MonthlyBill[]
+  payments           Payment[]
 }

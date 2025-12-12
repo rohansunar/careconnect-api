@@ -1,0 +1,12 @@
+model PaymentLink {
+  id                String   @id @default(uuid())
+  bill_id           String
+  bill              MonthlyBill @relation(fields: [bill_id], references: [id], onDelete: Cascade)
+  provider          String?
+  link_url          String?
+  provider_link_id  String?
+  expires_at        DateTime?
+  status            PaymentLinkStatus @default(ACTIVE)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @default(now())
+}

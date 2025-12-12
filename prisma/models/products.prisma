@@ -17,6 +17,7 @@ model Product {
 
   subscriptions Subscription[]
   cartItems CartItem[]
+  orders Order[] @relation("orders")
 
   @@index([categoryId])
 }
