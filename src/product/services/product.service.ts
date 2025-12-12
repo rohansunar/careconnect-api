@@ -158,4 +158,36 @@ export class ProductService {
 
     return { message: 'Vendor product deactivated' };
   }
+
+  /**
+   * Restores a deactivated vendor product for a specific vendor.
+   * @param vendorId - The unique identifier of the vendor.
+   * @param productId - The unique identifier of the vendor product.
+   * @returns A success message indicating restoration.
+   */
+  async restoreProduct(vendorId: string, productId: string) {
+    await this.validateVendor(vendorId);
+    const vendorProduct = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+        vendorId: vendorId,
+      },
+    });
+
+    if (!vendorProduct) {
+      throw new NotFoundException('Vendor product not found');
+    }
+
+    if (vendorProduct.is_active) {
+      throw new BadRequestException('Product is already active');
+    }
+
+    // Restore by setting is_active to true
+    await this.prisma.product.update({
+      where: { id: productId },
+      data: { is_active: true },
+    });
+
+    return { message: 'Vendor product restored' };
+  }
 }

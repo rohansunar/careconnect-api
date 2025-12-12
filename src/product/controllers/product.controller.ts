@@ -108,4 +108,27 @@ export class ProductController {
     const { id } = vendor;
     return this.productService.deleteProduct(id, productId);
   }
+
+  /**
+   * Business logic rationale: Enable vendors to restore deactivated products from their catalog.
+   * Security consideration: Ownership check prevents unauthorized restoration.
+   * Design decision: Soft-restore by setting is_active to true.
+   */
+  @ApiOperation({
+    summary: 'Restore vendor product',
+    description: 'Enable vendors to restore deactivated products from their catalog.',
+  })
+  @ApiResponse({ status: 200, description: 'Product restored successfully.' })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Product not found.' })
+  @Put(':productId/restore')
+  async restoreProduct(
+    @Req() req: any,
+    @Param('productId') productId: string,
+    @CurrentUser() vendor: any,
+  ) {
+    const { id } = vendor;
+    return this.productService.restoreProduct(id, productId);
+  }
 }
