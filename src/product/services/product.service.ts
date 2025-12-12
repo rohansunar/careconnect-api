@@ -17,6 +17,8 @@ export class ProductService {
    * @returns A list of vendor products with their details.
    */
   async getProducts(vendorId: string) {
+    await this.validateVendor(vendorId);
+    console.log("vendorId", vendorId)
     const products = await this.prisma.product.findMany({
       where: { vendorId: vendorId },
       include: {
@@ -28,6 +30,21 @@ export class ProductService {
   }
 
   /**
+   * Validates if a vendor exists in the database.
+   * @param vendorId - The unique identifier of the vendor.
+   * @throws NotFoundException if the vendor does not exist.
+   */
+  async validateVendor(vendorId: string) {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: vendorId },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
+  }
+
+  /**
    * Creates a new vendor product after validating that the base product exists
    * and that the vendor doesn't already have this product.
    * @param vendorId - The unique identifier of the vendor.
@@ -35,6 +52,7 @@ export class ProductService {
    * @returns The created vendor product details.
    */
   async createProduct(vendorId: string, dto: CreateProductDto) {
+    await this.validateVendor(vendorId);
     // Check if vendor_product already exists for this product and vendor
     const existing = await this.prisma.product.findFirst({
       where: {
@@ -93,6 +111,7 @@ export class ProductService {
     productId: string,
     dto: UpdateProductDto,
   ) {
+    await this.validateVendor(vendorId);
     const vendorProduct = await this.prisma.product.findFirst({
       where: {
         id: productId,
@@ -119,6 +138,7 @@ export class ProductService {
    * @returns A success message indicating deactivation.
    */
   async deleteProduct(vendorId: string, productId: string) {
+    await this.validateVendor(vendorId);
     const vendorProduct = await this.prisma.product.findFirst({
       where: {
         id: productId,

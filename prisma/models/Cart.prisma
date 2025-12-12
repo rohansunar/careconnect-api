@@ -1,0 +1,29 @@
+enum CartStatus {
+  ACTIVE
+  CHECKED_OUT
+  ABANDONED
+}
+
+model Cart {
+  /// Unique identifier for the cart
+  id         String     @id @default(uuid())
+
+  /// Reference to the customer who owns this cart
+  customerId String
+  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  /// Status of the cart
+  status     CartStatus @default(ACTIVE)
+
+  /// Timestamp when cart was created
+  createdAt  DateTime   @default(now())
+
+  /// Timestamp when cart was last updated
+  updatedAt  DateTime   @default(now())
+
+  /// Cart items in this cart
+  cartItems  CartItem[]
+
+  /// Index for efficient customer cart queries
+  @@index([customerId])
+}

@@ -2,9 +2,9 @@ model CartItem {
   /// Unique identifier for the cart item (auto-incrementing)
   id          Int      @id @default(autoincrement())
 
-  /// Reference to the customer who owns this cart item
-  customerId  String
-  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  /// Reference to the cart this item belongs to
+  cartId      String
+  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   /// Reference to the product in the cart
   productId   String
@@ -19,21 +19,17 @@ model CartItem {
   /// Deposit amount for the product at time of adding to cart (snapshotted)
   deposit     Decimal? @db.Decimal(10, 2)
 
-  /// Optional reference to delivery address for this cart item
-  addressId   String?
-  address     CustomerAddress? @relation(fields: [addressId], references: [id])
-
   /// Timestamp when item was added to cart
   createdAt   DateTime @default(now())
 
   /// Timestamp when item was last updated
   updatedAt   DateTime @default(now())
 
-  /// Prevent duplicate items in cart (same customer, product, and address)
-  @@unique([customerId, productId, addressId])
+  /// Prevent duplicate items in cart (same cart, product, and address)
+  @@unique([cartId, productId])
 
-  /// Index for efficient customer cart queries
-  @@index([customerId])
+  /// Index for efficient cart queries
+  @@index([cartId])
 
   /// Index for efficient product-based queries
   @@index([productId])

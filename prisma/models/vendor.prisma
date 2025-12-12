@@ -6,7 +6,7 @@ model Vendor {
   email              String?
   address            Json?
   cityId             String?
-  city      City?    @relation(fields: [city_id], references: [id])
+  city      City?    @relation(fields: [cityId], references: [id])
   pincode            String?
   location           String?
   is_active          Boolean  @default(true)

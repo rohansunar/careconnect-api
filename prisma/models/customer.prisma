@@ -8,7 +8,7 @@ model Customer {
 
   addresses CustomerAddress[]
   notifications  Notification[]
-  cartItems CartItem[]
+  carts Cart[]
   orders Order[] @relation("orders")
   monthlyBills MonthlyBill[]
   payments Payment[]

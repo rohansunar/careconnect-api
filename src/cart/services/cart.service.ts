@@ -24,12 +24,26 @@ export class CartService {
     // Validate product exists and get current pricing
     const product = await this.validateProduct(dto.productId);
 
+    // Get or create active cart for customer
+    let cart = await this.prisma.cart.findFirst({
+      where: {
+        customerId,
+        status: 'ACTIVE',
+      },
+    });
+    if (!cart) {
+      cart = await this.prisma.cart.create({
+        data: {
+          customerId,
+        },
+      });
+    }
+
     // Check if item already exists in cart
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
-        customerId: customerId,
+        cartId: cart.id,
         productId: dto.productId,
-        addressId: dto.addressId,
       },
     });
 
@@ -43,7 +57,6 @@ export class CartService {
         },
         include: {
           product: true,
-          address: true,
         },
       });
     }
@@ -51,16 +64,14 @@ export class CartService {
     // Create new cart item
     return this.prisma.cartItem.create({
       data: {
-        customerId: customerId,
+        cartId: cart.id,
         productId: dto.productId,
         quantity: dto.quantity,
-        addressId: dto.addressId,
         price: product.price,
         deposit: product.deposit,
       },
       include: {
         product: true,
-        address: true,
       },
     });
   }
@@ -88,7 +99,6 @@ export class CartService {
       },
       include: {
         product: true,
-        address: true,
       },
     });
   }
@@ -150,14 +160,13 @@ export class CartService {
   /**
    * Retrieves all cart items for a specific customer.
    * @param customerId - The unique identifier of the customer
-   * @returns Array of cart items with product and address details
+   * @returns Array of cart items with product details
    */
   async getCartItems(customerId: string) {
     return this.prisma.cartItem.findMany({
-      where: { customerId },
+      where: { cart: { customerId } },
       include: {
         product: true,
-        address: true,
       },
       orderBy: { createdAt: 'desc' },
     });

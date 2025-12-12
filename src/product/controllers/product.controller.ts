@@ -59,8 +59,8 @@ export class ProductController {
     @Body() dto: CreateProductDto,
     @CurrentUser() vendor: any,
   ) {
-    const { vendorId } = vendor;
-    return this.productService.createProduct(vendorId, dto);
+    const { id } = vendor;
+    return this.productService.createProduct(id, dto);
   }
 
   /**
@@ -84,8 +84,8 @@ export class ProductController {
     @Body() dto: UpdateProductDto,
     @CurrentUser() vendor: any,
   ) {
-    const { vendorId } = vendor;
-    return this.productService.updateProduct(vendorId, productId, dto);
+    const { id } = vendor;
+    return this.productService.updateProduct(id, productId, dto);
   }
 
   /**
@@ -105,7 +105,7 @@ export class ProductController {
     @Param('productId') productId: string,
     @CurrentUser() vendor: any,
   ) {
-    const { vendorId } = vendor;
-    return this.productService.deleteProduct(vendorId, productId);
+    const { id } = vendor;
+    return this.productService.deleteProduct(id, productId);
   }
 }

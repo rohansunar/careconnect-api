@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsNumber,
   Min,
-  IsOptional,
 } from 'class-validator';
 
 /**
@@ -23,11 +22,4 @@ export class CreateCartItemDto {
   @IsNumber()
   @Min(1)
   quantity: number;
-
-  /**
-   * Optional delivery address identifier
-   */
-  @IsOptional()
-  @IsString()
-  addressId?: string;
 }
