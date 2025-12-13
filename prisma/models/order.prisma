@@ -1,20 +1,19 @@
 model Order {
-  id                  String   @id @default(uuid())
-  customer_id         String?
-  customer            Customer? @relation("orders", fields: [customer_id], references: [id])
-  vendor_id           String?
-  vendor              Vendor? @relation("orders", fields: [vendor_id], references: [id])
-  address_id          String?
-  address             CustomerAddress? @relation("orders", fields: [address_id], references: [id])
-  product_id          String?
-  product             Product? @relation("orders", fields: [product_id], references: [id])
-  qty                 Int
-  total_amount        Decimal  @db.Decimal(10, 2)
-  status              String   @db.VarChar(32) @default("PENDING")
-  payment_status      String   @db.VarChar(32) @default("PENDING")
-  assigned_rider_phone String?
-  created_at          DateTime @default(now())
-  updated_at          DateTime @default(now())
+  id                    String   @id @default(uuid())
+  customerId            String?
+  customer              Customer? @relation("orders", fields: [customerId], references: [id])
+  vendorId              String?
+  vendor                Vendor? @relation("orders", fields: [vendorId], references: [id])
+  addressId             String?
+  address               CustomerAddress? @relation("orders", fields: [addressId], references: [id])
+  cartId                String?
+  cart                  Cart? @relation("orders", fields: [cartId], references: [id])
+  total_amount          Decimal  @db.Decimal(10, 2)
+  status                String   @db.VarChar(32) @default("PENDING")
+  payment_status        String   @db.VarChar(32) @default("PENDING")
+  assigned_rider_phone  String?
+  created_at            DateTime @default(now())
+  updated_at            DateTime @default(now())
 
   payments Payment[]
 }

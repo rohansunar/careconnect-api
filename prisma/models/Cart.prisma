@@ -23,6 +23,7 @@ model Cart {
 
   /// Cart items in this cart
   cartItems  CartItem[]
+  orders     Order[] @relation("orders")
 
   /// Index for efficient customer cart queries
   @@index([customerId])

@@ -13,62 +13,22 @@ export class CreateOrderDto {
   /**
    * Unique identifier of the customer
    */
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  customer_id?: string;
+  customerId?: string;
+
+  /**
+ * Unique identifier of the cart
+ */
+  @IsNotEmpty()
+  @IsString()
+  cartId?: string;
 
   /**
    * Unique identifier of the vendor
    */
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  vendor_id?: string;
+  vendorId?: string;
 
-  /**
-   * Unique identifier of the delivery address
-   */
-  @IsOptional()
-  @IsString()
-  address_id?: string;
-
-  /**
-   * Unique identifier of the product
-   */
-  @IsOptional()
-  @IsString()
-  product_id?: string;
-
-  /**
-   * Quantity of the product (must be > 0)
-   */
-  @IsNumber()
-  @Min(1)
-  qty: number;
-
-  /**
-   * Total amount for the order
-   */
-  @IsNumber()
-  total_amount: number;
-
-  /**
-   * Status of the order
-   */
-  @IsOptional()
-  @IsString()
-  status?: string;
-
-  /**
-   * Payment status of the order
-   */
-  @IsOptional()
-  @IsString()
-  payment_status?: string;
-
-  /**
-   * Assigned rider's phone number
-   */
-  @IsOptional()
-  @IsString()
-  assigned_rider_phone?: string;
 }

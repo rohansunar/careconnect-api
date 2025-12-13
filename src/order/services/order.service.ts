@@ -18,26 +18,38 @@ export class OrderService {
    */
   async create(dto: CreateOrderDto) {
     // Validate related entities if provided
-    if (dto.customer_id) {
-      await this.validateCustomer(dto.customer_id);
+    let addressId = "";
+    if (dto.customerId) {
+      await this.validateCustomer(dto.customerId);
+      const address = await this.prisma.customerAddress.findFirst({
+        where: { customerId: dto.customerId, isDefault: true, isActive: true }
+      });
+      if (!address) {
+        throw new BadRequestException('No default active address found for customer');
+      }
+      addressId = address.id;
     }
-    if (dto.vendor_id) {
-      await this.validateVendor(dto.vendor_id);
+    if (dto.vendorId) {
+      await this.validateVendor(dto.vendorId);
     }
-    if (dto.address_id) {
-      await this.validateAddress(dto.address_id);
+    if (dto.cartId) {
+      await this.validateCart(dto.cartId);
     }
-    if (dto.product_id) {
-      await this.validateProduct(dto.product_id);
+
+    const data = {
+      total_amount:140,
+      status:"PENDING",
+      payment_status:"PENDING",
+      addressId,
+      ...dto
     }
 
     return this.prisma.order.create({
-      data: dto,
+      data: data,
       include: {
         customer: true,
         vendor: true,
         address: true,
-        product: true,
       },
     });
   }
@@ -52,7 +64,6 @@ export class OrderService {
         customer: true,
         vendor: true,
         address: true,
-        product: true,
       },
       orderBy: { created_at: 'desc' },
     });
@@ -70,7 +81,6 @@ export class OrderService {
         customer: true,
         vendor: true,
         address: true,
-        product: true,
       },
     });
 
@@ -117,7 +127,6 @@ export class OrderService {
         customer: true,
         vendor: true,
         address: true,
-        product: true,
       },
     });
   }
@@ -200,6 +209,25 @@ export class OrderService {
 
     if (!product || !product.is_active) {
       throw new BadRequestException('Product not found or unavailable');
+    }
+  }
+
+  /**
+   * Validates that a cart exists and is active.
+   * @param cartId - The unique identifier of the cart
+   * @throws BadRequestException if cart doesn't exist or is not active
+   */
+  private async validateCart(cartId: string) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+    });
+
+    if (!cart) {
+      throw new BadRequestException('Cart not found');
+    }
+
+    if (cart.status !== 'ACTIVE') {
+      throw new BadRequestException('Cart is not active or already processed');
     }
   }
 }

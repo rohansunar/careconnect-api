@@ -30,13 +30,55 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Create a new order',
-    description: 'Creates a new order with the provided details.',
+    description: 'Creates a new order with the provided details. Validates related entities (customer, vendor, address, product) if IDs are provided.',
   })
-  @ApiBody({ type: CreateOrderDto })
-  @ApiResponse({ status: 201, description: 'Order created successfully.' })
+  @ApiBody({
+    type: CreateOrderDto,
+    examples: {
+      'example1': {
+        summary: 'Create order example',
+        value: {
+          customerId: 'customer-uuid-123',
+          vendorId: 'vendor-uuid-456',
+          cartId:'cart-uuid-456'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully.',
+    schema: {
+      example: {
+        id: 'order-uuid-123',
+        customer_id: 'customer-uuid-123',
+        vendor_id: 'vendor-uuid-456',
+        address_id: 'address-uuid-789',
+        product_id: 'product-uuid-101',
+        qty: 2,
+        total_amount: 50.00,
+        status: 'PENDING',
+        payment_status: 'PENDING',
+        assigned_rider_phone: '+1234567890',
+        created_at: '2023-12-01T10:00:00.000Z',
+        updated_at: '2023-12-01T10:00:00.000Z',
+        customer: { id: 'customer-uuid-123', name: 'John Doe' },
+        vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
+        address: { id: 'address-uuid-789', street: '123 Main St' },
+        product: { id: 'product-uuid-101', name: 'Water Jar' }
+      }
+    }
+  })
   @ApiResponse({
     status: 400,
     description: 'Bad request - invalid data or related entities not found.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Customer not found',
+        error: 'Bad Request'
+      }
+    }
   })
   @Post()
   async create(@Body() dto: CreateOrderDto) {
@@ -49,9 +91,34 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Get all orders',
-    description: 'Retrieves a list of all orders.',
+    description: 'Retrieves a list of all orders, ordered by creation date descending, including related customer, vendor, address, and product information.',
   })
-  @ApiResponse({ status: 200, description: 'Orders retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Orders retrieved successfully.',
+    schema: {
+      example: [
+        {
+          id: 'order-uuid-123',
+          customer_id: 'customer-uuid-123',
+          vendor_id: 'vendor-uuid-456',
+          address_id: 'address-uuid-789',
+          product_id: 'product-uuid-101',
+          qty: 2,
+          total_amount: 50.00,
+          status: 'PENDING',
+          payment_status: 'PENDING',
+          assigned_rider_phone: '+1234567890',
+          created_at: '2023-12-01T10:00:00.000Z',
+          updated_at: '2023-12-01T10:00:00.000Z',
+          customer: { id: 'customer-uuid-123', name: 'John Doe' },
+          vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
+          address: { id: 'address-uuid-789', street: '123 Main St' },
+          product: { id: 'product-uuid-101', name: 'Water Jar' }
+        }
+      ]
+    }
+  })
   @Get()
   async findAll() {
     return this.orderService.findAll();
@@ -64,11 +131,48 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Get order by ID',
-    description: 'Retrieves a single order by its unique identifier.',
+    description: 'Retrieves a single order by its unique identifier, including related customer, vendor, address, and product information.',
   })
-  @ApiParam({ name: 'id', description: 'Order ID' })
-  @ApiResponse({ status: 200, description: 'Order retrieved successfully.' })
-  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+    example: 'order-uuid-123'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order retrieved successfully.',
+    schema: {
+      example: {
+        id: 'order-uuid-123',
+        customer_id: 'customer-uuid-123',
+        vendor_id: 'vendor-uuid-456',
+        address_id: 'address-uuid-789',
+        product_id: 'product-uuid-101',
+        qty: 2,
+        total_amount: 50.00,
+        status: 'PENDING',
+        payment_status: 'PENDING',
+        assigned_rider_phone: '+1234567890',
+        created_at: '2023-12-01T10:00:00.000Z',
+        updated_at: '2023-12-01T10:00:00.000Z',
+        customer: { id: 'customer-uuid-123', name: 'John Doe' },
+        vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
+        address: { id: 'address-uuid-789', street: '123 Main St' },
+        product: { id: 'product-uuid-101', name: 'Water Jar' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Order not found',
+        error: 'Not Found'
+      }
+    }
+  })
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.orderService.findOne(id);
@@ -82,13 +186,72 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Update order by ID',
-    description: 'Updates an existing order with the provided details.',
+    description: 'Updates an existing order with the provided details. Validates related entities if IDs are provided.',
   })
-  @ApiParam({ name: 'id', description: 'Order ID' })
-  @ApiBody({ type: UpdateOrderDto })
-  @ApiResponse({ status: 200, description: 'Order updated successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid data.' })
-  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+    example: 'order-uuid-123'
+  })
+  @ApiBody({
+    type: UpdateOrderDto,
+    examples: {
+      'example1': {
+        summary: 'Update order status example',
+        value: {
+          status: 'CONFIRMED',
+          payment_status: 'PAID',
+          assigned_rider_phone: '+1234567890'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order updated successfully.',
+    schema: {
+      example: {
+        id: 'order-uuid-123',
+        customer_id: 'customer-uuid-123',
+        vendor_id: 'vendor-uuid-456',
+        address_id: 'address-uuid-789',
+        product_id: 'product-uuid-101',
+        qty: 2,
+        total_amount: 50.00,
+        status: 'CONFIRMED',
+        payment_status: 'PAID',
+        assigned_rider_phone: '+1234567890',
+        created_at: '2023-12-01T10:00:00.000Z',
+        updated_at: '2023-12-01T10:05:00.000Z',
+        customer: { id: 'customer-uuid-123', name: 'John Doe' },
+        vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
+        address: { id: 'address-uuid-789', street: '123 Main St' },
+        product: { id: 'product-uuid-101', name: 'Water Jar' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid data or related entities not found.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Vendor not found',
+        error: 'Bad Request'
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Order not found',
+        error: 'Not Found'
+      }
+    }
+  })
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {
     return this.orderService.update(id, dto);
@@ -101,11 +264,33 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Delete order by ID',
-    description: 'Deletes an order by its unique identifier.',
+    description: 'Deletes an order by its unique identifier. This action is irreversible.',
   })
-  @ApiParam({ name: 'id', description: 'Order ID' })
-  @ApiResponse({ status: 200, description: 'Order deleted successfully.' })
-  @ApiResponse({ status: 404, description: 'Order not found.' })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+    example: 'order-uuid-123'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order deleted successfully.',
+    schema: {
+      example: {
+        message: 'Order deleted successfully'
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Order not found',
+        error: 'Not Found'
+      }
+    }
+  })
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.orderService.delete(id);

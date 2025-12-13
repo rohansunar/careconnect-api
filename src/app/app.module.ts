@@ -2,13 +2,14 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './controllers/app.controller';
 import { AppService } from './services/app.service';
-import { PrismaModule } from '../common/database/prisma.module';
-import { VendorModule } from '../vendor/vendor.module';
-import { ProductModule } from '../product/product.module';
-import { AuthModule } from '../auth/auth.module';
-import { CustomerModule } from '../customer/customer.module';
-import { SearchModule } from '../search/search.module';
-import { CartModule } from '../cart/cart.module';
+import { PrismaModule } from 'src/common/database/prisma.module';
+import { VendorModule } from 'src/vendor/vendor.module';
+import { ProductModule } from 'src/product/product.module';
+import { AuthModule } from 'src/auth/auth.module';
+import { CustomerModule } from 'src/customer/customer.module';
+import { SearchModule } from 'src/search/search.module';
+import { CartModule } from 'src/cart/cart.module';
+import { OrderModule } from 'src/order/order.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CartModule } from '../cart/cart.module';
     CustomerModule,
     SearchModule,
     CartModule,
+    OrderModule
   ],
   controllers: [AppController],
   providers: [AppService],
