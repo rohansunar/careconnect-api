@@ -48,34 +48,17 @@ export class ProductImageController {
   @ApiResponse({
     status: 201,
     description: 'Images uploaded successfully',
-    type: UploadProductImagesResponseDto,
+    schema: { example: { productId: '123', uploadedCount: 3, images: [{ id: 'products/123/1703123456789_image.jpg', url: 'https://water-delivery-images.s3.amazonaws.com/products/123/1703123456789_image.webp', filename: 'product-image-1.webp', size: 245760, width: 800, height: 600, uploadedAt: '2024-01-15T10:30:00Z' }], totalImages: 5, uploadedAt: '2024-01-15T10:30:00Z' } },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid file format, size, or validation error',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: {
-          type: 'string',
-          example: 'Invalid image file: File size too large',
-        },
-        error: { type: 'string', example: 'Bad Request' },
-      },
-    },
+    schema: { example: { statusCode: 400, message: 'Invalid image file: File size too large', error: 'Bad Request' } },
   })
   @ApiResponse({
     status: 404,
     description: 'Product not found',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Product not found' },
-        error: { type: 'string', example: 'Not Found' },
-      },
-    },
+    schema: { example: { statusCode: 404, message: 'Product not found', error: 'Not Found' } },
   })
   async uploadProductImages(
     @Param('productId') productId: string,
@@ -122,25 +105,12 @@ export class ProductImageController {
   @ApiResponse({
     status: 200,
     description: 'Image deleted successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Image deleted successfully' },
-        remainingImages: { type: 'number', example: 4 },
-      },
-    },
+    schema: { example: { message: 'Image deleted successfully', remainingImages: 4 } },
   })
   @ApiResponse({
     status: 404,
     description: 'Product or image not found',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Product not found' },
-        error: { type: 'string', example: 'Not Found' },
-      },
-    },
+    schema: { example: { statusCode: 404, message: 'Product not found', error: 'Not Found' } },
   })
   async deleteProductImage(
     @Param('productId') productId: string,
@@ -170,43 +140,17 @@ export class ProductImageController {
   @ApiResponse({
     status: 200,
     description: 'Images reordered successfully',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Images reordered successfully' },
-        images: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/ProductImageResponseDto' },
-        },
-      },
-    },
+    schema: { example: { message: 'Images reordered successfully', images: [{ id: 'products/123/1703123456789_image.jpg', url: 'https://water-delivery-images.s3.amazonaws.com/products/123/1703123456789_image.webp', filename: 'product-image-1.webp', size: 245760, width: 800, height: 600, uploadedAt: '2024-01-15T10:30:00Z' }] } },
   })
   @ApiResponse({
     status: 404,
     description: 'Product not found',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 404 },
-        message: { type: 'string', example: 'Product not found' },
-        error: { type: 'string', example: 'Not Found' },
-      },
-    },
+    schema: { example: { statusCode: 404, message: 'Product not found', error: 'Not Found' } },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid image IDs or order',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: {
-          type: 'string',
-          example: 'Invalid image ID format: image_abc',
-        },
-        error: { type: 'string', example: 'Bad Request' },
-      },
-    },
+    schema: { example: { statusCode: 400, message: 'Invalid image ID format: image_abc', error: 'Bad Request' } },
   })
   async reorderProductImages(
     @Param('productId') productId: string,

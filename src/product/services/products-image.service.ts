@@ -440,6 +440,38 @@ export class ProductImageService {
     }
   }
 
+  async getProductImages(
+    user: { id: string; role: string; vendorId?: string },
+    productId: string,
+  ): Promise<ProductImageResponseDto[]> {
+    try {
+      // Validate product ownership
+      const product = await this.validateProductOwnership(productId, user);
+
+      const images = product.images || [];
+
+      return images.map((url, index) => {
+        const key = this.extractS3KeyFromUrl(url);
+        const filename = key.split('/').pop() || `image-${index}.webp`;
+
+        return {
+          id: key,
+          url,
+          filename,
+          size: 0, // Size not stored
+          width: 800, // Default dimensions
+          height: 600,
+          uploadedAt: new Date(), // Upload time not stored
+        };
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to retrieve product images');
+    }
+  }
+
   /**
    * Extract the S3 key from a Supabase Storage URL.
    *

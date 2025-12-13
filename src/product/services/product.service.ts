@@ -30,6 +30,31 @@ export class ProductService {
   }
 
   /**
+   * Retrieves a single product by ID for a specific vendor.
+   * @param vendorId - The unique identifier of the vendor.
+   * @param productId - The unique identifier of the product.
+   * @returns The product details with vendor information.
+   */
+  async getProductById(vendorId: string, productId: string) {
+    await this.validateVendor(vendorId);
+    const product = await this.prisma.product.findFirst({
+      where: {
+        id: productId,
+        vendorId: vendorId,
+      },
+      include: {
+        vendor: true,
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
+    return product;
+  }
+
+  /**
    * Validates if a vendor exists in the database.
    * @param vendorId - The unique identifier of the vendor.
    * @throws NotFoundException if the vendor does not exist.

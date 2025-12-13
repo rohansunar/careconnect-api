@@ -3,7 +3,7 @@ import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
 
 export class VerifyOtpDto {
   @ApiProperty({
-    description: 'Vendor phone number',
+    description: 'Vendor/Customer phone number',
     example: '+91-9832012345',
   })
   @IsString()
@@ -21,12 +21,12 @@ export class VerifyOtpDto {
 
 export class VerifyOtpResponseDto {
   @ApiProperty({
-    description: 'Authentication Token for Vendor',
+    description: 'Authentication Token for Vendor/Customer',
   })
   token: string;
 
   @ApiProperty({
-    description: 'Vendor Details',
+    description: 'Vendor or Customer Details',
   })
   vendor: any;
 

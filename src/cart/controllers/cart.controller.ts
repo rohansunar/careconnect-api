@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Post,
   Put,
   Delete,
@@ -83,10 +84,10 @@ export class CartController {
   }
 
   /**
-   * Business logic rationale: Allow customers to remove items from their cart.
-   * Security consideration: Ownership check ensures customers only remove their own cart items.
-   * Design decision: Hard delete with proper error handling.
-   */
+    * Business logic rationale: Allow customers to remove items from their cart.
+    * Security consideration: Ownership check ensures customers only remove their own cart items.
+    * Design decision: Hard delete with proper error handling.
+    */
   @ApiOperation({
     summary: 'Remove item from cart',
     description: 'Allow customers to remove items from their cart.',
@@ -102,5 +103,25 @@ export class CartController {
       throw new Error('Invalid cart item ID');
     }
     return this.cartService.removeFromCart(id);
+  }
+
+  /**
+   * Business logic rationale: Retrieve the authenticated user's cart with detailed item information.
+   * Security consideration: JWT authentication ensures only the authenticated customer can access their cart.
+   * Design decision: Returns empty array if cart is empty, includes all necessary item details.
+   */
+  @ApiOperation({
+    summary: 'Get user cart',
+    description: 'Retrieve the authenticated user\'s cart items with detailed information including IDs, names, quantities, prices, and deposits.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Cart items retrieved successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Get()
+  async getCart(@CurrentUser() customer: any) {
+    const { id } = customer;
+    return this.cartService.getCartItems(id);
   }
 }

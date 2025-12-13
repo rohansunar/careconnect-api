@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ExecutionContext } from '@nestjs/common';
 import request from 'supertest';
 import { CartController } from '../../src/cart/controllers/cart.controller';
 import { CartService } from '../../src/cart/services/cart.service';
@@ -29,10 +29,15 @@ describe('CartController', () => {
       addToCart: jest.fn(),
       updateQuantity: jest.fn(),
       removeFromCart: jest.fn(),
+      getCartItems: jest.fn(),
     };
 
     const mockAuthGuard = {
-      canActivate: jest.fn().mockReturnValue(true),
+      canActivate: jest.fn((context: ExecutionContext) => {
+        const request = context.switchToHttp().getRequest();
+        request.user = { id: '1' };
+        return true;
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -61,24 +66,20 @@ describe('CartController', () => {
   describe('POST /cart', () => {
     it('should add item to cart successfully and return 201', async () => {
       const dto: CreateCartItemDto = {
-        customerId: 'customer-123',
         productId: 'product-456',
         quantity: 2,
-        addressId: 'address-789',
       };
 
       const expectedResponse = {
         id: 1,
-        customerId: 'customer-123',
+        cartId: 1,
         productId: 'product-456',
         quantity: 2,
         price: 100.5,
         deposit: 10.0,
-        addressId: 'address-789',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         product: { id: 'product-456', name: 'Test Product' },
-        address: { id: 'address-789', label: 'Home' },
       };
 
       mockCartService.addToCart.mockResolvedValue(expectedResponse as any);
@@ -89,29 +90,26 @@ describe('CartController', () => {
         .expect(201);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
+      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto, '1');
       expect(mockCartService.addToCart).toHaveBeenCalledTimes(1);
     });
 
     it('should add item to cart without addressId', async () => {
       const dto: CreateCartItemDto = {
-        customerId: 'customer-123',
         productId: 'product-456',
         quantity: 1,
       };
 
       const expectedResponse = {
         id: 1,
-        customerId: 'customer-123',
+        cartId: 1,
         productId: 'product-456',
         quantity: 1,
         price: 50.0,
         deposit: null,
-        addressId: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         product: { id: 'product-456', name: 'Test Product' },
-        address: null,
       };
 
       mockCartService.addToCart.mockResolvedValue(expectedResponse as any);
@@ -122,28 +120,11 @@ describe('CartController', () => {
         .expect(201);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
-    });
-
-    it('should throw 400 Bad Request for invalid customer', async () => {
-      const dto: CreateCartItemDto = {
-        customerId: 'invalid-customer',
-        productId: 'product-456',
-        quantity: 1,
-      };
-
-      mockCartService.addToCart.mockRejectedValue(
-        new BadRequestException('Customer not found'),
-      );
-
-      await request(app.getHttpServer()).post('/cart').send(dto).expect(400);
-
-      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
+      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto, '1');
     });
 
     it('should throw 400 Bad Request for invalid product', async () => {
       const dto: CreateCartItemDto = {
-        customerId: 'customer-123',
         productId: 'invalid-product',
         quantity: 1,
       };
@@ -154,7 +135,7 @@ describe('CartController', () => {
 
       await request(app.getHttpServer()).post('/cart').send(dto).expect(400);
 
-      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto);
+      expect(mockCartService.addToCart).toHaveBeenCalledWith(dto, '1');
     });
 
     // DTO validation tests removed as they require proper validation pipe setup in test environment
@@ -269,12 +250,39 @@ describe('CartController', () => {
     });
   });
 
+  describe('GET /cart', () => {
+    it('should get cart items successfully and return 200', async () => {
+      const expectedResponse = [
+        {
+          id: 1,
+          cartId: 1,
+          productId: 'product-456',
+          quantity: 2,
+          price: 100.5,
+          deposit: 10.0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          product: { id: 'product-456', name: 'Test Product' },
+        },
+      ];
+
+      mockCartService.getCartItems.mockResolvedValue(expectedResponse as any);
+
+      const response = await request(app.getHttpServer())
+        .get('/cart')
+        .expect(200);
+
+      expect(response.body).toEqual(expectedResponse);
+      expect(mockCartService.getCartItems).toHaveBeenCalledWith('1');
+      expect(mockCartService.getCartItems).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('Authentication', () => {
     it('should require authentication for POST /cart', async () => {
       // This test verifies that the CustomerAuthGuard is applied
       // Since we mocked it to return true, the request should proceed
       const dto: CreateCartItemDto = {
-        customerId: 'customer-123',
         productId: 'product-456',
         quantity: 1,
       };
@@ -295,6 +303,12 @@ describe('CartController', () => {
       mockCartService.removeFromCart.mockResolvedValue({ message: 'Removed' });
 
       await request(app.getHttpServer()).delete('/cart/1').expect(200);
+    });
+
+    it('should require authentication for GET /cart', async () => {
+      mockCartService.getCartItems.mockResolvedValue([]);
+
+      await request(app.getHttpServer()).get('/cart').expect(200);
     });
   });
 });
