@@ -133,26 +133,6 @@ export class OrderService {
     });
   }
 
-  /**
-   * Deletes an order by ID.
-   * @param id - The unique identifier of the order
-   * @returns Confirmation of deletion
-   */
-  async delete(id: string) {
-    const order = await this.prisma.order.findUnique({
-      where: { id },
-    });
-
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    await this.prisma.order.delete({
-      where: { id },
-    });
-
-    return { message: 'Order deleted successfully' };
-  }
 
   /**
    * Validates that a customer exists.

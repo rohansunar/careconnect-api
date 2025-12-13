@@ -14,7 +14,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
  * Rationale for controller testing:
  * - Ensures API reliability: Unit tests validate that controller methods correctly handle HTTP requests, delegate to services, and return appropriate responses, ensuring the API behaves as specified.
  * - Isolates controller logic: By mocking the OrderService, we test the controller's responsibility of routing and response handling without external dependencies.
- * - Covers critical endpoints: Tests for POST /orders (create), GET /orders (findAll), GET /orders/:id (findOne), PATCH /orders/:id (update), and DELETE /orders/:id (delete) ensure all CRUD operations are validated.
+ * - Covers critical endpoints: Tests for POST /orders (create), GET /orders (findAll), GET /orders/:id (findOne), and PATCH /orders/:id (update) ensure CRUD operations are validated.
  * - Validates HTTP status codes: Error scenarios test that appropriate exceptions are thrown, which map to correct HTTP status codes in the framework.
  * - Tests authentication: Ensures CustomerAuthGuard is properly applied to all endpoints.
  * - Maintains code quality: Comprehensive tests with comments promote maintainability, allowing future changes to be validated against expected behavior.
@@ -30,7 +30,6 @@ describe('OrderController', () => {
       findAll: jest.fn(),
       findOne: jest.fn(),
       update: jest.fn(),
-      delete: jest.fn(),
     };
 
     const mockAuthGuard = {
@@ -355,37 +354,6 @@ describe('OrderController', () => {
     });
   });
 
-  describe('DELETE /orders/:id', () => {
-    it('should delete order successfully and return 200', async () => {
-      const orderId = 'order-123';
-      const expectedResponse = { message: 'Order deleted successfully' };
-
-      mockOrderService.delete.mockResolvedValue(expectedResponse);
-
-      const response = await request(app.getHttpServer())
-        .delete(`/orders/${orderId}`)
-        .expect(200);
-
-      expect(response.body).toEqual(expectedResponse);
-      expect(mockOrderService.delete).toHaveBeenCalledWith(orderId);
-      expect(mockOrderService.delete).toHaveBeenCalledTimes(1);
-    });
-
-    it('should throw 404 Not Found for non-existent order', async () => {
-      const orderId = 'non-existent-id';
-
-      mockOrderService.delete.mockRejectedValue(
-        new NotFoundException('Order not found'),
-      );
-
-      await request(app.getHttpServer())
-        .delete(`/orders/${orderId}`)
-        .expect(404);
-
-      expect(mockOrderService.delete).toHaveBeenCalledWith(orderId);
-    });
-  });
-
   describe('Authentication', () => {
     it('should require authentication for POST /orders', async () => {
       const dto: CreateOrderDto = {
@@ -415,12 +383,6 @@ describe('OrderController', () => {
       mockOrderService.update.mockResolvedValue({} as any);
 
       await request(app.getHttpServer()).patch('/orders/order-123').send(dto).expect(200);
-    });
-
-    it('should require authentication for DELETE /orders/:id', async () => {
-      mockOrderService.delete.mockResolvedValue({ message: 'Deleted' });
-
-      await request(app.getHttpServer()).delete('/orders/order-123').expect(200);
     });
   });
 });

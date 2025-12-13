@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -51,10 +50,10 @@ export class OrderController {
     schema: {
       example: {
         id: 'order-uuid-123',
-        customer_id: 'customer-uuid-123',
-        vendor_id: 'vendor-uuid-456',
-        address_id: 'address-uuid-789',
-        product_id: 'product-uuid-101',
+        customerId: 'customer-uuid-123',
+        vendorId: 'vendor-uuid-456',
+        addressId: 'address-uuid-789',
+        productId: 'product-uuid-101',
         qty: 2,
         total_amount: 50.00,
         status: 'PENDING',
@@ -100,12 +99,10 @@ export class OrderController {
       example: [
         {
           id: 'order-uuid-123',
-          customer_id: 'customer-uuid-123',
-          vendor_id: 'vendor-uuid-456',
-          address_id: 'address-uuid-789',
-          product_id: 'product-uuid-101',
-          qty: 2,
-          total_amount: 50.00,
+          customerId: 'customer-uuid-123',
+          vendorId: 'vendor-uuid-456',
+          addressId: 'address-uuid-789',
+          productId: 'product-uuid-101',
           status: 'PENDING',
           payment_status: 'PENDING',
           assigned_rider_phone: '+1234567890',
@@ -144,10 +141,10 @@ export class OrderController {
     schema: {
       example: {
         id: 'order-uuid-123',
-        customer_id: 'customer-uuid-123',
-        vendor_id: 'vendor-uuid-456',
-        address_id: 'address-uuid-789',
-        product_id: 'product-uuid-101',
+        customerId: 'customer-uuid-123',
+        vendorId: 'vendor-uuid-456',
+        addressId: 'address-uuid-789',
+        productId: 'product-uuid-101',
         qty: 2,
         total_amount: 50.00,
         status: 'PENDING',
@@ -212,11 +209,10 @@ export class OrderController {
     schema: {
       example: {
         id: 'order-uuid-123',
-        customer_id: 'customer-uuid-123',
-        vendor_id: 'vendor-uuid-456',
-        address_id: 'address-uuid-789',
-        product_id: 'product-uuid-101',
-        qty: 2,
+        customerId: 'customer-uuid-123',
+        vendorId: 'vendor-uuid-456',
+        addressId: 'address-uuid-789',
+        productId: 'product-uuid-101',
         total_amount: 50.00,
         status: 'CONFIRMED',
         payment_status: 'PAID',
@@ -255,44 +251,5 @@ export class OrderController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {
     return this.orderService.update(id, dto);
-  }
-
-  /**
-   * Deletes an order by ID.
-   * @param id - The unique identifier of the order
-   * @returns Confirmation of deletion
-   */
-  @ApiOperation({
-    summary: 'Delete order by ID',
-    description: 'Deletes an order by its unique identifier. This action is irreversible.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique identifier of the order (UUID)',
-    example: 'order-uuid-123'
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Order deleted successfully.',
-    schema: {
-      example: {
-        message: 'Order deleted successfully'
-      }
-    }
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Order not found.',
-    schema: {
-      example: {
-        statusCode: 404,
-        message: 'Order not found',
-        error: 'Not Found'
-      }
-    }
-  })
-  @Delete(':id')
-  async delete(@Param('id') id: string) {
-    return this.orderService.delete(id);
   }
 }

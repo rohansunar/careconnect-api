@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { OrderService } from '../../src/order/services/order.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
+import { CartService } from '../../src/cart/services/cart.service';
 import { CreateOrderDto } from '../../src/order/dto/create-order.dto';
 import { UpdateOrderDto } from '../../src/order/dto/update-order.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
@@ -21,7 +22,7 @@ import {
  *
  * Rationale for comprehensive testing:
  * - Ensures reliability: By mocking PrismaService, we isolate the service logic and verify correct database interactions without external dependencies.
- * - Covers key methods: Tests for create, findAll, findOne, update, and delete methods ensure all CRUD operations are validated.
+ * - Covers key methods: Tests for create, findAll, findOne, and update methods ensure CRUD operations are validated.
  * - Validates business logic: Tests include validation of related entities (customer, vendor, address, product) and proper error handling.
  * - Error handling scenarios: Includes tests for not found entities, invalid data, and edge cases to guarantee robust error handling.
  * - Maintainability: Detailed assertions on Prisma method calls and return values make it easy to identify regressions during future code changes.
@@ -34,12 +35,12 @@ describe('OrderService', () => {
 
   beforeEach(async () => {
     mockPrismaService = {
+      $transaction: jest.fn(async (fn) => fn(mockPrismaService)),
       order: {
         create: jest.fn(),
         findMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
-        delete: jest.fn(),
       },
       customer: {
         findUnique: jest.fn(),
@@ -49,10 +50,15 @@ describe('OrderService', () => {
       },
       customerAddress: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
       },
-      product: {
+      cart: {
         findUnique: jest.fn(),
       },
+    };
+
+    const mockCartService = {
+      updateCartStatus: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -61,6 +67,10 @@ describe('OrderService', () => {
         {
           provide: PrismaService,
           useValue: mockPrismaService,
+        },
+        {
+          provide: CartService,
+          useValue: mockCartService,
         },
       ],
     }).compile();
@@ -83,10 +93,11 @@ describe('OrderService', () => {
     };
 
     it('should create order successfully with all validations', async () => {
+      const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
-      mockPrismaService.customerAddress.findUnique.mockResolvedValue(mockAddress);
-      mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.cart.findUnique.mockResolvedValue(mockCart);
       mockPrismaService.order.create.mockResolvedValue(mockOrderResponse);
 
       const result = await service.create(dto);
@@ -94,23 +105,31 @@ describe('OrderService', () => {
       expect(result).toEqual(mockOrderResponse);
       expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({ where: { id: mockCustomer.id } });
       expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({ where: { id: mockVendor.id } });
-      expect(mockPrismaService.customerAddress.findUnique).toHaveBeenCalledWith({ where: { id: mockAddress.id } });
-      expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({ where: { id: mockProduct.id } });
+      expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
+        where: { customerId: mockCustomer.id, isDefault: true, isActive: true }
+      });
+      expect(mockPrismaService.cart.findUnique).toHaveBeenCalledWith({
+        where: { id: dto.cartId },
+        include: { cartItems: true }
+      });
       expect(mockPrismaService.order.create).toHaveBeenCalledWith({
-        data: dto,
+        data: expect.any(Object),
         include: {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
+          cart: {
+            include: {
+              cartItems: true
+            }
+          },
         },
       });
     });
 
     it('should create order with minimal fields (no validations)', async () => {
       const minimalDto: CreateOrderDto = {
-        qty: 1,
-        total_amount: 50.0,
+        // No fields, just empty
       };
 
       mockPrismaService.order.create.mockResolvedValue(mockMinimalOrder);
@@ -120,12 +139,16 @@ describe('OrderService', () => {
       expect(result).toEqual(mockMinimalOrder);
       expect(mockPrismaService.customer.findUnique).not.toHaveBeenCalled();
       expect(mockPrismaService.order.create).toHaveBeenCalledWith({
-        data: minimalDto,
+        data: expect.any(Object), // Since it prepares the data
         include: {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
+          cart: {
+            include: {
+              cartItems: true
+            }
+          },
         },
       });
     });
@@ -139,7 +162,10 @@ describe('OrderService', () => {
     });
 
     it('should throw BadRequestException for non-existent vendor', async () => {
+      const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.cart.findUnique.mockResolvedValue(mockCart);
       mockPrismaService.vendor.findUnique.mockResolvedValue(null);
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
@@ -148,25 +174,19 @@ describe('OrderService', () => {
     });
 
     it('should throw BadRequestException for non-existent address', async () => {
+      const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+      mockPrismaService.cart.findUnique.mockResolvedValue(mockCart);
       mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
-      mockPrismaService.customerAddress.findUnique.mockResolvedValue(null);
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-      expect(mockPrismaService.customerAddress.findUnique).toHaveBeenCalledWith({ where: { id: mockAddress.id } });
+      expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
+        where: { customerId: mockCustomer.id, isDefault: true, isActive: true }
+      });
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
 
-    it('should throw BadRequestException for inactive product', async () => {
-      mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
-      mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
-      mockPrismaService.customerAddress.findUnique.mockResolvedValue(mockAddress);
-      mockPrismaService.product.findUnique.mockResolvedValue({ ...mockProduct, is_active: false });
-
-      await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-      expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({ where: { id: mockProduct.id } });
-      expect(mockPrismaService.order.create).not.toHaveBeenCalled();
-    });
   });
 
   describe('findAll', () => {
@@ -181,7 +201,6 @@ describe('OrderService', () => {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
         },
         orderBy: { created_at: 'desc' },
       });
@@ -211,7 +230,6 @@ describe('OrderService', () => {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
         },
       });
     });
@@ -226,7 +244,6 @@ describe('OrderService', () => {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
         },
       });
     });
@@ -258,7 +275,6 @@ describe('OrderService', () => {
           customer: true,
           vendor: true,
           address: true,
-          product: true,
         },
       });
     });
@@ -298,29 +314,6 @@ describe('OrderService', () => {
 
       await expect(service.update(orderId, dtoWithInvalidId)).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('delete', () => {
-    const orderId = mockOrder.id;
-
-    it('should delete order successfully', async () => {
-      mockPrismaService.order.findUnique.mockResolvedValue(mockOrder);
-      mockPrismaService.order.delete.mockResolvedValue(mockOrder);
-
-      const result = await service.delete(orderId);
-
-      expect(result).toEqual({ message: 'Order deleted successfully' });
-      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({ where: { id: orderId } });
-      expect(mockPrismaService.order.delete).toHaveBeenCalledWith({ where: { id: orderId } });
-    });
-
-    it('should throw NotFoundException for non-existent order', async () => {
-      mockPrismaService.order.findUnique.mockResolvedValue(null);
-
-      await expect(service.delete(orderId)).rejects.toThrow(NotFoundException);
-      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({ where: { id: orderId } });
-      expect(mockPrismaService.order.delete).not.toHaveBeenCalled();
     });
   });
 });

@@ -54,15 +54,9 @@ export const mockOrder = {
 };
 
 export const mockCreateOrderDto = {
-  customer_id: mockCustomer.id,
-  vendor_id: mockVendor.id,
-  address_id: mockAddress.id,
-  product_id: mockProduct.id,
-  qty: 2,
-  total_amount: 50.00,
-  status: 'PENDING',
-  payment_status: 'PENDING',
-  assigned_rider_phone: '+1122334455',
+  customerId: mockCustomer.id,
+  vendorId: mockVendor.id,
+  cartId: 'cart-uuid-123',
 };
 
 export const mockUpdateOrderDto = {
