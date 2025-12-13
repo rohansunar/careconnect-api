@@ -4,12 +4,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { CartService } from '../../cart/services/cart.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
+import { OrderStatus, CartStatus } from '../../common/constants/order-status.constants';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cartService: CartService,
+  ) {}
 
   /**
    * Creates a new order with validation.
@@ -17,40 +22,37 @@ export class OrderService {
    * @returns The created order with relations
    */
   async create(dto: CreateOrderDto) {
-    // Validate related entities if provided
-    let addressId = "";
-    if (dto.customerId) {
-      await this.validateCustomer(dto.customerId);
-      const address = await this.prisma.customerAddress.findFirst({
-        where: { customerId: dto.customerId, isDefault: true, isActive: true }
+    return this.prisma.$transaction(async (tx) => {
+      // Validate entities
+      const { addressId, cart } = await this.validateEntities(dto);
+
+      // Calculate total amount
+      const totalAmount = cart ? this.calculateTotalAmount(cart) : 0;
+
+      // Prepare order data
+      const data = this.prepareOrderData(dto, totalAmount, addressId);
+
+      // Create order
+      const order = await tx.order.create({
+        data: data,
+        include: {
+          customer: true,
+          vendor: true,
+          address: true,
+          cart: {
+            include: {
+              cartItems: true
+            }
+          },
+        },
       });
-      if (!address) {
-        throw new BadRequestException('No default active address found for customer');
+
+      // Update cart status to CHECKED_OUT if cart exists
+      if (dto.cartId) {
+        await this.cartService.updateCartStatus(dto.cartId, CartStatus.CHECKED_OUT);
       }
-      addressId = address.id;
-    }
-    if (dto.vendorId) {
-      await this.validateVendor(dto.vendorId);
-    }
-    if (dto.cartId) {
-      await this.validateCart(dto.cartId);
-    }
 
-    const data = {
-      total_amount:140,
-      status:"PENDING",
-      payment_status:"PENDING",
-      addressId,
-      ...dto
-    }
-
-    return this.prisma.order.create({
-      data: data,
-      include: {
-        customer: true,
-        vendor: true,
-        address: true,
-      },
+      return order;
     });
   }
 
@@ -220,14 +222,75 @@ export class OrderService {
   private async validateCart(cartId: string) {
     const cart = await this.prisma.cart.findUnique({
       where: { id: cartId },
+      include: { cartItems: true },
     });
 
     if (!cart) {
       throw new BadRequestException('Cart not found');
     }
 
-    if (cart.status !== 'ACTIVE') {
+    if (cart.status !== CartStatus.ACTIVE) {
       throw new BadRequestException('Cart is not active or already processed');
     }
+    return cart;
+  }
+
+  /**
+   * Validates all entities required for order creation.
+   * @param dto - The order creation data
+   * @returns Object containing validated addressId and cart
+   */
+  private async validateEntities(dto: CreateOrderDto) {
+    let addressId = "";
+    let cart;
+
+    if (dto.customerId) {
+      await this.validateCustomer(dto.customerId);
+      const address = await this.prisma.customerAddress.findFirst({
+        where: { customerId: dto.customerId, isDefault: true, isActive: true }
+      });
+      if (!address) {
+        throw new BadRequestException('No default active address found for customer');
+      }
+      addressId = address.id;
+    }
+
+    if (dto.vendorId) {
+      await this.validateVendor(dto.vendorId);
+    }
+
+    if (dto.cartId) {
+      cart = await this.validateCart(dto.cartId);
+    }
+
+    return { addressId, cart };
+  }
+
+  /**
+   * Calculates the total amount from cart items.
+   * @param cart - The validated cart with cartItems
+   * @returns The calculated total amount
+   */
+  private calculateTotalAmount(cart: any): number {
+    return cart.cartItems.reduce((sum: number, item: any) => {
+      return sum + (Number(item.price) * item.quantity);
+    }, 0);
+  }
+
+  /**
+   * Prepares the order data object.
+   * @param dto - The order creation data
+   * @param totalAmount - The calculated total amount
+   * @param addressId - The validated address ID
+   * @returns The prepared order data
+   */
+  private prepareOrderData(dto: CreateOrderDto, totalAmount: number, addressId: string) {
+    return {
+      total_amount: totalAmount,
+      status: OrderStatus.PENDING,
+      payment_status: OrderStatus.PENDING,
+      addressId,
+      ...dto
+    };
   }
 }

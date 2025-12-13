@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
+import { CartStatus } from '../../common/constants/order-status.constants';
 
 @Injectable()
 export class CartService {
@@ -166,6 +167,31 @@ export class CartService {
         product: true,
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Updates the status of a cart.
+   * @param cartId - The unique identifier of the cart
+   * @param status - The new status for the cart
+   * @returns The updated cart
+   * @throws NotFoundException if cart doesn't exist
+   */
+  async updateCartStatus(cartId: string, status: CartStatus) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+    });
+
+    if (!cart) {
+      throw new NotFoundException('Cart not found');
+    }
+
+    return this.prisma.cart.update({
+      where: { id: cartId },
+      data: {
+        status,
+        updatedAt: new Date(),
+      },
     });
   }
 }
