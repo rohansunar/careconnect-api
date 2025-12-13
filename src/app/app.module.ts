@@ -10,6 +10,7 @@ import { CustomerModule } from 'src/customer/customer.module';
 import { SearchModule } from 'src/search/search.module';
 import { CartModule } from 'src/cart/cart.module';
 import { OrderModule } from 'src/order/order.module';
+import { PaymentModule } from 'src/payment/payment.module';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { OrderModule } from 'src/order/order.module';
     CustomerModule,
     SearchModule,
     CartModule,
-    OrderModule
+    OrderModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

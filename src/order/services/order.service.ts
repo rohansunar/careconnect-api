@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
+import { PaymentService } from '../../payment/services/payment.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { OrderStatus, CartStatus } from '../../common/constants/order-status.constants';
@@ -14,6 +15,7 @@ export class OrderService {
   constructor(
     private prisma: PrismaService,
     private cartService: CartService,
+    private paymentService: PaymentService,
   ) {}
 
   /**
@@ -50,6 +52,19 @@ export class OrderService {
       // Update cart status to CHECKED_OUT if cart exists
       if (dto.cartId) {
         await this.cartService.updateCartStatus(dto.cartId, CartStatus.CHECKED_OUT);
+      }
+
+      // Create payment for the order
+      try {
+        await this.paymentService.createPaymentForOrder(
+          order.id,
+          order.customerId!,
+          order.vendorId!,
+          Number(order.total_amount),
+        );
+      } catch (error) {
+        // Log error but don't fail order creation
+        console.error('Failed to create payment for order:', error);
       }
 
       return order;
