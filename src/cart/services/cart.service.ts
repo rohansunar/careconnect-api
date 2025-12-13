@@ -70,9 +70,6 @@ export class CartService {
         price: product.price,
         deposit: product.deposit,
       },
-      include: {
-        product: true,
-      },
     });
   }
 
@@ -82,7 +79,7 @@ export class CartService {
    * @param dto - The update data containing new quantity
    * @returns The updated cart item
    */
-  async updateQuantity(cartItemId: number, dto: UpdateCartItemDto) {
+  async updateQuantity(cartItemId: string, dto: UpdateCartItemDto) {
     const cartItem = await this.prisma.cartItem.findUnique({
       where: { id: cartItemId },
     });
@@ -108,7 +105,7 @@ export class CartService {
    * @param cartItemId - The unique identifier of the cart item to remove
    * @returns Confirmation of deletion
    */
-  async removeFromCart(cartItemId: number) {
+  async removeFromCart(cartItemId: string) {
     const cartItem = await this.prisma.cartItem.findUnique({
       where: { id: cartItemId },
     });

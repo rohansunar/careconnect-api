@@ -18,7 +18,6 @@ export class ProductService {
    */
   async getProducts(vendorId: string) {
     await this.validateVendor(vendorId);
-    console.log("vendorId", vendorId)
     const products = await this.prisma.product.findMany({
       where: { vendorId: vendorId },
       include: {

@@ -76,11 +76,7 @@ export class CartController {
     @Param('id') cartItemId: string,
     @Body() dto: UpdateCartItemDto,
   ) {
-    const id = parseInt(cartItemId, 10);
-    if (isNaN(id)) {
-      throw new Error('Invalid cart item ID');
-    }
-    return this.cartService.updateQuantity(id, dto);
+    return this.cartService.updateQuantity(cartItemId, dto);
   }
 
   /**
@@ -98,11 +94,7 @@ export class CartController {
   @ApiResponse({ status: 404, description: 'Cart item not found.' })
   @Delete(':id')
   async removeFromCart(@Param('id') cartItemId: string) {
-    const id = parseInt(cartItemId, 10);
-    if (isNaN(id)) {
-      throw new Error('Invalid cart item ID');
-    }
-    return this.cartService.removeFromCart(id);
+    return this.cartService.removeFromCart(cartItemId);
   }
 
   /**

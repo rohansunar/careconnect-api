@@ -51,10 +51,6 @@ model Cart {
   customerId String
   customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  /// Reference to the vendor who owns this cart
-  vendorId String
-  vendor   Vendor   @relation(fields: [vendorId], references: [id])
-
   /// Status of the cart
   status     CartStatus @default(ACTIVE)
 
@@ -69,16 +65,10 @@ model Cart {
 
   /// Index for efficient customer cart queries
   @@index([customerId])
-
-  /// Index for efficient vendor cart queries
-  @@index([vendorId])
 }
 
 model CartItem {
-  /// Unique identifier for the cart item (auto-incrementing)
-  id          Int      @id @default(autoincrement())
-
-  /// Reference to the cart this item belongs to
+  id          String     @id @default(uuid())
   cartId      String
   cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 

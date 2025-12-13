@@ -1,8 +1,5 @@
 model CartItem {
-  /// Unique identifier for the cart item (auto-incrementing)
-  id          Int      @id @default(autoincrement())
-
-  /// Reference to the cart this item belongs to
+  id          String     @id @default(uuid())
   cartId      String
   cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
