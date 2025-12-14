@@ -28,11 +28,21 @@ export class OrderService {
       // Validate entities
       const { addressId, cart } = await this.validateEntities(dto);
 
+      // Increment counter for order
+      const counter = await tx.counter.upsert({
+        where: { type: "order" },
+        update: { lastNumber: { increment: 1 } },
+        create: { type: "order", lastNumber: 1 }
+      });
+
+      // Generate orderNo
+      const orderNo = "O" + counter.lastNumber.toString().padStart(6, '0');
+
       // Calculate total amount
       const totalAmount = cart ? this.calculateTotalAmount(cart) : 0;
 
       // Prepare order data
-      const data = this.prepareOrderData(dto, totalAmount, addressId);
+      const data = this.prepareOrderData(dto, totalAmount, addressId, orderNo);
 
       // Create order
       const order = await tx.order.create({
@@ -277,10 +287,12 @@ export class OrderService {
    * @param dto - The order creation data
    * @param totalAmount - The calculated total amount
    * @param addressId - The validated address ID
+   * @param orderNo - The generated order number
    * @returns The prepared order data
    */
-  private prepareOrderData(dto: CreateOrderDto, totalAmount: number, addressId: string) {
+  private prepareOrderData(dto: CreateOrderDto, totalAmount: number, addressId: string, orderNo: string) {
     return {
+      orderNo,
       total_amount: totalAmount,
       status: OrderStatus.PENDING,
       payment_status: OrderStatus.PENDING,

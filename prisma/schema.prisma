@@ -169,6 +169,12 @@ model City {
 // bbox      Unsupported("geometry")
 
 
+model Counter {
+  id          String @id @default(uuid())
+  type        String @unique
+  lastNumber  Int    @default(0)
+}
+
 model Customer {
   id         String   @id @default(uuid())
   name       String
@@ -248,6 +254,7 @@ model Notification {
 
 model Order {
   id                    String   @id @default(uuid())
+  orderNo               String   @unique
   customerId            String?
   customer              Customer? @relation("orders", fields: [customerId], references: [id])
   vendorId              String?
@@ -263,7 +270,9 @@ model Order {
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
 
+
   payments Payment[]
+  @@index([orderNo])
 }
 
 enum OtpPurpose {
@@ -379,6 +388,7 @@ model Subscription {
 
 model Vendor {
   id                 String   @id @default(uuid())
+  vendorNo           String   @unique
   name               String
   owner_name         String?
   phone              String   @unique
@@ -394,6 +404,7 @@ model Vendor {
   delivery_time_msg  String?
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
+  @@index([vendorNo])
 
   products           Product[]
   subscriptions      Subscription[]

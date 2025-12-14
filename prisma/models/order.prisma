@@ -1,5 +1,6 @@
 model Order {
   id                    String   @id @default(uuid())
+  orderNo               String   @unique
   customerId            String?
   customer              Customer? @relation("orders", fields: [customerId], references: [id])
   vendorId              String?
@@ -15,5 +16,7 @@ model Order {
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
 
+
   payments Payment[]
+  @@index([orderNo])
 }

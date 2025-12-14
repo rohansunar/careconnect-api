@@ -1,0 +1,5 @@
+model Counter {
+  id          String @id @default(uuid())
+  type        String @unique
+  lastNumber  Int    @default(0)
+}

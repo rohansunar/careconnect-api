@@ -1,5 +1,6 @@
 model Vendor {
   id                 String   @id @default(uuid())
+  vendorNo           String   @unique
   name               String
   owner_name         String?
   phone              String   @unique
@@ -15,6 +16,7 @@ model Vendor {
   delivery_time_msg  String?
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
+  @@index([vendorNo])
 
   products           Product[]
   subscriptions      Subscription[]
