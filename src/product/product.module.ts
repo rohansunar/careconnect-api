@@ -10,7 +10,11 @@ import { ProductImageService } from './services/products-image.service';
 
 @Module({
   imports: [],
-  controllers: [ProductController, ProductImageController, CategoriesController],
+  controllers: [
+    ProductController,
+    ProductImageController,
+    CategoriesController,
+  ],
   providers: [
     ProductService,
     CategoriesService,

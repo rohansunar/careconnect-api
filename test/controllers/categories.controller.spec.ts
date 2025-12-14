@@ -4,7 +4,11 @@ import request from 'supertest';
 import { CategoriesController } from '../../src/product/controllers/categories.controller';
 import { CategoriesService } from '../../src/product/services/categories.service';
 import { AdminVendorGuard } from '../../src/auth/guards/admin-vendor.guard';
-import { NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 /**
  * Unit tests for CategoriesController.
@@ -63,10 +67,17 @@ describe('CategoriesController', () => {
   describe('GET /categories', () => {
     it('should return all categories successfully', async () => {
       const expectedCategories = [
-        { id: 'cat-1', name: 'Water Jars', created_at: '2025-12-12T19:14:10.744Z', updated_at: '2025-12-12T19:14:10.744Z' },
+        {
+          id: 'cat-1',
+          name: 'Water Jars',
+          created_at: '2025-12-12T19:14:10.744Z',
+          updated_at: '2025-12-12T19:14:10.744Z',
+        },
       ];
 
-      mockCategoriesService.getCategories.mockResolvedValue(expectedCategories as any);
+      mockCategoriesService.getCategories.mockResolvedValue(
+        expectedCategories as any,
+      );
 
       const response = await request(app.getHttpServer())
         .get('/categories')
@@ -80,9 +91,16 @@ describe('CategoriesController', () => {
   describe('POST /categories', () => {
     it('should create a category successfully', async () => {
       const dto = { name: 'New Category' };
-      const expectedResponse = { id: 'cat-123', name: 'New Category', created_at: '2025-12-12T19:14:10.827Z', updated_at: '2025-12-12T19:14:10.827Z' };
+      const expectedResponse = {
+        id: 'cat-123',
+        name: 'New Category',
+        created_at: '2025-12-12T19:14:10.827Z',
+        updated_at: '2025-12-12T19:14:10.827Z',
+      };
 
-      mockCategoriesService.createCategory.mockResolvedValue(expectedResponse as any);
+      mockCategoriesService.createCategory.mockResolvedValue(
+        expectedResponse as any,
+      );
 
       const response = await request(app.getHttpServer())
         .post('/categories')
@@ -95,7 +113,9 @@ describe('CategoriesController', () => {
 
     it('should throw 400 for duplicate name', async () => {
       const dto = { name: 'Existing Category' };
-      const error = new BadRequestException('Category with this name already exists');
+      const error = new BadRequestException(
+        'Category with this name already exists',
+      );
 
       mockCategoriesService.createCategory.mockRejectedValue(error);
 
@@ -110,9 +130,16 @@ describe('CategoriesController', () => {
     it('should update a category successfully', async () => {
       const categoryId = 'cat-123';
       const dto = { name: 'Updated Category' };
-      const expectedResponse = { id: categoryId, name: 'Updated Category', created_at: '2025-12-12T19:14:10.885Z', updated_at: '2025-12-12T19:14:10.885Z' };
+      const expectedResponse = {
+        id: categoryId,
+        name: 'Updated Category',
+        created_at: '2025-12-12T19:14:10.885Z',
+        updated_at: '2025-12-12T19:14:10.885Z',
+      };
 
-      mockCategoriesService.updateCategory.mockResolvedValue(expectedResponse as any);
+      mockCategoriesService.updateCategory.mockResolvedValue(
+        expectedResponse as any,
+      );
 
       const response = await request(app.getHttpServer())
         .put(`/categories/${categoryId}`)
@@ -120,7 +147,10 @@ describe('CategoriesController', () => {
         .expect(200);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCategoriesService.updateCategory).toHaveBeenCalledWith(categoryId, dto);
+      expect(mockCategoriesService.updateCategory).toHaveBeenCalledWith(
+        categoryId,
+        dto,
+      );
     });
 
     it('should throw 404 for non-existent category', async () => {
@@ -149,12 +179,16 @@ describe('CategoriesController', () => {
         .expect(200);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCategoriesService.deleteCategory).toHaveBeenCalledWith(categoryId);
+      expect(mockCategoriesService.deleteCategory).toHaveBeenCalledWith(
+        categoryId,
+      );
     });
 
     it('should throw 400 if category has associated products', async () => {
       const categoryId = 'cat-123';
-      const error = new BadRequestException('Cannot delete category as it is associated with existing products');
+      const error = new BadRequestException(
+        'Cannot delete category as it is associated with existing products',
+      );
 
       mockCategoriesService.deleteCategory.mockRejectedValue(error);
 
@@ -167,7 +201,9 @@ describe('CategoriesController', () => {
   describe('Authentication', () => {
     it('should require authentication for all endpoints', async () => {
       const mockAuthGuardFail = {
-        canActivate: jest.fn().mockRejectedValue(new UnauthorizedException('Unauthorized')),
+        canActivate: jest
+          .fn()
+          .mockRejectedValue(new UnauthorizedException('Unauthorized')),
       };
 
       const module: TestingModule = await Test.createTestingModule({
@@ -186,9 +222,7 @@ describe('CategoriesController', () => {
       const appFail = module.createNestApplication();
       await appFail.init();
 
-      await request(appFail.getHttpServer())
-        .get('/categories')
-        .expect(401);
+      await request(appFail.getHttpServer()).get('/categories').expect(401);
 
       await appFail.close();
     });

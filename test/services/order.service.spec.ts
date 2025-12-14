@@ -96,21 +96,27 @@ describe('OrderService', () => {
       const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockAddress,
+      );
       mockPrismaService.cart.findUnique.mockResolvedValue(mockCart);
       mockPrismaService.order.create.mockResolvedValue(mockOrderResponse);
 
       const result = await service.create(dto);
 
       expect(result).toEqual(mockOrderResponse);
-      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({ where: { id: mockCustomer.id } });
-      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({ where: { id: mockVendor.id } });
+      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({
+        where: { id: mockCustomer.id },
+      });
+      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({
+        where: { id: mockVendor.id },
+      });
       expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
-        where: { customerId: mockCustomer.id, isDefault: true, isActive: true }
+        where: { customerId: mockCustomer.id, isDefault: true, isActive: true },
       });
       expect(mockPrismaService.cart.findUnique).toHaveBeenCalledWith({
         where: { id: dto.cartId },
-        include: { cartItems: true }
+        include: { cartItems: true },
       });
       expect(mockPrismaService.order.create).toHaveBeenCalledWith({
         data: expect.any(Object),
@@ -120,8 +126,8 @@ describe('OrderService', () => {
           address: true,
           cart: {
             include: {
-              cartItems: true
-            }
+              cartItems: true,
+            },
           },
         },
       });
@@ -146,8 +152,8 @@ describe('OrderService', () => {
           address: true,
           cart: {
             include: {
-              cartItems: true
-            }
+              cartItems: true,
+            },
           },
         },
       });
@@ -157,19 +163,25 @@ describe('OrderService', () => {
       mockPrismaService.customer.findUnique.mockResolvedValue(null);
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({ where: { id: mockCustomer.id } });
+      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({
+        where: { id: mockCustomer.id },
+      });
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException for non-existent vendor', async () => {
       const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockAddress,
+      );
       mockPrismaService.cart.findUnique.mockResolvedValue(mockCart);
       mockPrismaService.vendor.findUnique.mockResolvedValue(null);
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
-      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({ where: { id: mockVendor.id } });
+      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({
+        where: { id: mockVendor.id },
+      });
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
 
@@ -182,11 +194,10 @@ describe('OrderService', () => {
 
       await expect(service.create(dto)).rejects.toThrow(BadRequestException);
       expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalledWith({
-        where: { customerId: mockCustomer.id, isDefault: true, isActive: true }
+        where: { customerId: mockCustomer.id, isDefault: true, isActive: true },
       });
       expect(mockPrismaService.order.create).not.toHaveBeenCalled();
     });
-
   });
 
   describe('findAll', () => {
@@ -267,7 +278,9 @@ describe('OrderService', () => {
       const result = await service.update(orderId, dto);
 
       expect(result).toEqual(updatedOrder);
-      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({ where: { id: orderId } });
+      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({
+        where: { id: orderId },
+      });
       expect(mockPrismaService.order.update).toHaveBeenCalledWith({
         where: { id: orderId },
         data: dto,
@@ -286,21 +299,33 @@ describe('OrderService', () => {
       };
 
       mockPrismaService.order.findUnique.mockResolvedValue({ id: orderId });
-      mockPrismaService.customer.findUnique.mockResolvedValue({ id: 'new-customer-123' });
-      mockPrismaService.vendor.findUnique.mockResolvedValue({ id: 'new-vendor-456' });
+      mockPrismaService.customer.findUnique.mockResolvedValue({
+        id: 'new-customer-123',
+      });
+      mockPrismaService.vendor.findUnique.mockResolvedValue({
+        id: 'new-vendor-456',
+      });
       mockPrismaService.order.update.mockResolvedValue(mockOrder);
 
       await service.update(orderId, dtoWithIds);
 
-      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({ where: { id: 'new-customer-123' } });
-      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({ where: { id: 'new-vendor-456' } });
+      expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({
+        where: { id: 'new-customer-123' },
+      });
+      expect(mockPrismaService.vendor.findUnique).toHaveBeenCalledWith({
+        where: { id: 'new-vendor-456' },
+      });
     });
 
     it('should throw NotFoundException for non-existent order', async () => {
       mockPrismaService.order.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(orderId, dto)).rejects.toThrow(NotFoundException);
-      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({ where: { id: orderId } });
+      await expect(service.update(orderId, dto)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockPrismaService.order.findUnique).toHaveBeenCalledWith({
+        where: { id: orderId },
+      });
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
     });
 
@@ -312,7 +337,9 @@ describe('OrderService', () => {
       mockPrismaService.order.findUnique.mockResolvedValue({ id: orderId });
       mockPrismaService.customer.findUnique.mockResolvedValue(null);
 
-      await expect(service.update(orderId, dtoWithInvalidId)).rejects.toThrow(BadRequestException);
+      await expect(service.update(orderId, dtoWithInvalidId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
     });
   });

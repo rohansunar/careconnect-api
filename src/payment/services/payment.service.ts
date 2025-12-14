@@ -83,7 +83,10 @@ export class PaymentService {
       this.logger.log(`Payment created successfully: ${payment.id}`);
       return payment;
     } catch (error) {
-      this.logger.error(`Failed to create payment: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create payment: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Failed to initiate payment');
     }
   }
@@ -122,7 +125,8 @@ export class PaymentService {
 
     try {
       // Verify webhook with provider
-      const verifiedData = await this.paymentProvider.verifyWebhook(webhookData);
+      const verifiedData =
+        await this.paymentProvider.verifyWebhook(webhookData);
 
       // Find and update payment status
       const payment = await this.prisma.payment.findFirst({
@@ -137,7 +141,8 @@ export class PaymentService {
         where: { id: payment.id },
         data: {
           status: verifiedData.status as PaymentStatus,
-          completed_at: verifiedData.status === 'COMPLETED' ? new Date() : undefined,
+          completed_at:
+            verifiedData.status === 'COMPLETED' ? new Date() : undefined,
           provider_payload: webhookData,
         },
         include: {
@@ -153,10 +158,15 @@ export class PaymentService {
         });
       }
 
-      this.logger.log(`Payment status updated: ${payment.id} to ${verifiedData.status}`);
+      this.logger.log(
+        `Payment status updated: ${payment.id} to ${verifiedData.status}`,
+      );
       return payment;
     } catch (error) {
-      this.logger.error(`Webhook processing failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Webhook processing failed: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Invalid webhook data');
     }
   }
@@ -169,7 +179,12 @@ export class PaymentService {
    * @param amount - The payment amount
    * @returns The created payment
    */
-  async createPaymentForOrder(orderId: string, customerId: string, vendorId: string, amount: number) {
+  async createPaymentForOrder(
+    orderId: string,
+    customerId: string,
+    vendorId: string,
+    amount: number,
+  ) {
     this.logger.log(`Creating payment for order: ${orderId}`);
 
     try {
@@ -201,7 +216,10 @@ export class PaymentService {
       this.logger.log(`Payment created for order: ${payment.id}`);
       return payment;
     } catch (error) {
-      this.logger.error(`Failed to create payment for order: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create payment for order: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }

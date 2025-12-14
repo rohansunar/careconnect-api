@@ -242,9 +242,7 @@ describe('OrderController', () => {
         new NotFoundException('Order not found'),
       );
 
-      await request(app.getHttpServer())
-        .get(`/orders/${orderId}`)
-        .expect(404);
+      await request(app.getHttpServer()).get(`/orders/${orderId}`).expect(404);
 
       expect(mockOrderService.findOne).toHaveBeenCalledWith(orderId);
     });
@@ -382,7 +380,10 @@ describe('OrderController', () => {
       const dto: UpdateOrderDto = { status: 'COMPLETED' };
       mockOrderService.update.mockResolvedValue({} as any);
 
-      await request(app.getHttpServer()).patch('/orders/order-123').send(dto).expect(200);
+      await request(app.getHttpServer())
+        .patch('/orders/order-123')
+        .send(dto)
+        .expect(200);
     });
   });
 });

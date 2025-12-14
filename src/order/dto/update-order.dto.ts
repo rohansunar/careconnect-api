@@ -1,9 +1,4 @@
-import {
-  IsString,
-  IsNumber,
-  Min,
-  IsOptional,
-} from 'class-validator';
+import { IsString, IsNumber, Min, IsOptional } from 'class-validator';
 
 /**
  * Data Transfer Object for updating an order

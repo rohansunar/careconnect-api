@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -29,20 +22,21 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Create a new order',
-    description: 'Creates a new order with the provided details. Validates related entities (customer, vendor, address, product) if IDs are provided.',
+    description:
+      'Creates a new order with the provided details. Validates related entities (customer, vendor, address, product) if IDs are provided.',
   })
   @ApiBody({
     type: CreateOrderDto,
     examples: {
-      'example1': {
+      example1: {
         summary: 'Create order example',
         value: {
           customerId: 'customer-uuid-123',
           vendorId: 'vendor-uuid-456',
-          cartId:'cart-uuid-456'
-        }
-      }
-    }
+          cartId: 'cart-uuid-456',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
@@ -55,7 +49,7 @@ export class OrderController {
         addressId: 'address-uuid-789',
         productId: 'product-uuid-101',
         qty: 2,
-        total_amount: 50.00,
+        total_amount: 50.0,
         status: 'PENDING',
         payment_status: 'PENDING',
         assigned_rider_phone: '+1234567890',
@@ -64,9 +58,9 @@ export class OrderController {
         customer: { id: 'customer-uuid-123', name: 'John Doe' },
         vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
         address: { id: 'address-uuid-789', street: '123 Main St' },
-        product: { id: 'product-uuid-101', name: 'Water Jar' }
-      }
-    }
+        product: { id: 'product-uuid-101', name: 'Water Jar' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -75,9 +69,9 @@ export class OrderController {
       example: {
         statusCode: 400,
         message: 'Customer not found',
-        error: 'Bad Request'
-      }
-    }
+        error: 'Bad Request',
+      },
+    },
   })
   @Post()
   async create(@Body() dto: CreateOrderDto) {
@@ -90,7 +84,8 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Get all orders',
-    description: 'Retrieves a list of all orders, ordered by creation date descending, including related customer, vendor, address, and product information.',
+    description:
+      'Retrieves a list of all orders, ordered by creation date descending, including related customer, vendor, address, and product information.',
   })
   @ApiResponse({
     status: 200,
@@ -111,10 +106,10 @@ export class OrderController {
           customer: { id: 'customer-uuid-123', name: 'John Doe' },
           vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
           address: { id: 'address-uuid-789', street: '123 Main St' },
-          product: { id: 'product-uuid-101', name: 'Water Jar' }
-        }
-      ]
-    }
+          product: { id: 'product-uuid-101', name: 'Water Jar' },
+        },
+      ],
+    },
   })
   @Get()
   async findAll() {
@@ -128,12 +123,13 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Get order by ID',
-    description: 'Retrieves a single order by its unique identifier, including related customer, vendor, address, and product information.',
+    description:
+      'Retrieves a single order by its unique identifier, including related customer, vendor, address, and product information.',
   })
   @ApiParam({
     name: 'id',
     description: 'Unique identifier of the order (UUID)',
-    example: 'order-uuid-123'
+    example: 'order-uuid-123',
   })
   @ApiResponse({
     status: 200,
@@ -146,7 +142,7 @@ export class OrderController {
         addressId: 'address-uuid-789',
         productId: 'product-uuid-101',
         qty: 2,
-        total_amount: 50.00,
+        total_amount: 50.0,
         status: 'PENDING',
         payment_status: 'PENDING',
         assigned_rider_phone: '+1234567890',
@@ -155,9 +151,9 @@ export class OrderController {
         customer: { id: 'customer-uuid-123', name: 'John Doe' },
         vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
         address: { id: 'address-uuid-789', street: '123 Main St' },
-        product: { id: 'product-uuid-101', name: 'Water Jar' }
-      }
-    }
+        product: { id: 'product-uuid-101', name: 'Water Jar' },
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -166,9 +162,9 @@ export class OrderController {
       example: {
         statusCode: 404,
         message: 'Order not found',
-        error: 'Not Found'
-      }
-    }
+        error: 'Not Found',
+      },
+    },
   })
   @Get(':id')
   async findOne(@Param('id') id: string) {
@@ -183,25 +179,26 @@ export class OrderController {
    */
   @ApiOperation({
     summary: 'Update order by ID',
-    description: 'Updates an existing order with the provided details. Validates related entities if IDs are provided.',
+    description:
+      'Updates an existing order with the provided details. Validates related entities if IDs are provided.',
   })
   @ApiParam({
     name: 'id',
     description: 'Unique identifier of the order (UUID)',
-    example: 'order-uuid-123'
+    example: 'order-uuid-123',
   })
   @ApiBody({
     type: UpdateOrderDto,
     examples: {
-      'example1': {
+      example1: {
         summary: 'Update order status example',
         value: {
           status: 'CONFIRMED',
           payment_status: 'PAID',
-          assigned_rider_phone: '+1234567890'
-        }
-      }
-    }
+          assigned_rider_phone: '+1234567890',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -213,7 +210,7 @@ export class OrderController {
         vendorId: 'vendor-uuid-456',
         addressId: 'address-uuid-789',
         productId: 'product-uuid-101',
-        total_amount: 50.00,
+        total_amount: 50.0,
         status: 'CONFIRMED',
         payment_status: 'PAID',
         assigned_rider_phone: '+1234567890',
@@ -222,9 +219,9 @@ export class OrderController {
         customer: { id: 'customer-uuid-123', name: 'John Doe' },
         vendor: { id: 'vendor-uuid-456', name: 'Vendor Inc' },
         address: { id: 'address-uuid-789', street: '123 Main St' },
-        product: { id: 'product-uuid-101', name: 'Water Jar' }
-      }
-    }
+        product: { id: 'product-uuid-101', name: 'Water Jar' },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -233,9 +230,9 @@ export class OrderController {
       example: {
         statusCode: 400,
         message: 'Vendor not found',
-        error: 'Bad Request'
-      }
-    }
+        error: 'Bad Request',
+      },
+    },
   })
   @ApiResponse({
     status: 404,
@@ -244,9 +241,9 @@ export class OrderController {
       example: {
         statusCode: 404,
         message: 'Order not found',
-        error: 'Not Found'
-      }
-    }
+        error: 'Not Found',
+      },
+    },
   })
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {

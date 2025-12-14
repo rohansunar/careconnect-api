@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -30,12 +23,13 @@ export class PaymentController {
    */
   @ApiOperation({
     summary: 'Create a new payment',
-    description: 'Creates a new payment for the specified order. Validates order existence and initiates payment with provider.',
+    description:
+      'Creates a new payment for the specified order. Validates order existence and initiates payment with provider.',
   })
   @ApiBody({
     type: CreatePaymentDto,
     examples: {
-      'example1': {
+      example1: {
         summary: 'Create payment example',
         value: {
           orderId: 'order-uuid-123',
@@ -51,7 +45,7 @@ export class PaymentController {
       example: {
         id: 'payment-uuid-123',
         order_id: 'order-uuid-123',
-        amount: 100.00,
+        amount: 100.0,
         currency: 'INR',
         status: 'PENDING',
         provider: 'MOCK',
@@ -84,7 +78,8 @@ export class PaymentController {
    */
   @ApiOperation({
     summary: 'Get payment details',
-    description: 'Retrieves detailed information about a specific payment by its unique identifier.',
+    description:
+      'Retrieves detailed information about a specific payment by its unique identifier.',
   })
   @ApiParam({
     name: 'id',
@@ -100,14 +95,14 @@ export class PaymentController {
         order_id: 'order-uuid-123',
         customer_id: 'customer-uuid-456',
         vendor_id: 'vendor-uuid-789',
-        amount: 100.00,
+        amount: 100.0,
         currency: 'INR',
         payment_mode: 'ONLINE',
         provider: 'MOCK',
         provider_payment_id: 'mock_1234567890_order-uuid-123',
         status: 'PENDING',
         created_at: '2023-12-01T10:00:00.000Z',
-        order: { id: 'order-uuid-123', total_amount: 100.00 },
+        order: { id: 'order-uuid-123', total_amount: 100.0 },
         customer: { id: 'customer-uuid-456', name: 'John Doe' },
         vendor: { id: 'vendor-uuid-789', name: 'Vendor Inc' },
       },
@@ -137,18 +132,19 @@ export class PaymentController {
    */
   @ApiOperation({
     summary: 'Handle payment webhook',
-    description: 'Processes webhook notifications from payment providers to update payment status.',
+    description:
+      'Processes webhook notifications from payment providers to update payment status.',
   })
   @ApiBody({
     type: WebhookDto,
     examples: {
-      'example1': {
+      example1: {
         summary: 'Webhook example',
         value: {
           payload: {
             paymentId: 'mock_1234567890_order-uuid-123',
             status: 'COMPLETED',
-            amount: 100.00,
+            amount: 100.0,
           },
         },
       },
@@ -178,6 +174,8 @@ export class PaymentController {
   })
   @Post('webhook')
   async handleWebhook(@Body() webhookData: WebhookDto) {
-    return this.paymentService.handleWebhook(webhookData.payload || webhookData);
+    return this.paymentService.handleWebhook(
+      webhookData.payload || webhookData,
+    );
   }
 }

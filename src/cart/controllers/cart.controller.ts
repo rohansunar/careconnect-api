@@ -80,10 +80,10 @@ export class CartController {
   }
 
   /**
-    * Business logic rationale: Allow customers to remove items from their cart.
-    * Security consideration: Ownership check ensures customers only remove their own cart items.
-    * Design decision: Hard delete with proper error handling.
-    */
+   * Business logic rationale: Allow customers to remove items from their cart.
+   * Security consideration: Ownership check ensures customers only remove their own cart items.
+   * Design decision: Hard delete with proper error handling.
+   */
   @ApiOperation({
     summary: 'Remove item from cart',
     description: 'Allow customers to remove items from their cart.',
@@ -104,7 +104,8 @@ export class CartController {
    */
   @ApiOperation({
     summary: 'Get user cart',
-    description: 'Retrieve the authenticated user\'s cart items with detailed information including IDs, names, quantities, prices, and deposits.',
+    description:
+      "Retrieve the authenticated user's cart items with detailed information including IDs, names, quantities, prices, and deposits.",
   })
   @ApiResponse({
     status: 200,

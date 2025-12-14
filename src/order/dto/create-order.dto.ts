@@ -18,8 +18,8 @@ export class CreateOrderDto {
   customerId?: string;
 
   /**
- * Unique identifier of the cart
- */
+   * Unique identifier of the cart
+   */
   @IsNotEmpty()
   @IsString()
   cartId?: string;
@@ -30,5 +30,4 @@ export class CreateOrderDto {
   @IsNotEmpty()
   @IsString()
   vendorId?: string;
-
 }

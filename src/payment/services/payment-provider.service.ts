@@ -49,7 +49,9 @@ export class PaymentProviderService {
    * @returns Provider response
    */
   async initiatePayment(data: InitiatePaymentData): Promise<ProviderResponse> {
-    this.logger.log(`Initiating payment for order: ${data.orderId} with provider: ${this.provider}`);
+    this.logger.log(
+      `Initiating payment for order: ${data.orderId} with provider: ${this.provider}`,
+    );
 
     switch (this.provider) {
       case 'STRIPE':
@@ -84,7 +86,9 @@ export class PaymentProviderService {
   /**
    * Mock payment initiation for development/testing.
    */
-  private async initiateMockPayment(data: InitiatePaymentData): Promise<ProviderResponse> {
+  private async initiateMockPayment(
+    data: InitiatePaymentData,
+  ): Promise<ProviderResponse> {
     const mockPaymentId = `mock_${Date.now()}_${data.orderId}`;
 
     return {
@@ -102,7 +106,9 @@ export class PaymentProviderService {
   /**
    * Mock webhook verification.
    */
-  private async verifyMockWebhook(webhookData: any): Promise<WebhookVerificationData> {
+  private async verifyMockWebhook(
+    webhookData: any,
+  ): Promise<WebhookVerificationData> {
     // In mock, assume payment is completed
     return {
       providerPaymentId: webhookData.paymentId || 'mock_payment_id',
@@ -113,7 +119,9 @@ export class PaymentProviderService {
   /**
    * Stripe payment initiation (placeholder).
    */
-  private async initiateStripePayment(data: InitiatePaymentData): Promise<ProviderResponse> {
+  private async initiateStripePayment(
+    data: InitiatePaymentData,
+  ): Promise<ProviderResponse> {
     // TODO: Implement Stripe integration
     throw new Error('Stripe integration not implemented');
   }
@@ -121,7 +129,9 @@ export class PaymentProviderService {
   /**
    * Stripe webhook verification (placeholder).
    */
-  private async verifyStripeWebhook(webhookData: any): Promise<WebhookVerificationData> {
+  private async verifyStripeWebhook(
+    webhookData: any,
+  ): Promise<WebhookVerificationData> {
     // TODO: Implement Stripe webhook verification
     throw new Error('Stripe webhook verification not implemented');
   }
@@ -129,7 +139,9 @@ export class PaymentProviderService {
   /**
    * Razorpay payment initiation (placeholder).
    */
-  private async initiateRazorpayPayment(data: InitiatePaymentData): Promise<ProviderResponse> {
+  private async initiateRazorpayPayment(
+    data: InitiatePaymentData,
+  ): Promise<ProviderResponse> {
     // TODO: Implement Razorpay integration
     throw new Error('Razorpay integration not implemented');
   }
@@ -137,7 +149,9 @@ export class PaymentProviderService {
   /**
    * Razorpay webhook verification (placeholder).
    */
-  private async verifyRazorpayWebhook(webhookData: any): Promise<WebhookVerificationData> {
+  private async verifyRazorpayWebhook(
+    webhookData: any,
+  ): Promise<WebhookVerificationData> {
     // TODO: Implement Razorpay webhook verification
     throw new Error('Razorpay webhook verification not implemented');
   }

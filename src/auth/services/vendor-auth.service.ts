@@ -82,7 +82,9 @@ export class VendorAuthService {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new BadRequestException('Failed to verify OTP and create vendor. Please try again.');
+      throw new BadRequestException(
+        'Failed to verify OTP and create vendor. Please try again.',
+      );
     }
   }
 
@@ -98,7 +100,7 @@ export class VendorAuthService {
     }
     // Additional validation: Ensure phone is a valid format (basic check)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
-    if (!phoneRegex.test(dto.phone.replace("-",""))) {
+    if (!phoneRegex.test(dto.phone.replace('-', ''))) {
       throw new BadRequestException('Invalid phone number format.');
     }
     // Ensure code is numeric and of expected length (assuming 6 digits)
@@ -156,7 +158,10 @@ export class VendorAuthService {
       create: { type: 'vendor', lastNumber: 1 },
     });
 
-    return this.VENDOR_NUMBER_PREFIX + counter.lastNumber.toString().padStart(this.VENDOR_NUMBER_PADDING, '0');
+    return (
+      this.VENDOR_NUMBER_PREFIX +
+      counter.lastNumber.toString().padStart(this.VENDOR_NUMBER_PADDING, '0')
+    );
   }
 
   // async refreshTokens(userId: number, refreshToken: string) {

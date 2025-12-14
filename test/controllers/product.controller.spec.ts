@@ -4,7 +4,11 @@ import request from 'supertest';
 import { ProductController } from '../../src/product/controllers/product.controller';
 import { ProductService } from '../../src/product/services/product.service';
 import { AdminVendorGuard } from '../../src/auth/guards/admin-vendor.guard';
-import { NotFoundException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 
 /**
  * Unit tests for ProductController.
@@ -72,7 +76,10 @@ describe('ProductController', () => {
         .expect(200);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(vendorId, productId);
+      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(
+        vendorId,
+        productId,
+      );
       expect(mockProductService.restoreProduct).toHaveBeenCalledTimes(1);
     });
 
@@ -88,7 +95,10 @@ describe('ProductController', () => {
         .put(`/product/${productId}/restore`)
         .expect(404);
 
-      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(vendorId, productId);
+      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(
+        vendorId,
+        productId,
+      );
     });
 
     it('should throw 400 Bad Request for already active product', async () => {
@@ -103,7 +113,10 @@ describe('ProductController', () => {
         .put(`/product/${productId}/restore`)
         .expect(400);
 
-      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(vendorId, productId);
+      expect(mockProductService.restoreProduct).toHaveBeenCalledWith(
+        vendorId,
+        productId,
+      );
     });
   });
 
@@ -126,7 +139,9 @@ describe('ProductController', () => {
       const productId = 'product-123';
 
       const mockAuthGuardFail = {
-        canActivate: jest.fn().mockRejectedValue(new UnauthorizedException('Unauthorized')),
+        canActivate: jest
+          .fn()
+          .mockRejectedValue(new UnauthorizedException('Unauthorized')),
       };
 
       const module: TestingModule = await Test.createTestingModule({

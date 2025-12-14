@@ -8,7 +8,10 @@ import { CartService } from '../../cart/services/cart.service';
 import { PaymentService } from '../../payment/services/payment.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
-import { OrderStatus, CartStatus } from '../../common/constants/order-status.constants';
+import {
+  OrderStatus,
+  CartStatus,
+} from '../../common/constants/order-status.constants';
 
 @Injectable()
 export class OrderService {
@@ -30,13 +33,13 @@ export class OrderService {
 
       // Increment counter for order
       const counter = await tx.counter.upsert({
-        where: { type: "order" },
+        where: { type: 'order' },
         update: { lastNumber: { increment: 1 } },
-        create: { type: "order", lastNumber: 1 }
+        create: { type: 'order', lastNumber: 1 },
       });
 
       // Generate orderNo
-      const orderNo = "O" + counter.lastNumber.toString().padStart(6, '0');
+      const orderNo = 'O' + counter.lastNumber.toString().padStart(6, '0');
 
       // Calculate total amount
       const totalAmount = cart ? this.calculateTotalAmount(cart) : 0;
@@ -53,15 +56,18 @@ export class OrderService {
           address: true,
           cart: {
             include: {
-              cartItems: true
-            }
+              cartItems: true,
+            },
           },
         },
       });
 
       // Update cart status to CHECKED_OUT if cart exists
       if (dto.cartId) {
-        await this.cartService.updateCartStatus(dto.cartId, CartStatus.CHECKED_OUT);
+        await this.cartService.updateCartStatus(
+          dto.cartId,
+          CartStatus.CHECKED_OUT,
+        );
       }
 
       // Create payment for the order
@@ -158,7 +164,6 @@ export class OrderService {
     });
   }
 
-
   /**
    * Validates that a customer exists.
    * @param customerId - The unique identifier of the customer
@@ -246,16 +251,18 @@ export class OrderService {
    * @returns Object containing validated addressId and cart
    */
   private async validateEntities(dto: CreateOrderDto) {
-    let addressId = "";
+    let addressId = '';
     let cart;
 
     if (dto.customerId) {
       await this.validateCustomer(dto.customerId);
       const address = await this.prisma.customerAddress.findFirst({
-        where: { customerId: dto.customerId, isDefault: true, isActive: true }
+        where: { customerId: dto.customerId, isDefault: true, isActive: true },
       });
       if (!address) {
-        throw new BadRequestException('No default active address found for customer');
+        throw new BadRequestException(
+          'No default active address found for customer',
+        );
       }
       addressId = address.id;
     }
@@ -278,7 +285,7 @@ export class OrderService {
    */
   private calculateTotalAmount(cart: any): number {
     return cart.cartItems.reduce((sum: number, item: any) => {
-      return sum + (Number(item.price) * item.quantity);
+      return sum + Number(item.price) * item.quantity;
     }, 0);
   }
 
@@ -290,14 +297,19 @@ export class OrderService {
    * @param orderNo - The generated order number
    * @returns The prepared order data
    */
-  private prepareOrderData(dto: CreateOrderDto, totalAmount: number, addressId: string, orderNo: string) {
+  private prepareOrderData(
+    dto: CreateOrderDto,
+    totalAmount: number,
+    addressId: string,
+    orderNo: string,
+  ) {
     return {
       orderNo,
       total_amount: totalAmount,
       status: OrderStatus.PENDING,
       payment_status: OrderStatus.PENDING,
       addressId,
-      ...dto
+      ...dto,
     };
   }
 }
