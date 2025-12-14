@@ -1,7 +1,5 @@
 model Payment {
   id                    String   @id @default(uuid())
-  bill_id               String?
-  bill                  MonthlyBill? @relation(fields: [bill_id], references: [id])
   order_id              String?
   order                 Order? @relation(fields: [order_id], references: [id])
   customer_id           String?

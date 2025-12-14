@@ -55,15 +55,6 @@ describe('Payments CRUD', () => {
         },
       });
 
-      const monthlyBill = await prisma.monthlyBill.create({
-        data: {
-          customer_id: customer.id,
-          vendor_id: vendor.id,
-          month: '2025-01',
-          total_amount: 500.0,
-        },
-      });
-
       const order = await prisma.order.create({
         data: {
           customer_id: customer.id,
@@ -74,7 +65,6 @@ describe('Payments CRUD', () => {
       });
 
       const paymentData = {
-        bill_id: monthlyBill.id,
         order_id: order.id,
         customer_id: customer.id,
         vendor_id: vendor.id,
@@ -93,7 +83,6 @@ describe('Payments CRUD', () => {
       const payment = await prisma.payment.create({ data: paymentData });
 
       expect(payment).toHaveProperty('id');
-      expect(payment.bill_id).toBe(monthlyBill.id);
       expect(payment.order_id).toBe(order.id);
       expect(payment.customer_id).toBe(customer.id);
       expect(payment.vendor_id).toBe(vendor.id);
@@ -126,7 +115,6 @@ describe('Payments CRUD', () => {
       expect(payment.currency).toBe('INR');
       expect(payment.status).toBe('PENDING');
       expect(payment.reconciled).toBe(false);
-      expect(payment.bill_id).toBeNull();
       expect(payment.order_id).toBeNull();
       expect(payment.customer_id).toBeNull();
       expect(payment.vendor_id).toBeNull();
@@ -159,17 +147,6 @@ describe('Payments CRUD', () => {
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
 
-    it('should throw error for invalid bill_id', async () => {
-      const paymentData = {
-        bill_id: 'invalid-bill-id',
-        amount: 100.0,
-        payment_mode: 'card',
-      };
-
-      await expect(
-        prisma.payment.create({ data: paymentData }),
-      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
-    });
 
     it('should throw error for invalid order_id', async () => {
       const paymentData = {

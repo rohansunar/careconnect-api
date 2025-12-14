@@ -28,15 +28,6 @@ enum PaymentStatus {
   REFUNDED
 }
 
-enum PaymentLinkStatus {
-  ACTIVE
-  EXPIRED
-  USED
-}
-
-
-
-
 enum CartStatus {
   ACTIVE
   CHECKED_OUT
@@ -45,59 +36,57 @@ enum CartStatus {
 
 model Cart {
   /// Unique identifier for the cart
-  id         String     @id @default(uuid())
+  id String @id @default(uuid())
 
   /// Reference to the customer who owns this cart
   customerId String
-  customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   /// Status of the cart
-  status     CartStatus @default(ACTIVE)
+  status CartStatus @default(ACTIVE)
 
   /// Timestamp when cart was created
-  createdAt  DateTime   @default(now())
+  createdAt DateTime @default(now())
 
   /// Timestamp when cart was last updated
-  updatedAt  DateTime   @default(now())
+  updatedAt DateTime @default(now())
 
   /// Cart items in this cart
-  cartItems  CartItem[]
-  orders     Order[] @relation("orders")
+  cartItems CartItem[]
+  orders    Order[]    @relation("orders")
 
   /// Index for efficient customer cart queries
   @@index([customerId])
 }
 
 model CartItem {
-  id          String     @id @default(uuid())
-  cartId      String
-  cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  id     String @id @default(uuid())
+  cartId String
+  cart   Cart   @relation(fields: [cartId], references: [id], onDelete: Cascade)
 
   /// Reference to the product in the cart
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   /// Quantity of the product in cart (must be > 0)
-  quantity    Int      @default(1)
+  quantity Int @default(1)
 
   /// Price of the product at time of adding to cart (snapshotted)
-  price       Decimal  @db.Decimal(10, 2)
+  price Decimal @db.Decimal(10, 2)
 
   /// Deposit amount for the product at time of adding to cart (snapshotted)
-  deposit     Decimal? @db.Decimal(10, 2)
+  deposit Decimal? @db.Decimal(10, 2)
 
   /// Timestamp when item was added to cart
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   /// Timestamp when item was last updated
-  updatedAt   DateTime @default(now())
+  updatedAt DateTime @default(now())
 
   /// Prevent duplicate items in cart (same cart, product, and address)
   @@unique([cartId, productId])
-
   /// Index for efficient cart queries
   @@index([cartId])
-
   /// Index for efficient product-based queries
   @@index([productId])
 }
@@ -110,37 +99,35 @@ enum admin_role {
 }
 
 model Admin {
-  id            String      @id @default(uuid())
-  name          String      @db.VarChar(100)
-  email         String      @unique @db.VarChar(150)
-  password_hash String      @db.Text
+  id            String     @id @default(uuid())
+  name          String     @db.VarChar(100)
+  email         String     @unique @db.VarChar(150)
+  password_hash String     @db.Text
   role          admin_role
-  is_active     Boolean     @default(true)
-  phone         String?     @db.VarChar(20)
-  created_at    DateTime    @default(now()) @db.Timestamp
-  updated_at    DateTime    @default(now()) @db.Timestamp
+  is_active     Boolean    @default(true)
+  phone         String?    @db.VarChar(20)
+  created_at    DateTime   @default(now()) @db.Timestamp
+  updated_at    DateTime   @default(now()) @db.Timestamp
 }
-
 
 model BankAccount {
   id                String   @id @default(uuid())
   vendorId          String
   vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  accountNumber      String
-  ifscCode           String
-  bankName           String
-  accountHolderName  String
+  accountNumber     String
+  ifscCode          String
+  bankName          String
+  accountHolderName String
   upiId             String?
-  isDefault          Boolean  @default(false)
-  isVerified         Boolean  @default(false)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @default(now())
+  isDefault         Boolean  @default(false)
+  isVerified        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @default(now())
 
+  @@unique([accountNumber])
   /// Constraints & indexes
   @@index([vendorId])
-  @@unique([accountNumber])
 }
-
 
 model Categories {
   id         String    @id @default(uuid())
@@ -152,7 +139,6 @@ model Categories {
   /// Constraints & indexes
   @@unique([name])
 }
-
 
 model City {
   id         String   @id @default(uuid())
@@ -168,11 +154,10 @@ model City {
 
 // bbox      Unsupported("geometry")
 
-
 model Counter {
-  id          String @id @default(uuid())
-  type        String @unique
-  lastNumber  Int    @default(0)
+  id         String @id @default(uuid())
+  type       String @unique
+  lastNumber Int    @default(0)
 }
 
 model Customer {
@@ -183,14 +168,13 @@ model Customer {
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 
-  addresses CustomerAddress[]
-  notifications  Notification[]
-  carts Cart[]
-  orders Order[] @relation("orders")
-  monthlyBills MonthlyBill[]
-  payments Payment[]
+  addresses     CustomerAddress[]
+  notifications Notification[]
+  carts         Cart[]
+  orders        Order[]           @relation("orders")
+  monthlyBills  MonthlyBill[]
+  payments      Payment[]
 }
-
 
 model CustomerAddress {
   id         String   @id @default(uuid())
@@ -202,33 +186,32 @@ model CustomerAddress {
   city       City?    @relation(fields: [cityId], references: [id])
   pincode    String?
   created_at DateTime @default(now())
-  isDefault Boolean   @default(false)
-  isActive   Boolean   @default(true)
+  isDefault  Boolean  @default(false)
+  isActive   Boolean  @default(true)
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
-  orders Order[] @relation("orders")
-  @@index([customerId])
+  orders        Order[]        @relation("orders")
 
+  @@index([customerId])
 }
 
 // location    Unsupported("geometry(POINT, 4326)")
 
 model MonthlyBill {
-  id            String   @id @default(uuid())
-  customer_id   String?
-  customer      Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id     String?
-  vendor        Vendor? @relation(fields: [vendor_id], references: [id])
-  month         String
-  total_amount  Decimal  @db.Decimal(10, 2)
-  paid_amount   Decimal  @db.Decimal(10, 2) @default(0)
-  status        MonthlyBillStatus @default(PENDING)
-  generated_at  DateTime @default(now())
-  updated_at    DateTime @default(now())
+  id           String            @id @default(uuid())
+  customer_id  String?
+  customer     Customer?         @relation(fields: [customer_id], references: [id])
+  vendor_id    String?
+  vendor       Vendor?           @relation(fields: [vendor_id], references: [id])
+  month        String
+  total_amount Decimal           @db.Decimal(10, 2)
+  paid_amount  Decimal           @default(0) @db.Decimal(10, 2)
+  status       MonthlyBillStatus @default(PENDING)
+  generated_at DateTime          @default(now())
+  updated_at   DateTime          @default(now())
 
   payments Payment[]
-  payment_links PaymentLink[]
 }
 
 enum NotificationStatus {
@@ -251,27 +234,26 @@ model Notification {
   created_at  DateTime           @default(now())
 }
 
-
 model Order {
-  id                    String   @id @default(uuid())
-  orderNo               String   @unique
-  customerId            String?
-  customer              Customer? @relation("orders", fields: [customerId], references: [id])
-  vendorId              String?
-  vendor                Vendor? @relation("orders", fields: [vendorId], references: [id])
-  addressId             String?
-  address               CustomerAddress? @relation("orders", fields: [addressId], references: [id])
-  cartId                String?
-  cart                  Cart? @relation("orders", fields: [cartId], references: [id])
-  total_amount          Decimal  @db.Decimal(10, 2)
-  status                String   @db.VarChar(32) @default("PENDING")
-  payment_status        String   @db.VarChar(32) @default("PENDING")
-  assigned_rider_phone  String?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now())
-
+  id                   String           @id @default(uuid())
+  orderNo              String           @unique
+  customerId           String?
+  customer             Customer?        @relation("orders", fields: [customerId], references: [id])
+  vendorId             String?
+  vendor               Vendor?          @relation("orders", fields: [vendorId], references: [id])
+  addressId            String?
+  address              CustomerAddress? @relation("orders", fields: [addressId], references: [id])
+  cartId               String?
+  cart                 Cart?            @relation("orders", fields: [cartId], references: [id])
+  total_amount         Decimal          @db.Decimal(10, 2)
+  status               String           @default("PENDING") @db.VarChar(32)
+  payment_status       String           @default("PENDING") @db.VarChar(32)
+  assigned_rider_phone String?
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @default(now())
 
   payments Payment[]
+
   @@index([orderNo])
 }
 
@@ -296,49 +278,35 @@ model OtpCode {
   @@unique([phone, purpose])
 }
 
-
 model Payment {
-  id                    String   @id @default(uuid())
-  bill_id               String?
-  bill                  MonthlyBill? @relation(fields: [bill_id], references: [id])
-  order_id              String?
-  order                 Order? @relation(fields: [order_id], references: [id])
-  customer_id           String?
-  customer              Customer? @relation(fields: [customer_id], references: [id])
-  vendor_id             String?
-  vendor                Vendor? @relation(fields: [vendor_id], references: [id])
-  amount                Decimal  @db.Decimal(12, 2)
-  currency              String   @default("INR")
-  payment_mode          String
-  provider              String?
-  provider_payment_id   String?
-  provider_payload      Json?
-  status                PaymentStatus @default(PENDING)
-  initiated_at          DateTime @default(now())
-  completed_at          DateTime?
-  reconciled            Boolean  @default(false)
-  metadata              Json?
-  created_at            DateTime @default(now())
-  updated_at            DateTime @default(now())
-}
-
-model PaymentLink {
-  id                String   @id @default(uuid())
-  bill_id           String
-  bill              MonthlyBill @relation(fields: [bill_id], references: [id], onDelete: Cascade)
-  provider          String?
-  link_url          String?
-  provider_link_id  String?
-  expires_at        DateTime?
-  status            PaymentLinkStatus @default(ACTIVE)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @default(now())
+  id                  String        @id @default(uuid())
+  order_id            String?
+  order               Order?        @relation(fields: [order_id], references: [id])
+  customer_id         String?
+  customer            Customer?     @relation(fields: [customer_id], references: [id])
+  vendor_id           String?
+  vendor              Vendor?       @relation(fields: [vendor_id], references: [id])
+  amount              Decimal       @db.Decimal(12, 2)
+  currency            String        @default("INR")
+  payment_mode        String
+  provider            String?
+  provider_payment_id String?
+  provider_payload    Json?
+  status              PaymentStatus @default(PENDING)
+  initiated_at        DateTime      @default(now())
+  completed_at        DateTime?
+  reconciled          Boolean       @default(false)
+  metadata            Json?
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @default(now())
+  monthlyBill         MonthlyBill?  @relation(fields: [monthlyBillId], references: [id])
+  monthlyBillId       String?
 }
 
 model Product {
-  id          String @id @default(uuid())
-  name        String
-  categoryId  String
+  id         String @id @default(uuid())
+  name       String
+  categoryId String
 
   /// Relation to Categories (on delete -> CASCADE)
   categories  Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -347,16 +315,16 @@ model Product {
   created_at  DateTime   @default(now())
   vendorId    String
   vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  price       Decimal  @db.Decimal(10, 2)  
-  deposit     Decimal?  @db.Decimal(10, 2) 
+  price       Decimal    @db.Decimal(10, 2)
+  deposit     Decimal?   @db.Decimal(10, 2)
   is_active   Boolean    @default(true)
   updated_at  DateTime   @default(now())
 
   subscriptions Subscription[]
-  cartItems CartItem[]
+  cartItems     CartItem[]
+
   @@index([categoryId])
 }
-
 
 enum SubscriptionStatus {
   ACTIVE
@@ -385,7 +353,6 @@ model Subscription {
   @@index([productId])
 }
 
-
 model Vendor {
   id                 String   @id @default(uuid())
   vendorNo           String   @unique
@@ -395,7 +362,7 @@ model Vendor {
   email              String?
   address            Json?
   cityId             String?
-  city      City?    @relation(fields: [cityId], references: [id])
+  city               City?    @relation(fields: [cityId], references: [id])
   pincode            String?
   location           String?
   is_active          Boolean  @default(true)
@@ -404,13 +371,14 @@ model Vendor {
   delivery_time_msg  String?
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
-  @@index([vendorNo])
 
-  products           Product[]
-  subscriptions      Subscription[]
-  notifications      Notification[]
-  bankAccounts       BankAccount[]
-  orders             Order[] @relation("orders")
-  monthlyBills       MonthlyBill[]
-  payments           Payment[]
+  products      Product[]
+  subscriptions Subscription[]
+  notifications Notification[]
+  bankAccounts  BankAccount[]
+  orders        Order[]        @relation("orders")
+  monthlyBills  MonthlyBill[]
+  payments      Payment[]
+
+  @@index([vendorNo])
 }

@@ -20,18 +20,10 @@ enum MonthlyBillStatus {
   PAID
   OVERDUE
 }
-
 enum PaymentStatus {
   PENDING
   COMPLETED
   FAILED
   REFUNDED
 }
-
-enum PaymentLinkStatus {
-  ACTIVE
-  EXPIRED
-  USED
-}
-
 

@@ -16,7 +16,6 @@ describe('Schema Integrity', () => {
     expect(prisma.order).toBeDefined();
     expect(prisma.monthlyBill).toBeDefined();
     expect(prisma.payment).toBeDefined();
-    expect(prisma.paymentLink).toBeDefined();
     expect(prisma.notification).toBeDefined();
   });
 });
@@ -58,20 +57,13 @@ describe('Model Relationships', () => {
     expect(prisma.monthlyBill.fields.vendor).toBeDefined();
   });
 
-  it('Payment should have bill, order, customer, and vendor relations', () => {
-    expect(prisma.payment.fields.bill_id).toBeDefined();
-    expect(prisma.payment.fields.bill).toBeDefined();
+  it('Payment should have order, customer, and vendor relations', () => {
     expect(prisma.payment.fields.order_id).toBeDefined();
     expect(prisma.payment.fields.order).toBeDefined();
     expect(prisma.payment.fields.customer_id).toBeDefined();
     expect(prisma.payment.fields.customer).toBeDefined();
     expect(prisma.payment.fields.vendor_id).toBeDefined();
     expect(prisma.payment.fields.vendor).toBeDefined();
-  });
-
-  it('PaymentLink should have bill relation and foreign key', () => {
-    expect(prisma.paymentLink.fields.bill_id).toBeDefined();
-    expect(prisma.paymentLink.fields.bill).toBeDefined();
   });
 
   it('Notification should have customer and vendor relations', () => {
@@ -107,10 +99,6 @@ describe('Model Relationships', () => {
     expect(prisma.order.fields.payments).toBeDefined();
   });
 
-  it('MonthlyBill should have relations to payments and payment_links', () => {
-    expect(prisma.monthlyBill.fields.payments).toBeDefined();
-    expect(prisma.monthlyBill.fields.payment_links).toBeDefined();
-  });
 });
 
 describe('Field Validations', () => {
@@ -170,12 +158,6 @@ describe('Field Validations', () => {
     expect(prisma.payment.fields.status).toBeDefined();
   });
 
-  it('PaymentLink should have required fields: id, bill_id, status', () => {
-    expect(prisma.paymentLink.fields.id).toBeDefined();
-    expect(prisma.paymentLink.fields.bill_id).toBeDefined();
-    expect(prisma.paymentLink.fields.status).toBeDefined();
-  });
-
   it('Notification should have required fields: id, type, message, sent_via, status', () => {
     expect(prisma.notification.fields.id).toBeDefined();
     expect(prisma.notification.fields.type).toBeDefined();
@@ -212,12 +194,6 @@ describe('Enum Validations', () => {
     expect(Prisma.PaymentStatus.COMPLETED).toBe('COMPLETED');
     expect(Prisma.PaymentStatus.FAILED).toBe('FAILED');
     expect(Prisma.PaymentStatus.REFUNDED).toBe('REFUNDED');
-  });
-
-  it('PaymentLinkStatus enum should be defined correctly', () => {
-    expect(Prisma.PaymentLinkStatus.ACTIVE).toBe('ACTIVE');
-    expect(Prisma.PaymentLinkStatus.EXPIRED).toBe('EXPIRED');
-    expect(Prisma.PaymentLinkStatus.USED).toBe('USED');
   });
 
   it('NotificationStatus enum should be defined correctly', () => {

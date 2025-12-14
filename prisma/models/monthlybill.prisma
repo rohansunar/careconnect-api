@@ -10,7 +10,4 @@ model MonthlyBill {
   status        MonthlyBillStatus @default(PENDING)
   generated_at  DateTime @default(now())
   updated_at    DateTime @default(now())
-
-  payments Payment[]
-  payment_links PaymentLink[]
 }
