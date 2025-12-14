@@ -18,8 +18,7 @@ export class OtpService {
   }
 
   async generateOtp(phone: string, purpose: OtpPurpose): Promise<string> {
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    const code = isDevelopment ? '123456' : this.generateRandomCode();
+    const code = this.generateRandomCode();
     const hashedCode = this.hashCode(code);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 

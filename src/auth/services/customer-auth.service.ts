@@ -33,7 +33,8 @@ export class CustomerAuthService {
    * @returns A response indicating success and OTP expiration time.
    */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
-    await this.otpService.generateOtp(phone, OtpPurpose.CUSTOMER_LOGIN);
+    const otp = await this.otpService.generateOtp(phone, OtpPurpose.CUSTOMER_LOGIN);
+    console.log(`SMS to ${phone}: Your OTP code is ${otp}`);
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }
 
