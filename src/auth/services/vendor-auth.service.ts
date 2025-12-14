@@ -98,7 +98,7 @@ export class VendorAuthService {
     }
     // Additional validation: Ensure phone is a valid format (basic check)
     const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
-    if (!phoneRegex.test(dto.phone)) {
+    if (!phoneRegex.test(dto.phone.replace("-",""))) {
       throw new BadRequestException('Invalid phone number format.');
     }
     // Ensure code is numeric and of expected length (assuming 6 digits)
