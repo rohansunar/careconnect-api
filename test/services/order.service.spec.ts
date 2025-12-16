@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrderService } from '../../src/order/services/order.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { CartService } from '../../src/cart/services/cart.service';
+import { PaymentService } from '../../src/payment/services/payment.service';
+import { NotificationService } from '../../src/notification/services/notification.service';
 import { CreateOrderDto } from '../../src/order/dto/create-order.dto';
 import { UpdateOrderDto } from '../../src/order/dto/update-order.dto';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
@@ -32,6 +34,7 @@ import {
 describe('OrderService', () => {
   let service: OrderService;
   let mockPrismaService: any;
+  let mockNotificationService: any;
 
   beforeEach(async () => {
     mockPrismaService = {
@@ -55,10 +58,21 @@ describe('OrderService', () => {
       cart: {
         findUnique: jest.fn(),
       },
+      counter: {
+        upsert: jest.fn(),
+      },
     };
 
     const mockCartService = {
       updateCartStatus: jest.fn(),
+    };
+
+    const mockPaymentService = {
+      createPaymentForOrder: jest.fn(),
+    };
+
+    mockNotificationService = {
+      sendWhatsApp: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -71,6 +85,14 @@ describe('OrderService', () => {
         {
           provide: CartService,
           useValue: mockCartService,
+        },
+        {
+          provide: PaymentService,
+          useValue: mockPaymentService,
+        },
+        {
+          provide: NotificationService,
+          useValue: mockNotificationService,
         },
       ],
     }).compile();
@@ -94,6 +116,7 @@ describe('OrderService', () => {
 
     it('should create order successfully with all validations', async () => {
       const mockCart = { id: dto.cartId, status: 'ACTIVE', cartItems: [] };
+      mockPrismaService.counter.upsert.mockResolvedValue({ lastNumber: 1 });
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.vendor.findUnique.mockResolvedValue(mockVendor);
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
@@ -138,6 +161,7 @@ describe('OrderService', () => {
         // No fields, just empty
       };
 
+      mockPrismaService.counter.upsert.mockResolvedValue({ lastNumber: 1 });
       mockPrismaService.order.create.mockResolvedValue(mockMinimalOrder);
 
       const result = await service.create(minimalDto);
@@ -288,6 +312,15 @@ describe('OrderService', () => {
           customer: true,
           vendor: true,
           address: true,
+          cart: {
+            include: {
+              cartItems: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
         },
       });
     });
@@ -341,6 +374,76 @@ describe('OrderService', () => {
         BadRequestException,
       );
       expect(mockPrismaService.order.update).not.toHaveBeenCalled();
+    });
+
+    it('should send WhatsApp notification when rider is assigned', async () => {
+      const orderWithoutRider = { ...mockOrder, assigned_rider_phone: null };
+      const dtoWithRider: UpdateOrderDto = {
+        assigned_rider_phone: '+5566778899',
+      };
+      const updatedOrderWithRider = {
+        ...orderWithoutRider,
+        assigned_rider_phone: '+5566778899',
+        cart: {
+          cartItems: [
+            {
+              product: { name: 'Water Bottle' },
+              quantity: 2,
+              price: 50,
+            },
+          ],
+        },
+        customer: { name: 'John Doe' },
+        address: { fullAddress: '123 Main St' },
+        total_amount: 100,
+        orderNo: 'O00001',
+      };
+
+      mockPrismaService.order.findUnique.mockResolvedValue(orderWithoutRider);
+      mockPrismaService.order.update.mockResolvedValue(updatedOrderWithRider);
+
+      const result = await service.update(orderId, dtoWithRider);
+
+      expect(result).toEqual(updatedOrderWithRider);
+      expect(mockPrismaService.order.update).toHaveBeenCalledWith({
+        where: { id: orderId },
+        data: dtoWithRider,
+        include: {
+          customer: true,
+          vendor: true,
+          address: true,
+          cart: {
+            include: {
+              cartItems: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          },
+        },
+      });
+      expect(mockNotificationService.sendWhatsApp).toHaveBeenCalledWith(
+        '+5566778899',
+        expect.stringContaining('New Order Assigned'),
+      );
+    });
+
+    it('should not send notification when rider phone is not changed', async () => {
+      const orderWithRider = { ...mockOrder, assigned_rider_phone: '+5566778899' };
+      const dtoWithoutRiderChange: UpdateOrderDto = {
+        status: 'CONFIRMED',
+      };
+
+      mockPrismaService.order.findUnique.mockResolvedValue(orderWithRider);
+      mockPrismaService.order.update.mockResolvedValue({
+        ...orderWithRider,
+        status: 'CONFIRMED',
+      });
+
+      await service.update(orderId, dtoWithoutRiderChange);
+
+      expect(mockNotificationService.sendWhatsApp).not.toHaveBeenCalled();
     });
   });
 });

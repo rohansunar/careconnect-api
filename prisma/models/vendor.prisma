@@ -25,4 +25,5 @@ model Vendor {
   orders             Order[] @relation("orders")
   monthlyBills       MonthlyBill[]
   payments           Payment[]
+  riders             Rider[]
 }

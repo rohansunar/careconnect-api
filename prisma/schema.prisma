@@ -342,6 +342,8 @@ model Rider {
   phone      String   @unique
   email      String?
   address    String?
+  vendorId  String?
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id])
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
 }
@@ -401,4 +403,5 @@ model Vendor {
   orders             Order[] @relation("orders")
   monthlyBills       MonthlyBill[]
   payments           Payment[]
+  riders             Rider[]
 }

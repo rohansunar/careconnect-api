@@ -151,7 +151,7 @@ export class PaymentService {
       });
 
       // Update order payment status if payment completed
-      if (verifiedData.status === PaymentStatus.COMPLETED) {
+      if (verifiedData.status === PaymentStatus.PAID) {
         await this.prisma.order.update({
           where: { id: payment.order_id! },
           data: { payment_status: 'PAID' },
@@ -221,6 +221,75 @@ export class PaymentService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Initiates a refund for a payment.
+   * @param paymentId - The payment ID to refund
+   * @param amount - The refund amount
+   * @param reason - The reason for refund
+   * @returns The refund result
+   */
+  async initiateRefund(
+    paymentId: string,
+    amount: number,
+    reason: string,
+  ) {
+    this.logger.log(`Initiating refund for payment: ${paymentId}`);
+
+    try {
+      const payment = await this.prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: { order: true },
+      });
+
+      if (!payment) {
+        throw new NotFoundException('Payment not found');
+      }
+
+      if (payment.status !== PaymentStatus.PAID) {
+        throw new BadRequestException('Can only refund completed payments');
+      }
+
+      if (!payment.provider_payment_id) {
+        throw new BadRequestException('Payment provider ID not found');
+      }
+
+      // Initiate refund with provider
+      const refundResult = await this.paymentProvider.initiateRefund({
+        paymentId: payment.provider_payment_id,
+        amount,
+        reason,
+      });
+
+      // Update payment status to REFUNDED
+      const updatedPayment = await this.prisma.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          provider_payload: { ...(payment.provider_payload as any || {}), refund: refundResult as any },
+        },
+        include: {
+          order: true,
+          customer: true,
+          vendor: true,
+        },
+      });
+      // Update order payment status
+      await this.prisma.order.update({
+        where: { id: payment.order_id! },
+        data: { payment_status: 'REFUNDED' },
+      });
+
+      this.logger.log(`Refund initiated successfully: ${paymentId}`);
+      return updatedPayment;
+    } catch (error) {
+      this.logger.error(
+        `Failed to initiate refund: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException('Failed to initiate refund');
     }
   }
 }

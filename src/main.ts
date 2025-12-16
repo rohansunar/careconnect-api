@@ -18,6 +18,11 @@ async function bootstrap() {
     adapter,
   );
 
+  app.enableCors({
+    origin: 'http://localhost:5173',
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
+
   // Multipart support for file uploads
   await app.register(import('@fastify/multipart'), {
     limits: {

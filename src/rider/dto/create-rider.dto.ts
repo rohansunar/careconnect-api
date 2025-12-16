@@ -3,6 +3,7 @@ import {
   IsPhoneNumber,
   IsEmail,
   IsOptional,
+  IsUUID,
 } from 'class-validator';
 
 export class CreateRiderDto {
@@ -19,4 +20,8 @@ export class CreateRiderDto {
   @IsOptional()
   @IsString()
   address?: string;
+
+  @IsOptional()
+  @IsUUID()
+  vendorId?: string;
 }
