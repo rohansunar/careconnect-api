@@ -11,6 +11,7 @@ import { SearchModule } from 'src/search/search.module';
 import { CartModule } from 'src/cart/cart.module';
 import { OrderModule } from 'src/order/order.module';
 import { PaymentModule } from 'src/payment/payment.module';
+import { RiderModule } from 'src/rider/rider.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { PaymentModule } from 'src/payment/payment.module';
     CartModule,
     OrderModule,
     PaymentModule,
+    RiderModule,
   ],
   controllers: [AppController],
   providers: [AppService],

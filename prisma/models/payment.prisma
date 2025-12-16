@@ -1,3 +1,11 @@
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUND_INITIATED
+  REFUNDED
+}
+
 model Payment {
   id                    String   @id @default(uuid())
   order_id              String?

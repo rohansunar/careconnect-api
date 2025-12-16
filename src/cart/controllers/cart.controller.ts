@@ -19,6 +19,7 @@ import { CartService } from '../services/cart.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
+import { CheckoutRequestDto, CheckoutResponseDto } from '../dto/checkout.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Cart')
@@ -116,5 +117,32 @@ export class CartController {
   async getCart(@CurrentUser() customer: any) {
     const { id } = customer;
     return this.cartService.getCartItems(id);
+  }
+
+  /**
+   * Business logic rationale: Generate a preview of the order summary based on current cart contents and delivery address.
+   * Security consideration: JWT authentication ensures only the authenticated customer can preview their cart.
+   * Design decision: Groups items by vendor, calculates totals, validates delivery address, returns structured preview without creating orders.
+   */
+  @ApiOperation({
+    summary: 'Generate checkout preview',
+    description:
+      'Generate a preview of the order summary including itemized breakdown, vendor grouping, subtotals, and delivery address validation.',
+  })
+  @ApiBody({ type: CheckoutRequestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Checkout preview generated successfully.',
+    type: CheckoutResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - invalid address or empty cart.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Post('checkout')
+  async generateCheckout(
+    @Body() dto: CheckoutRequestDto,
+    @CurrentUser() customer: any,
+  ) {
+    const { id } = customer;
+    return this.cartService.generateCheckout(dto, id);
   }
 }

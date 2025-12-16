@@ -1,3 +1,12 @@
+enum OrderStatus {
+  PENDING
+  PAID
+  CONFIRMED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
 model Order {
   id                    String   @id @default(uuid())
   orderNo               String   @unique
@@ -15,6 +24,8 @@ model Order {
   assigned_rider_phone  String?
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
+  cancelledAt           DateTime?
+  cancelReason          String?
 
 
   payments Payment[]

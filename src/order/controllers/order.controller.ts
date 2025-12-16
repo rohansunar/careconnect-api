@@ -9,6 +9,12 @@ import {
 import { OrderService } from '../services/order.service';
 import { CreateOrderDto } from '../dto/create-order.dto';
 import { UpdateOrderDto } from '../dto/update-order.dto';
+import { CancelOrderDto } from '../dto/cancel-order.dto';
+import { CancelOrderResponseDto } from '../dto/cancel-order-response.dto';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { User } from '../../common/interfaces/user.interface';
+import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { UseGuards } from '@nestjs/common';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -248,5 +254,113 @@ export class OrderController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateOrderDto) {
     return this.orderService.update(id, dto);
+  }
+
+  /**
+   * Cancels an order by ID.
+   * @param orderId - The unique identifier of the order
+   * @param dto - The cancellation data
+   * @param currentUser - The authenticated customer
+   * @returns The cancelled order
+   */
+  @ApiOperation({
+    summary: 'Cancel an order',
+    description:
+      'Cancels an existing order that belongs to the authenticated customer. Updates order status to CANCELLED, sets cancelledAt timestamp, and initiates refund if payment exists.',
+  })
+  @ApiParam({
+    name: 'orderId',
+    description: 'Unique identifier of the order (UUID)',
+    example: 'order-uuid-123',
+  })
+  @ApiBody({
+    type: CancelOrderDto,
+    examples: {
+      example1: {
+        summary: 'Cancel order example',
+        value: {
+          cancelReason: 'Customer requested cancellation due to change of plans',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order cancelled successfully.',
+    schema: {
+      example: {
+        id: 'order-uuid-123',
+        orderNo: 'O000001',
+        status: 'CANCELLED',
+        payment_status: 'REFUNDED',
+        cancelReason: 'Customer requested cancellation due to change of plans',
+        cancelledAt: '2023-12-01T10:30:00.000Z',
+        customer: {
+          id: 'customer-uuid-123',
+          name: 'John Doe',
+          phone: '+1234567890',
+        },
+        vendor: {
+          id: 'vendor-uuid-456',
+          name: 'Vendor Inc',
+        },
+        total_amount: 50.0,
+        created_at: '2023-12-01T10:00:00.000Z',
+        updated_at: '2023-12-01T10:30:00.000Z',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - order cannot be cancelled or invalid data.',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Order cannot be cancelled as it is already delivered',
+        error: 'Bad Request',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - customer not authenticated.',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized',
+        error: 'Unauthorized',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - customer not authorized to cancel this order.',
+    schema: {
+      example: {
+        statusCode: 403,
+        message: 'You are not authorized to cancel this order',
+        error: 'Forbidden',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Order not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  @Post(':orderId/cancel')
+  @UseGuards(CustomerAuthGuard)
+  async cancel(
+    @Param('orderId') orderId: string,
+    @Body() dto: CancelOrderDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    return this.orderService.cancelOrder(orderId, dto, currentUser);
   }
 }
