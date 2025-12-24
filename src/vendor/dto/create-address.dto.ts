@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt } from 'class-validator';
 
 export class CreateAddressDto {
   @IsString()
@@ -17,14 +17,18 @@ export class CreateAddressDto {
   @IsNotEmpty()
   zipCode: string;
 
-  @IsString()
-  @IsNotEmpty()
-  country: string;
-
   @IsOptional()
   @IsString()
   location?: string;
 
   @IsOptional()
   address?: any;
+
+  @IsOptional()
+  @IsInt()
+  service_radius_m?: number;
+
+  @IsOptional()
+  @IsString()
+  delivery_time_msg?: string;
 }
