@@ -1,4 +1,12 @@
-import { IsString, IsNotEmpty, IsOptional, ValidateNested, IsArray, IsNumber, Min } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+  IsNumber,
+  Min,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -11,7 +19,7 @@ export class CheckoutRequestDto {
    */
   @ApiProperty({
     description: 'Unique identifier of the delivery address',
-    example: 'addr_123e4567-e89b-12d3-a456-426614174000'
+    example: 'addr_123e4567-e89b-12d3-a456-426614174000',
   })
   @IsString()
   @IsNotEmpty()
@@ -27,7 +35,7 @@ export class CheckoutItemDto {
    */
   @ApiProperty({
     description: 'Unique identifier of the cart item',
-    example: 'item_123e4567-e89b-12d3-a456-426614174000'
+    example: 'item_123e4567-e89b-12d3-a456-426614174000',
   })
   @IsString()
   id: string;
@@ -41,8 +49,8 @@ export class CheckoutItemDto {
       id: 'prod_123e4567-e89b-12d3-a456-426614174000',
       name: '20L Water Jar',
       images: ['https://example.com/water-jar.jpg'],
-      description: 'Pure drinking water jar'
-    }
+      description: 'Pure drinking water jar',
+    },
   })
   @IsNotEmpty()
   product: {
@@ -57,7 +65,7 @@ export class CheckoutItemDto {
    */
   @ApiProperty({
     description: 'Quantity of the product',
-    example: 2
+    example: 2,
   })
   @IsNumber()
   @Min(1)
@@ -68,7 +76,7 @@ export class CheckoutItemDto {
    */
   @ApiProperty({
     description: 'Price per unit',
-    example: 50.00
+    example: 50.0,
   })
   @IsNumber()
   price: number;
@@ -78,7 +86,7 @@ export class CheckoutItemDto {
    */
   @ApiPropertyOptional({
     description: 'Deposit amount per unit',
-    example: 100.00
+    example: 100.0,
   })
   @IsOptional()
   @IsNumber()
@@ -89,7 +97,7 @@ export class CheckoutItemDto {
    */
   @ApiProperty({
     description: 'Total amount for this item',
-    example: 100.00
+    example: 100.0,
   })
   @IsNumber()
   totalPrice: number;
@@ -99,7 +107,7 @@ export class CheckoutItemDto {
    */
   @ApiPropertyOptional({
     description: 'Total deposit for this item',
-    example: 200.00
+    example: 200.0,
   })
   @IsOptional()
   @IsNumber()
@@ -118,8 +126,8 @@ export class CheckoutVendorDto {
     example: {
       id: 'vendor_123e4567-e89b-12d3-a456-426614174000',
       name: 'Water Supplier Co.',
-      vendorNo: 'VND001'
-    }
+      vendorNo: 'VND001',
+    },
   })
   @IsNotEmpty()
   vendor: {
@@ -133,7 +141,7 @@ export class CheckoutVendorDto {
    */
   @ApiProperty({
     description: 'Items from this vendor',
-    type: [CheckoutItemDto]
+    type: [CheckoutItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -145,7 +153,7 @@ export class CheckoutVendorDto {
    */
   @ApiProperty({
     description: 'Subtotal for this vendor',
-    example: 250.00
+    example: 250.0,
   })
   @IsNumber()
   vendorSubtotal: number;
@@ -155,7 +163,7 @@ export class CheckoutVendorDto {
    */
   @ApiPropertyOptional({
     description: 'Total deposit for this vendor',
-    example: 400.00
+    example: 400.0,
   })
   @IsOptional()
   @IsNumber()
@@ -171,7 +179,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Unique identifier of the cart',
-    example: 'cart_123e4567-e89b-12d3-a456-426614174000'
+    example: 'cart_123e4567-e89b-12d3-a456-426614174000',
   })
   @IsString()
   cartId: string;
@@ -186,8 +194,8 @@ export class CheckoutResponseDto {
       label: 'Home',
       address: '123 Main Street, Apartment 4B',
       city: 'Mumbai',
-      pincode: '400001'
-    }
+      pincode: '400001',
+    },
   })
   @IsNotEmpty()
   deliveryAddress: {
@@ -203,7 +211,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Whether the delivery address is valid for all vendors',
-    example: true
+    example: true,
   })
   @IsNotEmpty()
   isAddressValid: boolean;
@@ -213,7 +221,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Array of vendor groups with their items',
-    type: [CheckoutVendorDto]
+    type: [CheckoutVendorDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -225,7 +233,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Total number of items in cart',
-    example: 5
+    example: 5,
   })
   @IsNumber()
   totalItems: number;
@@ -235,7 +243,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Overall subtotal',
-    example: 500.00
+    example: 500.0,
   })
   @IsNumber()
   subtotal: number;
@@ -245,7 +253,7 @@ export class CheckoutResponseDto {
    */
   @ApiPropertyOptional({
     description: 'Overall total deposit amount',
-    example: 800.00
+    example: 800.0,
   })
   @IsOptional()
   @IsNumber()
@@ -256,7 +264,7 @@ export class CheckoutResponseDto {
    */
   @ApiProperty({
     description: 'Grand total',
-    example: 1300.00
+    example: 1300.0,
   })
   @IsNumber()
   grandTotal: number;
@@ -266,7 +274,7 @@ export class CheckoutResponseDto {
    */
   @ApiPropertyOptional({
     description: 'Delivery notes or warnings',
-    example: 'Some vendors may have delivery restrictions to this address'
+    example: 'Some vendors may have delivery restrictions to this address',
   })
   @IsOptional()
   @IsString()

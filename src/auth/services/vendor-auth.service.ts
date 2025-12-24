@@ -22,7 +22,10 @@ export class VendorAuthService {
    * @returns A response indicating success and OTP expiration time.
    */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
-    const otp = await this.otpService.generateOtp(phone, OtpPurpose.VENDOR_LOGIN);
+    const otp = await this.otpService.generateOtp(
+      phone,
+      OtpPurpose.VENDOR_LOGIN,
+    );
     console.log(`SMS to ${phone}: Your OTP code is ${otp}`);
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }

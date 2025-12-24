@@ -23,7 +23,8 @@ export class RiderController {
    */
   @ApiOperation({
     summary: 'Create a new rider',
-    description: 'Allow vendors to onboard new riders, limited to 10 per vendor.',
+    description:
+      'Allow vendors to onboard new riders, limited to 10 per vendor.',
   })
   @ApiResponse({ status: 201, description: 'Rider created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })

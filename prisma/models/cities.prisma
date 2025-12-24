@@ -6,8 +6,8 @@ model City {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
 
-  vendors           Vendor[]
   customerAddresses CustomerAddress[]
+  vendorAddress   VendorAddress[]
 }
 
 // bbox      Unsupported("geometry")

@@ -94,7 +94,9 @@ describe('RiderController', () => {
         name: 'John Doe',
         phone: '+1234567890',
       };
-      const error = new BadRequestException('Rider with this phone number already exists');
+      const error = new BadRequestException(
+        'Rider with this phone number already exists',
+      );
 
       mockRiderService.createRider.mockRejectedValue(error);
 

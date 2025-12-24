@@ -135,7 +135,10 @@ export class CartController {
     description: 'Checkout preview generated successfully.',
     type: CheckoutResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid address or empty cart.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid address or empty cart.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('checkout')
   async generateCheckout(

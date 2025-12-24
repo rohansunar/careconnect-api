@@ -430,7 +430,10 @@ describe('OrderService', () => {
     });
 
     it('should not send notification when rider phone is not changed', async () => {
-      const orderWithRider = { ...mockOrder, assigned_rider_phone: '+5566778899' };
+      const orderWithRider = {
+        ...mockOrder,
+        assigned_rider_phone: '+5566778899',
+      };
       const dtoWithoutRiderChange: UpdateOrderDto = {
         status: 'CONFIRMED',
       };

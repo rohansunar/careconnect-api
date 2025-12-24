@@ -233,7 +233,10 @@ export class CartService {
     }
 
     // Validate delivery address
-    const deliveryAddress = await this.validateDeliveryAddress(dto.addressId, customerId);
+    const deliveryAddress = await this.validateDeliveryAddress(
+      dto.addressId,
+      customerId,
+    );
 
     // Group cart items by vendor
     const vendorGroups = this.groupCartItemsByVendor(cart.cartItems);
@@ -242,7 +245,10 @@ export class CartService {
     const calculations = this.calculateTotals(vendorGroups);
 
     // Check if address is valid for all vendors (basic validation)
-    const isAddressValid = await this.validateAddressForVendors(deliveryAddress, vendorGroups);
+    const isAddressValid = await this.validateAddressForVendors(
+      deliveryAddress,
+      vendorGroups,
+    );
 
     return {
       cartId: cart.id,
@@ -259,7 +265,9 @@ export class CartService {
       subtotal: calculations.subtotal,
       totalDeposit: calculations.totalDeposit,
       grandTotal: calculations.grandTotal,
-      deliveryNotes: isAddressValid ? undefined : 'Some vendors may have delivery restrictions to this address',
+      deliveryNotes: isAddressValid
+        ? undefined
+        : 'Some vendors may have delivery restrictions to this address',
     };
   }
 
@@ -273,7 +281,7 @@ export class CartService {
 
     cartItems.forEach((item) => {
       const vendorId = item.product.vendor.id;
-      
+
       if (!vendorGroups.has(vendorId)) {
         vendorGroups.set(vendorId, {
           vendor: {
@@ -289,7 +297,9 @@ export class CartService {
 
       const vendorGroup = vendorGroups.get(vendorId);
       const totalPrice = Number(item.price) * item.quantity;
-      const totalDeposit = item.deposit ? Number(item.deposit) * item.quantity : 0;
+      const totalDeposit = item.deposit
+        ? Number(item.deposit) * item.quantity
+        : 0;
 
       vendorGroup.items.push({
         id: item.id,
@@ -358,7 +368,9 @@ export class CartService {
     }
 
     if (address.customerId !== customerId) {
-      throw new BadRequestException('Delivery address does not belong to the customer');
+      throw new BadRequestException(
+        'Delivery address does not belong to the customer',
+      );
     }
 
     if (!address.isActive) {
@@ -374,16 +386,19 @@ export class CartService {
    * @param vendorGroups - Array of vendor groups
    * @returns Boolean indicating if address is valid for all vendors
    */
-  private async validateAddressForVendors(deliveryAddress: any, vendorGroups: any[]): Promise<boolean> {
+  private async validateAddressForVendors(
+    deliveryAddress: any,
+    vendorGroups: any[],
+  ): Promise<boolean> {
     // Basic validation - in a real implementation, you might check:
     // 1. Vendor service radius
     // 2. Vendor availability in the address city
     // 3. Delivery restrictions
-    
+
     // For now, we'll do basic city and pincode validation
     for (const group of vendorGroups) {
       const vendor = group.vendor;
-      
+
       // Check if vendor has service radius and if address is within it
       // This is a simplified check - in reality, you'd calculate distance
       if (vendor.service_radius_m && deliveryAddress.cityId) {

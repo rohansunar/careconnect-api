@@ -231,11 +231,7 @@ export class PaymentService {
    * @param reason - The reason for refund
    * @returns The refund result
    */
-  async initiateRefund(
-    paymentId: string,
-    amount: number,
-    reason: string,
-  ) {
+  async initiateRefund(paymentId: string, amount: number, reason: string) {
     this.logger.log(`Initiating refund for payment: ${paymentId}`);
 
     try {
@@ -268,7 +264,10 @@ export class PaymentService {
         where: { id: paymentId },
         data: {
           status: PaymentStatus.REFUNDED,
-          provider_payload: { ...(payment.provider_payload as any || {}), refund: refundResult as any },
+          provider_payload: {
+            ...((payment.provider_payload as any) || {}),
+            refund: refundResult as any,
+          },
         },
         include: {
           order: true,

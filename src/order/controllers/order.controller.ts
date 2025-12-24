@@ -279,7 +279,8 @@ export class OrderController {
       example1: {
         summary: 'Cancel order example',
         value: {
-          cancelReason: 'Customer requested cancellation due to change of plans',
+          cancelReason:
+            'Customer requested cancellation due to change of plans',
         },
       },
     },

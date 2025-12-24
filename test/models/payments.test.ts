@@ -147,7 +147,6 @@ describe('Payments CRUD', () => {
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
 
-
     it('should throw error for invalid order_id', async () => {
       const paymentData = {
         order_id: 'invalid-order-id',

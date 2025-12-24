@@ -98,7 +98,6 @@ describe('Model Relationships', () => {
   it('Order should have relation to payments', () => {
     expect(prisma.order.fields.payments).toBeDefined();
   });
-
 });
 
 describe('Field Validations', () => {

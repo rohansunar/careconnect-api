@@ -200,11 +200,7 @@ export class OrderService {
    * @param currentUser - The authenticated customer
    * @returns The cancelled order with relations
    */
-  async cancelOrder(
-    orderId: string,
-    dto: CancelOrderDto,
-    currentUser: User,
-  ) {
+  async cancelOrder(orderId: string, dto: CancelOrderDto, currentUser: User) {
     return this.prisma.$transaction(async (tx) => {
       // Find the order with related data
       const order = await tx.order.findUnique({
@@ -243,7 +239,8 @@ export class OrderService {
           status: OrderStatus.CANCELLED,
           cancelledAt: new Date(),
           cancelReason: dto.cancelReason,
-          payment_status: completedPayments.length > 0 ? 'REFUNDED' : 'CANCELLED',
+          payment_status:
+            completedPayments.length > 0 ? 'REFUNDED' : 'CANCELLED',
         },
         include: {
           customer: true,
@@ -517,12 +514,13 @@ Please update your inventory accordingly.`;
     }
 
     try {
-      const itemsList = order.cart?.cartItems
-        ?.map(
-          (item: any) =>
-            `- ${item.product?.name || 'Unknown Product'} x${item.quantity} (${item.price} each)`,
-        )
-        .join('\n') || 'No items';
+      const itemsList =
+        order.cart?.cartItems
+          ?.map(
+            (item: any) =>
+              `- ${item.product?.name || 'Unknown Product'} x${item.quantity} (${item.price} each)`,
+          )
+          .join('\n') || 'No items';
 
       const message = `🚚 New Order Assigned!
 

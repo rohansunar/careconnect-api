@@ -106,7 +106,9 @@ export class PaymentProviderService {
    * @param data - Refund initiation data
    * @returns Refund provider response
    */
-  async initiateRefund(data: InitiateRefundData): Promise<RefundProviderResponse> {
+  async initiateRefund(
+    data: InitiateRefundData,
+  ): Promise<RefundProviderResponse> {
     this.logger.log(
       `Initiating refund for payment: ${data.paymentId} with provider: ${this.provider}`,
     );

@@ -65,9 +65,9 @@ describe('Riders CRUD', () => {
         phone: '+1234567890',
       };
 
-      await expect(
-        prisma.rider.create({ data: riderData }),
-      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+      await expect(prisma.rider.create({ data: riderData })).rejects.toThrow(
+        Prisma.PrismaClientKnownRequestError,
+      );
     });
 
     it('should throw error for null phone', async () => {
@@ -76,9 +76,9 @@ describe('Riders CRUD', () => {
         phone: null as any,
       };
 
-      await expect(
-        prisma.rider.create({ data: riderData }),
-      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+      await expect(prisma.rider.create({ data: riderData })).rejects.toThrow(
+        Prisma.PrismaClientKnownRequestError,
+      );
     });
 
     it('should throw error for duplicate phone', async () => {
@@ -94,9 +94,9 @@ describe('Riders CRUD', () => {
         phone: '+1234567890', // duplicate
       };
 
-      await expect(
-        prisma.rider.create({ data: riderData }),
-      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
+      await expect(prisma.rider.create({ data: riderData })).rejects.toThrow(
+        Prisma.PrismaClientKnownRequestError,
+      );
     });
   });
 

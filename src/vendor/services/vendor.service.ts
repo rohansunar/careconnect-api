@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
@@ -13,16 +17,8 @@ export class VendorService {
   async getProfile(vendorId: string) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
+      include: {
         address: true,
-        is_active: true,
-        is_available_today: true,
-        service_radius_m: true,
-        delivery_time_msg: true,
       },
     });
 
@@ -55,21 +51,33 @@ export class VendorService {
       throw new BadRequestException('Invalid phone number format');
     }
 
+    const { delivery_time_msg, service_radius_m, ...vendorData } = data;
+
     const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
-      data,
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
+      data: vendorData,
+      include: {
         address: true,
-        is_active: true,
-        is_available_today: true,
-        service_radius_m: true,
-        delivery_time_msg: true,
       },
     });
+
+    // Update address if address fields provided
+    if (delivery_time_msg !== undefined || service_radius_m !== undefined) {
+      const addressData: any = {};
+      if (delivery_time_msg !== undefined)
+        addressData.delivery_time_msg = delivery_time_msg;
+      if (service_radius_m !== undefined)
+        addressData.service_radius_m = service_radius_m;
+
+      if (vendor.address) {
+        await this.prisma.vendorAddress.update({
+          where: { vendorId },
+          data: addressData,
+        });
+      } else {
+        // If no address, create one? But perhaps not, since optional.
+      }
+    }
 
     return vendor;
   }
@@ -90,19 +98,26 @@ export class VendorService {
     const vendor = await this.prisma.vendor.update({
       where: { id: vendorId },
       data,
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
+      include: {
         address: true,
-        is_active: true,
-        is_available_today: true,
-        service_radius_m: true,
-        delivery_time_msg: true,
       },
     });
 
     return vendor;
+  }
+
+  /**
+   * Validates that a vendor exists by ID.
+   * @param vendorId - The unique identifier of the vendor.
+   * @throws NotFoundException if the vendor does not exist.
+   */
+  async validateVendorExists(vendorId: string): Promise<void> {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: vendorId },
+    });
+
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
+    }
   }
 }

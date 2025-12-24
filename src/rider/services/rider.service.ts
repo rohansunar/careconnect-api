@@ -11,24 +11,29 @@ export class RiderService {
    * @param isAdmin - Whether the creator is admin (affects limit enforcement).
    * @returns The created rider data.
    */
-  async createRider(data: {
-    name: string;
-    phone: string;
-    email?: string;
-    address?: string;
-    vendorId?: string;
-  }, isAdmin: boolean = false) {
+  async createRider(
+    data: {
+      name: string;
+      phone: string;
+      email?: string;
+      address?: string;
+      vendorId?: string;
+    },
+    isAdmin: boolean = false,
+  ) {
     // Check if phone number already exists
     const existingRider = await this.prisma.rider.findUnique({
       where: { phone: data.phone },
     });
 
     if (existingRider) {
-      throw new BadRequestException('Rider with this phone number already exists');
+      throw new BadRequestException(
+        'Rider with this phone number already exists',
+      );
     }
 
     // Validate phone number format if provided (E.164 international format)
-    if (!/^\+[1-9]\d{1,14}$/.test(data.phone.replace("-",""))) {
+    if (!/^\+[1-9]\d{1,14}$/.test(data.phone.replace('-', ''))) {
       throw new BadRequestException('Invalid phone number format');
     }
 
