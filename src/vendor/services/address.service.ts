@@ -37,11 +37,6 @@ export class AddressService {
       }
       cityId = cityRecord.id;
     }
-    console.log({
-      vendorId,
-      ...rest,
-      ...(cityId && { cityId }),
-    });
     const address = await this.prisma.vendorAddress.create({
       data: {
         vendorId,
@@ -58,11 +53,12 @@ export class AddressService {
    * @param id - The unique identifier of the address.
    * @returns The VendorAddress.
    */
-  async getAddressById(id: string): Promise<any> {
+  async getAddressById(vendorId: string): Promise<any> {
     const address = await this.prisma.vendorAddress.findUnique({
-      where: { id },
+      where: { vendorId },
     });
-
+    
+    
     if (!address) {
       throw new NotFoundException('Vendor address not found');
     }
@@ -77,13 +73,6 @@ export class AddressService {
    * @returns The updated VendorAddress.
    */
   async updateAddress(id: string, data: UpdateAddressDto): Promise<any> {
-    const existingAddress = await this.prisma.vendorAddress.findUnique({
-      where: { id },
-    });
-
-    if (!existingAddress) {
-      throw new NotFoundException('Vendor address not found');
-    }
 
     const { city, ...rest } = data;
     let updateData: any = { ...rest };
@@ -115,11 +104,9 @@ export class AddressService {
    * @returns The VendorAddress or null if not found.
    */
   async getAddressByVendorId(vendorId: string): Promise<any> {
-    const address = await this.prisma.vendorAddress.findUnique({
+   return await this.prisma.vendorAddress.findUnique({
       where: { vendorId },
     });
-
-    return address;
   }
 
   /**
@@ -127,14 +114,6 @@ export class AddressService {
    * @param id - The unique identifier of the address.
    */
   async deleteAddress(id: string): Promise<void> {
-    const existingAddress = await this.prisma.vendorAddress.findUnique({
-      where: { id },
-    });
-
-    if (!existingAddress) {
-      throw new NotFoundException('Vendor address not found');
-    }
-
     await this.prisma.vendorAddress.delete({
       where: { id },
     });

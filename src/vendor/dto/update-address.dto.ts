@@ -1,30 +1,30 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsNotEmpty } from 'class-validator';
 
 export class UpdateAddressDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   street?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   city?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   state?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   zipCode?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   location?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   address?: any;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsInt()
   service_radius_m?: number;
 

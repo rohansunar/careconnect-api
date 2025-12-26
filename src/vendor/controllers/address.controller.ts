@@ -86,7 +86,7 @@ export class AddressController {
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  @Put(':id')
+  @Put('addresses/:id')
   async updateAddress(
     @Body() dto: UpdateAddressDto,
     @CurrentUser() vendor: any,
@@ -100,7 +100,7 @@ export class AddressController {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    const updatedAddress = await this.addressService.updateAddress(id, dto);
+    const updatedAddress = await this.addressService.updateAddress(existingAddress.id, dto);
     return updatedAddress;
   }
 
@@ -116,7 +116,7 @@ export class AddressController {
   @ApiResponse({ status: 204, description: 'Address deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  @Delete(':id')
+  @Delete('addresses/:id')
   async deleteAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
     await this.vendorService.validateVendorExists(id);
@@ -127,6 +127,6 @@ export class AddressController {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    await this.addressService.deleteAddress(id);
+    await this.addressService.deleteAddress(existingAddress.id);
   }
 }
