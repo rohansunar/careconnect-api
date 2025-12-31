@@ -64,7 +64,7 @@ async function bootstrap() {
     fs.writeFileSync('./swagger.json', JSON.stringify(document, null, 2));
   }
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(
     `Water Jar Delivery API is running on: http://localhost:${process.env.PORT}`,
   );
