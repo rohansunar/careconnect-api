@@ -12,6 +12,7 @@ import { CartModule } from 'src/cart/cart.module';
 import { OrderModule } from 'src/order/order.module';
 import { PaymentModule } from 'src/payment/payment.module';
 import { RiderModule } from 'src/rider/rider.module';
+import { CitiesModule } from 'src/cities/cities.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { RiderModule } from 'src/rider/rider.module';
     CustomerModule,
     SearchModule,
     CartModule,
+    CitiesModule,
     OrderModule,
     PaymentModule,
     RiderModule,
