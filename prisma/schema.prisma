@@ -412,8 +412,8 @@ model VendorAddress {
   city      City?    @relation(fields: [cityId], references: [id])
   state     String?
   zipCode   String?
-  country   String?
-  location  String?  // For coordinates or additional location info
+  country   String?  @default("India")
+  location  Json?  // For coordinates or additional location info
   address   Json?    // For any additional address data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -6,9 +6,10 @@ import { VendorBankAccountController } from './controllers/vendor-bank-account.c
 import { VendorBankAccountService } from './services/vendor-bank-account.service';
 import { AddressController } from './controllers/address.controller';
 import { AddressService } from './services/address.service';
+import { CitiesModule } from '../cities/cities.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, CitiesModule],
   controllers: [
     VendorController,
     VendorBankAccountController,

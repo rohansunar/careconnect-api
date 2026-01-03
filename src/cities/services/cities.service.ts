@@ -24,4 +24,23 @@ export class CitiesService {
       },
     });
   }
+
+  /**
+   * Retrieves a city by ID.
+   * @param id - The ID of the city.
+   * @returns The city with selected fields or null.
+   */
+  async findById(id: string) {
+    return this.prisma.city.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        state: true,
+        country: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+  }
 }

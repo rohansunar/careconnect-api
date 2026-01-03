@@ -6,10 +6,11 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
+import { CitiesService } from '../../cities/services/cities.service';
 
 @Injectable()
 export class AddressService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private citiesService: CitiesService) {}
 
   /**
    * Creates a new VendorAddress for the given vendorId, ensuring no duplicate address exists for the vendor.
@@ -25,23 +26,18 @@ export class AddressService {
     if (existingAddress) {
       throw new BadRequestException('Vendor already has an address');
     }
-
-    const { city, ...rest } = data;
-    let cityId: string | undefined;
-    if (city) {
-      const cityRecord = await this.prisma.city.findFirst({
-        where: { name: city },
-      });
-      if (!cityRecord) {
-        throw new BadRequestException('City not found');
-      }
-      cityId = cityRecord.id;
+    // Check if city exists
+    const cityExists = await this.prisma.city.findUnique({
+      where: { id: data.cityId },
+    });
+    if (!cityExists) {
+      throw new BadRequestException('City does not exist');
     }
+   
     const address = await this.prisma.vendorAddress.create({
       data: {
         vendorId,
-        ...rest,
-        ...(cityId && { cityId }),
+        ...data,
       },
     });
 
@@ -73,26 +69,9 @@ export class AddressService {
    * @returns The updated VendorAddress.
    */
   async updateAddress(id: string, data: UpdateAddressDto): Promise<any> {
-
-    const { city, ...rest } = data;
-    let updateData: any = { ...rest };
-    if (city !== undefined) {
-      if (city) {
-        const cityRecord = await this.prisma.city.findFirst({
-          where: { name: city },
-        });
-        if (!cityRecord) {
-          throw new BadRequestException('City not found');
-        }
-        updateData.cityId = cityRecord.id;
-      } else {
-        updateData.cityId = null;
-      }
-    }
-
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { id },
-      data: updateData,
+      data,
     });
 
     return updatedAddress;
@@ -104,9 +83,20 @@ export class AddressService {
    * @returns The VendorAddress or null if not found.
    */
   async getAddressByVendorId(vendorId: string): Promise<any> {
-   return await this.prisma.vendorAddress.findUnique({
+    const address = await this.prisma.vendorAddress.findUnique({
       where: { vendorId },
     });
+    if (address && address.cityId) {
+      const city = await this.prisma.city.findUnique({
+        where: { id: address.cityId },
+        select: { name: true },
+      });
+      if (city) {
+        (address as any).city = city.name;
+        delete (address as any).cityId;
+      }
+    }
+    return address;
   }
 
   /**
