@@ -23,7 +23,7 @@ import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Product')
-@Controller('product')
+@Controller('products')
 @UseGuards(AdminVendorGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
@@ -87,7 +87,7 @@ export class ProductController {
   }
 
   /**
-   * Business logic rationale: Enable vendors to add new products to their catalog.
+   * Enable vendors to add new products to their catalog.
    * Security consideration: Ownership check via JWT, validation in service.
    * Design decision: Creates vendor_product row with product details.
    */
@@ -128,7 +128,7 @@ export class ProductController {
   }
 
   /**
-   * Business logic rationale: Allow vendors to retrieve a single product by ID.
+   * Allow vendors to retrieve a single product by ID.
    * Security consideration: Ensures the product belongs to the authenticated vendor.
    * Design decision: Includes vendor details in the response.
    */
@@ -196,7 +196,7 @@ export class ProductController {
   }
 
   /**
-   * Business logic rationale: Allow vendors to update product pricing, deposit, or availability.
+   * Allow vendors to update product pricing, deposit, or availability.
    * Security consideration: Ownership check ensures vendors only update their products.
    * Design decision: Partial updates allowed, atomic operations.
    */
@@ -280,7 +280,7 @@ export class ProductController {
   }
 
   /**
-   * Business logic rationale: Enable vendors to restore deactivated products from their catalog.
+   * Enable vendors to restore deactivated products from their catalog.
    * Security consideration: Ownership check prevents unauthorized restoration.
    * Design decision: Soft-restore by setting is_active to true.
    */

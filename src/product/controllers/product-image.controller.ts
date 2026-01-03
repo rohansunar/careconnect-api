@@ -33,7 +33,7 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('Product Image')
 @UseGuards(AdminVendorGuard, RolesGuard)
-@Controller('product/image')
+@Controller('products/image')
 export class ProductImageController {
   constructor(private readonly productImageService: ProductImageService) {}
 
