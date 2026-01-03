@@ -116,11 +116,8 @@ export class ProductImageController {
         });
       }
     }
-    const { vendorId, role } = vendor;
-    // const vendorId = role === 'vendor' ? vendorId : undefined;
-    const user = { id: vendorId, role: role };
 
-    return this.productImageService.uploadProductImages(user, productId, files);
+    return this.productImageService.uploadProductImages(vendor, productId, files);
   }
 
   @Delete(':productId')
