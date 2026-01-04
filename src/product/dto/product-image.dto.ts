@@ -111,6 +111,6 @@ export class ReorderProductImagesDto {
   })
   @IsArray()
   @IsString({ each: true })
-  @MaxLength(150, { each: true })
+  @MaxLength(250, { each: true })
   imageIds: string[];
 }
