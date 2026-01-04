@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import path from 'path';
 
 export interface S3UploadResult {
   key: string;
@@ -323,8 +324,7 @@ export class S3Service {
     productId: string,
   ): string {
     const timestamp = Date.now();
-    const sanitizedFilename = originalFilename.replace(/[^a-zA-Z0-9.-]/g, '_');
-
-    return `${prefix}/${productId}/${timestamp}_${sanitizedFilename}`;
+    const ext = path.extname(originalFilename);
+    return `${prefix}/${productId}/${timestamp}${ext}`;
   }
 }

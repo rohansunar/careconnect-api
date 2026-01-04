@@ -15,6 +15,7 @@ import {
   DeleteProductImageDto,
   ReorderProductImagesDto,
 } from '../dto/product-image.dto';
+import path from 'path';
 
 interface UploadedFile {
   buffer: Buffer;
@@ -228,7 +229,7 @@ export class ProductImageService {
       // Upload images
       const uploadResults = await this.uploadImagesToStorage(
         fileData,
-        productId,
+        `${userId}/${productId}`,
       );
 
       // Update product
@@ -358,21 +359,20 @@ export class ProductImageService {
     const reorderedImages: string[] = [];
 
     for (const id of imageIds) {
-      if (!id.startsWith('image_')) {
-        throw new BadRequestException(`Invalid image ID format: ${id}`);
-      }
-
-      const index = parseInt(id.split('_')[1], 10);
-      if (isNaN(index) || index < 0 || index >= currentImages.length) {
+      const splitedData = id.split('/');
+      const index = parseInt(
+        path.parse(splitedData[splitedData.length - 1]).name,
+        10,
+      );
+      if (isNaN(index) || index < 0) {
         throw new BadRequestException(`Invalid image index in ID: ${id}`);
       }
-
       if (indices.has(index)) {
         throw new BadRequestException(`Duplicate image ID: ${id}`);
       }
 
       indices.add(index);
-      reorderedImages.push(currentImages[index]);
+      reorderedImages.push(id);
     }
 
     if (indices.size !== currentImages.length) {
@@ -380,7 +380,6 @@ export class ProductImageService {
         'Not all images are included in the reorder list',
       );
     }
-
     return reorderedImages;
   }
 
@@ -388,9 +387,7 @@ export class ProductImageService {
     user: { id: string; role: string; vendorId?: string },
     productId: string,
     imageIds: string[],
-  ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
-    const { id: userId } = user;
-
+  ): Promise<{ message: string }> {
     try {
       // Validate product ownership
       const product = await this.validateProductOwnership(productId, user);
@@ -410,23 +407,9 @@ export class ProductImageService {
         data: { images: reorderedImages },
       });
 
-      // Prepare response
-      const images: ProductImageResponseDto[] = reorderedImages.map(
-        (url, index) => ({
-          id: `image_${index}`,
-          url,
-          filename: `product-image-${index + 1}.webp`,
-          size: 0,
-          width: 800,
-          height: 600,
-          uploadedAt: new Date(),
-        }),
-      );
-
       // Log success
       return {
         message: 'Images reordered successfully',
-        images,
       };
     } catch (error) {
       if (

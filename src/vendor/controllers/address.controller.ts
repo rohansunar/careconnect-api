@@ -106,7 +106,10 @@ export class AddressController {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    const updatedAddress = await this.addressService.updateAddress(existingAddress.id, dto);
+    const updatedAddress = await this.addressService.updateAddress(
+      existingAddress.id,
+      dto,
+    );
     return updatedAddress;
   }
 

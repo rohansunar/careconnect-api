@@ -117,7 +117,11 @@ export class ProductImageController {
       }
     }
 
-    return this.productImageService.uploadProductImages(vendor, productId, files);
+    return this.productImageService.uploadProductImages(
+      vendor,
+      productId,
+      files,
+    );
   }
 
   @Delete(':productId')
@@ -152,12 +156,8 @@ export class ProductImageController {
     @Body() deleteImageDto: DeleteProductImageDto,
     @CurrentUser() vendor: any,
   ): Promise<{ message: string; remainingImages: number }> {
-   
-    const vendorId = vendor.role === 'vendor' ? vendor.id : undefined;
-    const user = { id: vendor.vendorId, role: vendor.role, vendorId };
-
     return this.productImageService.deleteProductImage(
-      user,
+      vendor,
       productId,
       deleteImageDto.imageId,
     );
@@ -218,8 +218,7 @@ export class ProductImageController {
     @Param('productId') productId: string,
     @Body() reorderDto: ReorderProductImagesDto,
     @CurrentUser() vendor: any,
-  ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
-
+  ): Promise<{ message: string }> {
     return this.productImageService.reorderProductImages(
       vendor,
       productId,

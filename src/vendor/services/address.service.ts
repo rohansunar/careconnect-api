@@ -10,7 +10,10 @@ import { CitiesService } from '../../cities/services/cities.service';
 
 @Injectable()
 export class AddressService {
-  constructor(private prisma: PrismaService, private citiesService: CitiesService) {}
+  constructor(
+    private prisma: PrismaService,
+    private citiesService: CitiesService,
+  ) {}
 
   /**
    * Creates a new VendorAddress for the given vendorId, ensuring no duplicate address exists for the vendor.
@@ -59,8 +62,7 @@ export class AddressService {
     const address = await this.prisma.vendorAddress.findUnique({
       where: { vendorId },
     });
-    
-    
+
     if (!address) {
       throw new NotFoundException('Vendor address not found');
     }
@@ -74,7 +76,7 @@ export class AddressService {
    * @param data - The fields to update.
    * @returns The updated VendorAddress.
    */
-   async updateAddress(id: string, data: UpdateAddressDto): Promise<any> {
+  async updateAddress(id: string, data: UpdateAddressDto): Promise<any> {
     const updateData: any = { ...data };
     if (updateData.location) {
       updateData.location = JSON.stringify(updateData.location);
@@ -86,7 +88,7 @@ export class AddressService {
     });
 
     return updatedAddress;
-   }
+  }
 
   /**
    * Retrieves a VendorAddress by vendor ID.
