@@ -152,8 +152,8 @@ export class ProductImageController {
     @Body() deleteImageDto: DeleteProductImageDto,
     @CurrentUser() vendor: any,
   ): Promise<{ message: string; remainingImages: number }> {
-    console.log(vendor);
-    const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
+   
+    const vendorId = vendor.role === 'vendor' ? vendor.id : undefined;
     const user = { id: vendor.vendorId, role: vendor.role, vendorId };
 
     return this.productImageService.deleteProductImage(
@@ -219,11 +219,9 @@ export class ProductImageController {
     @Body() reorderDto: ReorderProductImagesDto,
     @CurrentUser() vendor: any,
   ): Promise<{ message: string; images: ProductImageResponseDto[] }> {
-    const vendorId = vendor.role === 'vendor' ? vendor.vendorId : undefined;
-    const user = { id: vendor.vendorId, role: vendor.role, vendorId };
 
     return this.productImageService.reorderProductImages(
-      user,
+      vendor,
       productId,
       reorderDto.imageIds,
     );
