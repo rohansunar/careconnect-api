@@ -81,10 +81,9 @@ export class AddressService {
     if (updateData.location) {
       updateData.location = JSON.stringify(updateData.location);
     }
-
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { id },
-      ...updateData,
+      data:updateData,
     });
 
     return updatedAddress;
