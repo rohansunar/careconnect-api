@@ -9,30 +9,30 @@ import {
 export class UpdateAddressDto {
   @IsNotEmpty()
   @IsString()
-  street?: string;
+  street: string;
 
   @IsNotEmpty()
   @IsString()
-  cityId?: string;
+  cityId: string;
 
   @IsNotEmpty()
   @IsString()
-  state?: string;
+  state: string;
 
   @IsNotEmpty()
   @IsString()
-  zipCode?: string;
+  zipCode: string;
 
   @IsOptional()
   @IsObject()
-  location?: { lat: string; lng: string };
+  location: { lat: string; lng: string };
 
   @IsNotEmpty()
-  address?: any;
+  address: any;
 
   @IsNotEmpty()
   @IsInt()
-  service_radius_m?: number;
+  service_radius_m: number;
 
   @IsOptional()
   @IsString()
