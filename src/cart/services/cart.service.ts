@@ -373,10 +373,6 @@ export class CartService {
       );
     }
 
-    if (!address.isActive) {
-      throw new BadRequestException('Delivery address is not active');
-    }
-
     return address;
   }
 

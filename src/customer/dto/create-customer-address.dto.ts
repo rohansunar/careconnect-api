@@ -30,8 +30,8 @@ export class CreateCustomerAddressDto {
 
   @IsNotEmpty()
   @IsString()
-  @Length(6, 6, { message: 'ZipCode must be exactly 6 digits' })
-  zipCode?: string;
+  @Length(6, 6, { message: 'Pincode must be exactly 6 digits' })
+  pincode?: string;
 
   @IsNotEmpty()
   @IsObject()

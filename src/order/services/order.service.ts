@@ -448,7 +448,7 @@ Please update your inventory accordingly.`;
     if (dto.customerId) {
       await this.validateCustomer(dto.customerId);
       const address = await this.prisma.customerAddress.findFirst({
-        where: { customerId: dto.customerId, isDefault: true, isActive: true },
+        where: { customerId: dto.customerId, isDefault: true, },
       });
       if (!address) {
         throw new BadRequestException(

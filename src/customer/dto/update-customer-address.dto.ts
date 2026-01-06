@@ -28,7 +28,7 @@ export class UpdateCustomerAddressDto {
   @IsString()
   cityId?: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @Length(6, 6, { message: 'Pincode must be exactly 6 digits' })
   pincode?: string;

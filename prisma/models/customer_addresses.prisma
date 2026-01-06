@@ -14,7 +14,7 @@ model CustomerAddress {
   address    String?
   cityId     String?
   city       City?    @relation(fields: [cityId], references: [id])
-  zipCode    String?
+  pincode    String?
   location   Json?
   created_at DateTime @default(now())
   isDefault  Boolean   @default(false)

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
+import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto'
 
 @Injectable()
 export class CustomerAddressService {
@@ -48,7 +49,6 @@ export class CustomerAddressService {
     const addresses = await this.prisma.customerAddress.findMany({
       where: {
         customerId,
-        isActive: true,
       },
       include: {
         city: true,
@@ -96,12 +96,7 @@ export class CustomerAddressService {
   async update(
     customerId: string,
     addressId: string,
-    data: {
-      label?: string;
-      address?: string;
-      cityId?: string;
-      pincode?: string;
-    },
+    data: UpdateCustomerAddressDto,
   ) {
     // Check if address exists and belongs to customer
     const existingAddress = await this.prisma.customerAddress.findFirst({
