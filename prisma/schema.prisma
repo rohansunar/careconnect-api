@@ -177,10 +177,10 @@ model CustomerAddress {
   address    String?
   cityId     String?
   city       City?    @relation(fields: [cityId], references: [id])
-  pincode    String?
+  zipCode    String?
+  location   Json?
   created_at DateTime @default(now())
-  isDefault Boolean   @default(false)
-  isActive   Boolean   @default(true)
+  isDefault  Boolean   @default(false)
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
@@ -412,9 +412,8 @@ model VendorAddress {
   city      City?    @relation(fields: [cityId], references: [id])
   state     String?
   zipCode   String?
-  country   String?  @default("India")
   location  Json?  // For coordinates or additional location info
-  address   Json?    // For any additional address data
+  address   String    // For any additional address data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

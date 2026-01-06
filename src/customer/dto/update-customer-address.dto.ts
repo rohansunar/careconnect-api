@@ -1,15 +1,30 @@
-import { IsString, IsOptional, Length } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  Length,
+  IsNotEmpty,
+  IsObject,
+  IsEnum,
+} from 'class-validator';
+
+export enum AddressLabel {
+  Home = 'Home',
+  Office = 'Office',
+  Restaurant = 'Restaurant',
+  Shop = 'Shop',
+  Institution = 'Institution',
+}
 
 export class UpdateCustomerAddressDto {
   @IsOptional()
-  @IsString()
-  label?: string;
+  @IsEnum(AddressLabel)
+  label?: AddressLabel;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
-  address?: string;
+  address: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   cityId?: string;
 
@@ -17,4 +32,8 @@ export class UpdateCustomerAddressDto {
   @IsString()
   @Length(6, 6, { message: 'Pincode must be exactly 6 digits' })
   pincode?: string;
+
+  @IsNotEmpty()
+  @IsObject()
+  location: object;
 }

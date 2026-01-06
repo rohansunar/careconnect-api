@@ -33,7 +33,7 @@ describe('VendorController', () => {
 
   describe('getProfile', () => {
     it('should return vendor profile', async () => {
-      const mockReq = { user: { vendorId: '123' } };
+      const mockReq = { user: { id: '123' } };
       const mockVendor = { id: '123' };
       const mockProfile = {
         id: '123',
@@ -48,10 +48,7 @@ describe('VendorController', () => {
       };
       jest.spyOn(service, 'getProfile').mockResolvedValue(mockProfile as any);
 
-      const result = await controller.getProfile(
-        mockReq as any,
-        mockVendor as any,
-      );
+      const result = await controller.getProfile(mockVendor);
 
       expect(result).toEqual(mockProfile);
       expect(service.getProfile).toHaveBeenCalledWith('123');
@@ -60,14 +57,14 @@ describe('VendorController', () => {
 
   describe('updateProfile', () => {
     it('should update vendor profile', async () => {
-      const mockReq = { user: { vendorId: '123' } };
+      const mockVendor = { id: '123' };
       const dto: UpdateProfileDto = { name: 'Updated Name' };
       const mockUpdated = { id: '123', name: 'Updated Name' };
       jest
         .spyOn(service, 'updateProfile')
         .mockResolvedValue(mockUpdated as any);
 
-      const result = await controller.updateProfile(mockReq as any, dto);
+      const result = await controller.updateProfile(mockVendor, dto);
 
       expect(result).toEqual(mockUpdated);
       expect(service.updateProfile).toHaveBeenCalledWith('123', dto);
@@ -76,14 +73,14 @@ describe('VendorController', () => {
 
   describe('updateAvailability', () => {
     it('should update vendor availability', async () => {
-      const mockReq = { user: { vendorId: '123' } };
+      const mockVendor = { id: '123' };
       const dto: UpdateAvailabilityDto = { is_active: false };
       const mockUpdated = { id: '123', is_active: false };
       jest
         .spyOn(service, 'updateAvailability')
         .mockResolvedValue(mockUpdated as any);
 
-      const result = await controller.updateAvailability(mockReq as any, dto);
+      const result = await controller.updateAvailability(mockVendor, dto);
 
       expect(result).toEqual(mockUpdated);
       expect(service.updateAvailability).toHaveBeenCalledWith('123', dto);

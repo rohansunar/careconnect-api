@@ -1,15 +1,23 @@
+enum AddressLabel {
+  Home
+  Office
+  Restaurant
+  Shop
+  Institution
+}
+
 model CustomerAddress {
   id         String   @id @default(uuid())
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  label      String?
+  label      AddressLabel?
   address    String?
   cityId     String?
   city       City?    @relation(fields: [cityId], references: [id])
-  pincode    String?
+  zipCode    String?
+  location   Json?
   created_at DateTime @default(now())
-  isDefault Boolean   @default(false)
-  isActive   Boolean   @default(true)
+  isDefault  Boolean   @default(false)
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]

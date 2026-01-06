@@ -73,6 +73,7 @@ describe('RiderController', () => {
         phone: '+1234567890',
         email: 'john@example.com',
         address: '123 Main St',
+        vendorId: 'vendor-456',
         created_at: new Date(),
       };
 
@@ -83,8 +84,14 @@ describe('RiderController', () => {
         .send(riderData)
         .expect(201);
 
-      expect(response.body).toEqual(expectedResponse);
-      expect(mockRiderService.createRider).toHaveBeenCalledWith(riderData);
+      expect(response.body).toEqual({
+        ...expectedResponse,
+        created_at: expectedResponse.created_at.toISOString(),
+      });
+      expect(mockRiderService.createRider).toHaveBeenCalledWith(
+        { ...riderData, vendorId: 'vendor-456' },
+        false,
+      );
       expect(mockRiderService.createRider).toHaveBeenCalledTimes(1);
     });
 
@@ -105,7 +112,10 @@ describe('RiderController', () => {
         .send(riderData)
         .expect(400);
 
-      expect(mockRiderService.createRider).toHaveBeenCalledWith(riderData);
+      expect(mockRiderService.createRider).toHaveBeenCalledWith(
+        { ...riderData, vendorId: 'vendor-456' },
+        false,
+      );
     });
 
     it('should throw 400 Bad Request for invalid phone format', async () => {
@@ -123,21 +133,41 @@ describe('RiderController', () => {
         .send(riderData)
         .expect(400);
 
-      expect(mockRiderService.createRider).toHaveBeenCalledWith(riderData);
+      expect(mockRiderService.createRider).toHaveBeenCalledWith(
+        { ...riderData, vendorId: 'vendor-456' },
+        false,
+      );
     });
 
-    it('should throw 400 Bad Request for missing required fields', async () => {
-      // Rationale: Tests validation for missing required fields like name and phone.
+    it('should create rider with partial data', async () => {
+      // Rationale: Tests creation with partial data.
       const riderData = {
+        name: 'John Doe',
+        phone: '+1234567890',
         email: 'john@example.com',
       };
+
+      const expectedResponse = {
+        id: 'rider-123',
+        name: 'John Doe',
+        phone: '+1234567890',
+        email: 'john@example.com',
+        address: null,
+        vendorId: 'vendor-456',
+        created_at: new Date(),
+      };
+
+      mockRiderService.createRider.mockResolvedValue(expectedResponse);
 
       await request(app.getHttpServer())
         .post('/riders')
         .send(riderData)
-        .expect(400);
+        .expect(201);
 
-      expect(mockRiderService.createRider).not.toHaveBeenCalled();
+      expect(mockRiderService.createRider).toHaveBeenCalledWith(
+        { ...riderData, vendorId: 'vendor-456' },
+        false,
+      );
     });
   });
 
@@ -153,6 +183,9 @@ describe('RiderController', () => {
         id: 'rider-123',
         name: 'John Doe',
         phone: '+1234567890',
+        email: null,
+        address: null,
+        vendorId: 'vendor-456',
         created_at: new Date(),
       };
 

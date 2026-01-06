@@ -90,6 +90,7 @@ describe('CustomerAddressService', () => {
           where: {
             customerId: mockCustomerId,
             id: { not: mockAddressId },
+            isActive: true,
           },
           data: {
             isDefault: false,
@@ -119,6 +120,7 @@ describe('CustomerAddressService', () => {
         where: {
           id: mockAddressId,
           customerId: mockCustomerId,
+          isActive: true,
         },
       });
 
@@ -188,6 +190,7 @@ describe('CustomerAddressService', () => {
           where: {
             customerId: mockCustomerId,
             id: { not: mockAddressId },
+            isActive: true,
           },
           data: {
             isDefault: false,
@@ -330,7 +333,7 @@ describe('CustomerAddressService', () => {
 
       expect(result).toEqual(mockAddresses);
       expect(mockPrismaService.customerAddress.findMany).toHaveBeenCalledWith({
-        where: { customerId: mockCustomerId },
+        where: { customerId: mockCustomerId, isActive: true },
         include: {
           city: true,
         },
@@ -366,6 +369,7 @@ describe('CustomerAddressService', () => {
         where: {
           id: mockAddressId,
           customerId: mockCustomerId,
+          isActive: true,
         },
         include: {
           city: true,
@@ -426,6 +430,7 @@ describe('CustomerAddressService', () => {
         where: {
           id: mockAddressId,
           customerId: mockCustomerId,
+          isActive: true,
         },
       });
       expect(mockPrismaService.customerAddress.update).toHaveBeenCalledWith({

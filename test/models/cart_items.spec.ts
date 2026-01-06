@@ -26,6 +26,7 @@ describe('CartItems CRUD', () => {
     await prisma.customerAddress.deleteMany();
     await prisma.customer.deleteMany();
     await prisma.product.deleteMany();
+    await prisma.vendorAddress.deleteMany();
     await prisma.vendor.deleteMany();
     await prisma.categories.deleteMany();
   });
@@ -44,6 +45,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V00001',
         },
       });
 

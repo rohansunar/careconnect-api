@@ -168,7 +168,10 @@ describe('CartController', () => {
         .expect(200);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCartService.updateQuantity).toHaveBeenCalledWith(1, dto);
+      expect(mockCartService.updateQuantity).toHaveBeenCalledWith(
+        cartItemId,
+        dto,
+      );
       expect(mockCartService.updateQuantity).toHaveBeenCalledTimes(1);
     });
 
@@ -187,24 +190,33 @@ describe('CartController', () => {
         .send(dto)
         .expect(404);
 
-      expect(mockCartService.updateQuantity).toHaveBeenCalledWith(999, dto);
+      expect(mockCartService.updateQuantity).toHaveBeenCalledWith(
+        cartItemId,
+        dto,
+      );
     });
 
     // DTO validation tests removed as they require proper validation pipe setup in test environment
 
-    it('should throw 500 for invalid cart item ID format', async () => {
+    it('should throw 404 for invalid cart item ID', async () => {
       const invalidId = 'invalid-id';
       const dto: UpdateCartItemDto = {
         quantity: 2,
       };
 
-      // The controller tries to parse the ID, and if it fails, it should throw an error
+      mockCartService.updateQuantity.mockRejectedValue(
+        new NotFoundException('Cart item not found'),
+      );
+
       await request(app.getHttpServer())
         .put(`/cart/${invalidId}`)
         .send(dto)
-        .expect(500);
+        .expect(404);
 
-      expect(mockCartService.updateQuantity).not.toHaveBeenCalled();
+      expect(mockCartService.updateQuantity).toHaveBeenCalledWith(
+        invalidId,
+        dto,
+      );
     });
   });
 
@@ -220,7 +232,7 @@ describe('CartController', () => {
         .expect(200);
 
       expect(response.body).toEqual(expectedResponse);
-      expect(mockCartService.removeFromCart).toHaveBeenCalledWith(1);
+      expect(mockCartService.removeFromCart).toHaveBeenCalledWith(cartItemId);
       expect(mockCartService.removeFromCart).toHaveBeenCalledTimes(1);
     });
 
@@ -235,18 +247,21 @@ describe('CartController', () => {
         .delete(`/cart/${cartItemId}`)
         .expect(404);
 
-      expect(mockCartService.removeFromCart).toHaveBeenCalledWith(999);
+      expect(mockCartService.removeFromCart).toHaveBeenCalledWith(cartItemId);
     });
 
-    it('should throw 500 for invalid cart item ID format', async () => {
+    it('should throw 404 for invalid cart item ID', async () => {
       const invalidId = 'invalid-id';
 
-      // The controller tries to parse the ID, and if it fails, it should throw an error
+      mockCartService.removeFromCart.mockRejectedValue(
+        new NotFoundException('Cart item not found'),
+      );
+
       await request(app.getHttpServer())
         .delete(`/cart/${invalidId}`)
-        .expect(500);
+        .expect(404);
 
-      expect(mockCartService.removeFromCart).not.toHaveBeenCalled();
+      expect(mockCartService.removeFromCart).toHaveBeenCalledWith(invalidId);
     });
   });
 

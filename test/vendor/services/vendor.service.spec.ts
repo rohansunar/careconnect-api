@@ -18,6 +18,9 @@ describe('VendorService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
             },
+            vendorAddress: {
+              update: jest.fn(),
+            },
           },
         },
       ],
@@ -53,16 +56,8 @@ describe('VendorService', () => {
       expect(result).toEqual(mockVendor);
       expect(prisma.vendor.findUnique).toHaveBeenCalledWith({
         where: { id: '123' },
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          email: true,
+        include: {
           address: true,
-          is_active: true,
-          is_available_today: true,
-          service_radius_m: true,
-          delivery_time_msg: true,
         },
       });
     });
@@ -83,6 +78,7 @@ describe('VendorService', () => {
         id: '123',
         name: 'Updated Name',
         phone: '+1234567890',
+        address: null,
       };
       jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
@@ -92,7 +88,9 @@ describe('VendorService', () => {
       expect(prisma.vendor.update).toHaveBeenCalledWith({
         where: { id: '123' },
         data: dto,
-        select: expect.any(Object),
+        include: {
+          address: true,
+        },
       });
     });
 
@@ -112,6 +110,7 @@ describe('VendorService', () => {
         id: '123',
         is_active: false,
         is_available_today: true,
+        address: null,
       };
       jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
@@ -121,20 +120,30 @@ describe('VendorService', () => {
       expect(prisma.vendor.update).toHaveBeenCalledWith({
         where: { id: '123' },
         data: { is_active: false, is_available_today: true },
-        select: expect.any(Object),
+        include: {
+          address: true,
+        },
       });
     });
 
     it('should update only is_active if is_available_today not provided', async () => {
       const dto = { is_active: true };
-      jest.spyOn(prisma.vendor, 'update').mockResolvedValue({} as any);
+      const mockUpdated = {
+        id: '123',
+        is_active: true,
+        address: null,
+      };
+      jest.spyOn(prisma.vendor, 'update').mockResolvedValue(mockUpdated as any);
 
-      await service.updateAvailability('123', dto);
+      const result = await service.updateAvailability('123', dto);
 
+      expect(result).toEqual(mockUpdated);
       expect(prisma.vendor.update).toHaveBeenCalledWith({
         where: { id: '123' },
         data: { is_active: true },
-        select: expect.any(Object),
+        include: {
+          address: true,
+        },
       });
     });
   });

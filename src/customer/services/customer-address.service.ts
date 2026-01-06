@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 
 @Injectable()
 export class CustomerAddressService {
@@ -15,15 +16,7 @@ export class CustomerAddressService {
    * @param data - The address data to create.
    * @returns The created customer address with city relation.
    */
-  async create(
-    customerId: string,
-    data: {
-      label?: string;
-      address?: string;
-      cityId?: string;
-      pincode?: string;
-    },
-  ) {
+  async create(customerId: string, data: CreateCustomerAddressDto) {
     // Validate city exists if cityId is provided
     if (data.cityId) {
       const city = await this.prisma.city.findUnique({
@@ -33,7 +26,6 @@ export class CustomerAddressService {
         throw new BadRequestException('City not found');
       }
     }
-
     const customerAddress = await this.prisma.customerAddress.create({
       data: {
         customerId,

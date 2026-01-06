@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { VendorAuthService } from '../../src/vendor/services/vendor-auth.service';
+import { VendorAuthService } from '../../src/auth/services/vendor-auth.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { OtpService } from '../../src/otp/services/otp.service';
 import { JwtService } from '@nestjs/jwt';
