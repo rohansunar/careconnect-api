@@ -112,10 +112,15 @@ export class CustomerAddressService {
     await this.validateCustomerExists(customerId);
     await this.validateCity(data.cityId);
     await this.checkDuplicateAddress(customerId, data);
+    const existingAddressesCount = await this.prisma.customerAddress.count({
+      where: { customerId, isActive: true } as any,
+    });
+    const isDefault = existingAddressesCount === 0;
     const customerAddress = await this.prisma.customerAddress.create({
       data: {
         customerId,
         ...data,
+        isDefault,
       },
       include: {
         city: true,
@@ -140,10 +145,7 @@ export class CustomerAddressService {
       include: {
         city: true,
       },
-      orderBy: [
-        { isDefault: 'desc' },
-        { created_at: 'desc' },
-      ],
+      orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
     });
 
     return addresses;
