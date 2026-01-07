@@ -140,9 +140,10 @@ export class CustomerAddressService {
       include: {
         city: true,
       },
-      orderBy: {
-        created_at: 'desc',
-      },
+      orderBy: [
+        { isDefault: 'desc' },
+        { created_at: 'desc' },
+      ],
     });
 
     return addresses;
