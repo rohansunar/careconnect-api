@@ -32,7 +32,7 @@ export class PaymentController {
       example1: {
         summary: 'Create payment example',
         value: {
-          orderId: 'order-uuid-123',
+          cartId: 'cart-uuid-123',
           paymentMode: 'ONLINE',
         },
       },

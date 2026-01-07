@@ -5,11 +5,11 @@ import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
  */
 export class CreatePaymentDto {
   /**
-   * Unique identifier of the order
+   * Unique identifier of the cart
    */
   @IsNotEmpty()
   @IsString()
-  orderId: string;
+  cartId: string;
 
   /**
    * Payment mode (ONLINE, CASH, etc.)

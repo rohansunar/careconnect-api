@@ -234,7 +234,6 @@ export class CartService {
 
     // Validate delivery address
     const deliveryAddress = await this.validateDeliveryAddress(
-      dto.addressId,
       customerId,
     );
 
@@ -355,9 +354,9 @@ export class CartService {
    * @returns The address data if valid
    * @throws BadRequestException if address doesn't exist or doesn't belong to customer
    */
-  async validateDeliveryAddress(addressId: string, customerId: string) {
-    const address = await this.prisma.customerAddress.findUnique({
-      where: { id: addressId },
+  async validateDeliveryAddress(customerId: string) {
+    const address = await this.prisma.customerAddress.findFirst({
+      where: { customerId, isDefault: true },
       include: {
         city: true,
       },
