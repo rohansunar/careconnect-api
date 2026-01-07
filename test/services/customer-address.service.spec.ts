@@ -18,6 +18,9 @@ describe('CustomerAddressService', () => {
         updateMany: jest.fn(),
         delete: jest.fn(),
       },
+      customer: {
+        findFirst: jest.fn(),
+      },
       city: {
         findUnique: jest.fn(),
       },
@@ -61,6 +64,10 @@ describe('CustomerAddressService', () => {
     };
 
     it('should set address as default successfully', async () => {
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       // Mock the existing address check
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
@@ -111,6 +118,10 @@ describe('CustomerAddressService', () => {
     });
 
     it('should throw NotFoundException when address does not exist', async () => {
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -154,6 +165,10 @@ describe('CustomerAddressService', () => {
     });
 
     it('should reset all other addresses to non-default when setting a new default', async () => {
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       // Mock existing addresses that should be reset
       const otherAddress1 = {
         id: 'address-456',
@@ -200,6 +215,10 @@ describe('CustomerAddressService', () => {
     });
 
     it('should handle error when updateMany fails', async () => {
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
@@ -217,6 +236,10 @@ describe('CustomerAddressService', () => {
     });
 
     it('should handle error when final update fails', async () => {
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
@@ -242,10 +265,10 @@ describe('CustomerAddressService', () => {
       const mockCustomerId = 'customer-123';
       const mockCityId = 'city-123';
       const mockData = {
-        label: 'Home',
         address: '123 Main St',
         cityId: mockCityId,
         pincode: '123456',
+        location: { lat: 12.34, lng: 56.78 },
       };
 
       const mockCity = {
@@ -256,15 +279,19 @@ describe('CustomerAddressService', () => {
       const mockCreatedAddress = {
         id: 'address-123',
         customerId: mockCustomerId,
-        label: mockData.label,
         address: mockData.address,
         cityId: mockData.cityId,
         pincode: mockData.pincode,
+        location: mockData.location,
         created_at: new Date(),
         isDefault: false,
         city: mockCity,
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.city.findUnique.mockResolvedValue(mockCity);
       mockPrismaService.customerAddress.create.mockResolvedValue(
         mockCreatedAddress,
@@ -293,6 +320,10 @@ describe('CustomerAddressService', () => {
         cityId: 'invalid-city-id',
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.city.findUnique.mockResolvedValue(null);
 
       await expect(service.create(mockCustomerId, mockData)).rejects.toThrow(
@@ -325,6 +356,10 @@ describe('CustomerAddressService', () => {
         },
       ];
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findMany.mockResolvedValue(
         mockAddresses,
       );
@@ -340,6 +375,382 @@ describe('CustomerAddressService', () => {
         orderBy: {
           created_at: 'desc',
         },
+      });
+    });
+
+    describe('createAddress', () => {
+      it('should create a customer address successfully with duplicate check', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockCityId = 'city-123';
+        const mockData = {
+          label: 'Home',
+          address: '123 Main St',
+          cityId: mockCityId,
+          pincode: '123456',
+          location: { lat: 12.34, lng: 56.78 },
+        };
+
+        const mockCity = {
+          id: mockCityId,
+          name: 'Test City',
+        };
+
+        const mockCreatedAddress = {
+          id: 'address-123',
+          customerId: mockCustomerId,
+          label: mockData.label,
+          address: mockData.address,
+          cityId: mockData.cityId,
+          pincode: mockData.pincode,
+          location: mockData.location,
+          created_at: new Date(),
+          isDefault: false,
+          city: mockCity,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst.mockResolvedValue(null); // No duplicate
+        mockPrismaService.city.findUnique.mockResolvedValue(mockCity);
+        mockPrismaService.customerAddress.create.mockResolvedValue(
+          mockCreatedAddress,
+        );
+
+        const result = await service.createAddress(mockCustomerId, mockData);
+
+        expect(result).toEqual(mockCreatedAddress);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenCalledWith({
+          where: {
+            customerId: mockCustomerId,
+            pincode: mockData.pincode,
+            cityId: mockData.cityId,
+            location: mockData.location,
+            address: mockData.address,
+          },
+        });
+        expect(mockPrismaService.city.findUnique).toHaveBeenCalledWith({
+          where: { id: mockCityId },
+        });
+        expect(mockPrismaService.customerAddress.create).toHaveBeenCalledWith({
+          data: {
+            customerId: mockCustomerId,
+            ...mockData,
+          },
+          include: {
+            city: true,
+          },
+        });
+      });
+
+      it('should throw BadRequestException when duplicate address found', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockData = {
+          address: '123 Main St',
+          cityId: 'city-123',
+          pincode: '123456',
+          location: { lat: 12.34, lng: 56.78 },
+        };
+
+        const mockDuplicateAddress = {
+          id: 'existing-address',
+          customerId: mockCustomerId,
+          ...mockData,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+          mockDuplicateAddress,
+        );
+
+        await expect(
+          service.createAddress(mockCustomerId, mockData),
+        ).rejects.toThrow(BadRequestException);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenCalledWith({
+          where: {
+            customerId: mockCustomerId,
+            pincode: mockData.pincode,
+            cityId: mockData.cityId,
+            location: mockData.location,
+            address: mockData.address,
+          },
+        });
+        expect(mockPrismaService.city.findUnique).not.toHaveBeenCalled();
+        expect(mockPrismaService.customerAddress.create).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when city not found', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockData = {
+          address: '123 Main St',
+          cityId: 'invalid-city-id',
+          pincode: '123456',
+          location: { lat: 12.34, lng: 56.78 },
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+        mockPrismaService.city.findUnique.mockResolvedValue(null);
+
+        await expect(
+          service.createAddress(mockCustomerId, mockData),
+        ).rejects.toThrow(BadRequestException);
+        expect(mockPrismaService.customerAddress.findFirst).toHaveBeenCalled();
+        expect(mockPrismaService.city.findUnique).toHaveBeenCalledWith({
+          where: { id: 'invalid-city-id' },
+        });
+        expect(mockPrismaService.customerAddress.create).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('updateAddress', () => {
+      it('should update a customer address successfully with duplicate check', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockAddressId = 'address-123';
+        const mockData = {
+          address: 'Updated 123 Main St',
+          location: { lat: 12.34, lng: 56.78 },
+          pincode: '123456',
+          cityId: 'city-123',
+        };
+
+        const mockExistingAddress = {
+          id: mockAddressId,
+          customerId: mockCustomerId,
+          label: 'Home',
+          address: '123 Main St',
+          cityId: 'old-city',
+          pincode: '654321',
+          location: { lat: 98.76, lng: 54.32 },
+          created_at: new Date(),
+          isDefault: false,
+        };
+
+        const mockCity = {
+          id: 'city-123',
+          name: 'Test City',
+        };
+
+        const mockUpdatedAddress = {
+          ...mockExistingAddress,
+          ...mockData,
+          city: mockCity,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst
+          .mockResolvedValueOnce(mockExistingAddress) // For existence check
+          .mockResolvedValueOnce(null); // For duplicate check
+        mockPrismaService.city.findUnique.mockResolvedValue(mockCity);
+        mockPrismaService.customerAddress.update.mockResolvedValue(
+          mockUpdatedAddress,
+        );
+
+        const result = await service.updateAddress(
+          mockCustomerId,
+          mockAddressId,
+          mockData,
+        );
+
+        expect(result).toEqual(mockUpdatedAddress);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenNthCalledWith(1, {
+          where: {
+            id: mockAddressId,
+            customerId: mockCustomerId,
+            isActive: true,
+          },
+        });
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenNthCalledWith(2, {
+          where: {
+            customerId: mockCustomerId,
+            id: { not: mockAddressId },
+            address: mockData.address,
+            location: mockData.location,
+            pincode: mockData.pincode,
+            cityId: mockData.cityId,
+          },
+        });
+        expect(mockPrismaService.city.findUnique).toHaveBeenCalledWith({
+          where: { id: 'city-123' },
+        });
+        expect(mockPrismaService.customerAddress.update).toHaveBeenCalledWith({
+          where: { id: mockAddressId },
+          data: mockData,
+          include: {
+            city: true,
+          },
+        });
+      });
+
+      it('should throw NotFoundException when address not found', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockAddressId = 'address-123';
+        const mockData = {
+          address: 'Updated 123 Main St',
+          location: { lat: 12.34, lng: 56.78 },
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+
+        await expect(
+          service.updateAddress(mockCustomerId, mockAddressId, mockData),
+        ).rejects.toThrow(NotFoundException);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenCalledWith({
+          where: {
+            id: mockAddressId,
+            customerId: mockCustomerId,
+            isActive: true,
+          },
+        });
+        expect(mockPrismaService.customerAddress.update).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when duplicate address found', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockAddressId = 'address-123';
+        const mockData = {
+          address: '123 Main St',
+          location: { lat: 12.34, lng: 56.78 },
+          pincode: '123456',
+          cityId: 'city-123',
+        };
+
+        const mockExistingAddress = {
+          id: mockAddressId,
+          customerId: mockCustomerId,
+        };
+
+        const mockDuplicateAddress = {
+          id: 'other-address',
+          customerId: mockCustomerId,
+          ...mockData,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst
+          .mockResolvedValueOnce(mockExistingAddress)
+          .mockResolvedValueOnce(mockDuplicateAddress);
+
+        await expect(
+          service.updateAddress(mockCustomerId, mockAddressId, mockData),
+        ).rejects.toThrow(BadRequestException);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenCalledTimes(2);
+        expect(mockPrismaService.city.findUnique).not.toHaveBeenCalled();
+        expect(mockPrismaService.customerAddress.update).not.toHaveBeenCalled();
+      });
+
+      it('should throw BadRequestException when city not found', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockAddressId = 'address-123';
+        const mockData = {
+          address: 'Updated 123 Main St',
+          location: { lat: 12.34, lng: 56.78 },
+          cityId: 'invalid-city-id',
+        };
+
+        const mockExistingAddress = {
+          id: mockAddressId,
+          customerId: mockCustomerId,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst
+          .mockResolvedValueOnce(mockExistingAddress)
+          .mockResolvedValueOnce(null);
+        mockPrismaService.city.findUnique.mockResolvedValue(null);
+
+        await expect(
+          service.updateAddress(mockCustomerId, mockAddressId, mockData),
+        ).rejects.toThrow(BadRequestException);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenCalledTimes(2);
+        expect(mockPrismaService.city.findUnique).toHaveBeenCalledWith({
+          where: { id: 'invalid-city-id' },
+        });
+        expect(mockPrismaService.customerAddress.update).not.toHaveBeenCalled();
+      });
+
+      it('should handle optional fields in duplicate check', async () => {
+        const mockCustomerId = 'customer-123';
+        const mockAddressId = 'address-123';
+        const mockData = {
+          address: 'Updated 123 Main St',
+          location: { lat: 12.34, lng: 56.78 },
+          // pincode and cityId not provided
+        };
+
+        const mockExistingAddress = {
+          id: mockAddressId,
+          customerId: mockCustomerId,
+        };
+
+        const mockUpdatedAddress = {
+          ...mockExistingAddress,
+          ...mockData,
+        };
+
+        mockPrismaService.customer.findFirst.mockResolvedValue({
+          id: mockCustomerId,
+          isActive: true,
+        });
+        mockPrismaService.customerAddress.findFirst
+          .mockResolvedValueOnce(mockExistingAddress)
+          .mockResolvedValueOnce(null);
+        mockPrismaService.customerAddress.update.mockResolvedValue(
+          mockUpdatedAddress,
+        );
+
+        const result = await service.updateAddress(
+          mockCustomerId,
+          mockAddressId,
+          mockData,
+        );
+
+        expect(result).toEqual(mockUpdatedAddress);
+        expect(
+          mockPrismaService.customerAddress.findFirst,
+        ).toHaveBeenNthCalledWith(2, {
+          where: {
+            customerId: mockCustomerId,
+            id: { not: mockAddressId },
+            address: mockData.address,
+            location: mockData.location,
+            // pincode and cityId not included since undefined
+          },
+        });
       });
     });
   });
@@ -358,6 +769,10 @@ describe('CustomerAddressService', () => {
         isDefault: true,
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockAddress,
       );
@@ -381,6 +796,10 @@ describe('CustomerAddressService', () => {
       const mockCustomerId = 'customer-123';
       const mockAddressId = 'address-123';
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -394,7 +813,8 @@ describe('CustomerAddressService', () => {
       const mockCustomerId = 'customer-123';
       const mockAddressId = 'address-123';
       const mockData = {
-        label: 'Updated Home',
+        address: 'Updated 123 Main St',
+        location: { lat: 12.34, lng: 56.78 },
       };
 
       const mockExistingAddress = {
@@ -412,6 +832,10 @@ describe('CustomerAddressService', () => {
         ...mockData,
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
@@ -446,9 +870,14 @@ describe('CustomerAddressService', () => {
       const mockCustomerId = 'customer-123';
       const mockAddressId = 'address-123';
       const mockData = {
-        label: 'Updated Home',
+        address: 'Updated 123 Main St',
+        location: { lat: 12.34, lng: 56.78 },
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(
@@ -472,10 +901,14 @@ describe('CustomerAddressService', () => {
         isDefault: false,
       };
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
-      mockPrismaService.customerAddress.delete.mockResolvedValue(
+      mockPrismaService.customerAddress.update.mockResolvedValue(
         mockExistingAddress,
       );
 
@@ -490,8 +923,9 @@ describe('CustomerAddressService', () => {
           customerId: mockCustomerId,
         },
       });
-      expect(mockPrismaService.customerAddress.delete).toHaveBeenCalledWith({
+      expect(mockPrismaService.customerAddress.update).toHaveBeenCalledWith({
         where: { id: mockAddressId },
+        data: { isActive: false } as any,
       });
     });
 
@@ -499,6 +933,10 @@ describe('CustomerAddressService', () => {
       const mockCustomerId = 'customer-123';
       const mockAddressId = 'address-123';
 
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: mockCustomerId,
+        isActive: true,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(
