@@ -129,7 +129,6 @@ export class CartController {
     description:
       'Generate a preview of the order summary including itemized breakdown, vendor grouping, subtotals, and delivery address validation.',
   })
-  @ApiBody({ type: CheckoutRequestDto })
   @ApiResponse({
     status: 200,
     description: 'Checkout preview generated successfully.',
@@ -142,10 +141,9 @@ export class CartController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('checkout')
   async generateCheckout(
-    @Body() dto: CheckoutRequestDto,
     @CurrentUser() customer: any,
   ) {
     const { id } = customer;
-    return this.cartService.generateCheckout(dto, id);
+    return this.cartService.generateCheckout(id);
   }
 }

@@ -3,6 +3,7 @@ import { CustomerAuthService } from '../../src/auth/services/customer-auth.servi
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { OtpService } from '../../src/otp/services/otp.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UnauthorizedException } from '@nestjs/common';
 import { OtpPurpose } from '@prisma/client';
 import {
@@ -44,6 +45,10 @@ describe('CustomerAuthService', () => {
       sign: jest.fn(),
     };
 
+    const mockConfigService = {
+      get: jest.fn().mockReturnValue('test-secret'),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CustomerAuthService,
@@ -58,6 +63,10 @@ describe('CustomerAuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -146,12 +155,15 @@ describe('CustomerAuthService', () => {
           name: '',
         },
       });
-      expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: mockCustomer.id.toString(),
-        phone: mockCustomer.phone,
-        role: 'customer',
-        name: mockCustomer.name,
-      });
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: mockCustomer.id.toString(),
+          phone: mockCustomer.phone,
+          role: 'customer',
+          name: mockCustomer.name,
+        },
+        { secret: 'test-secret' },
+      );
     });
 
     it('should throw UnauthorizedException if OTP verification fails', async () => {
@@ -225,12 +237,15 @@ describe('CustomerAuthService', () => {
           name: '',
         },
       });
-      expect(mockJwtService.sign).toHaveBeenCalledWith({
-        sub: mockCustomer.id.toString(),
-        phone: mockCustomer.phone,
-        role: 'customer',
-        name: mockCustomer.name,
-      });
+      expect(mockJwtService.sign).toHaveBeenCalledWith(
+        {
+          sub: mockCustomer.id.toString(),
+          phone: mockCustomer.phone,
+          role: 'customer',
+          name: mockCustomer.name,
+        },
+        { secret: 'test-secret' },
+      );
     });
 
     it('should create new customer if not exists', async () => {

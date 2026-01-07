@@ -157,6 +157,29 @@ export class CartService {
   }
 
   /**
+   * Validates that a cart exists and is active.
+   * @param cartId - The unique identifier of the cart
+   * @returns The validated cart with cartItems
+   * @throws BadRequestException if cart doesn't exist or is not active
+   */
+  async validateCart(cartId: string) {
+    const cart = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+      include: { cartItems: true },
+    });
+
+    if (!cart) {
+      throw new BadRequestException('Cart not found');
+    }
+
+    if (cart.status !== CartStatus.ACTIVE) {
+      throw new BadRequestException('Cart is not active or already processed');
+    }
+
+    return cart;
+  }
+
+  /**
    * Retrieves all cart items for a specific customer.
    * @param customerId - The unique identifier of the customer
    * @returns Array of cart items with product details
@@ -198,12 +221,10 @@ export class CartService {
 
   /**
    * Generates a checkout preview with itemized breakdown, vendor grouping, and address validation.
-   * @param dto - The checkout preview request data
    * @param customerId - The unique identifier of the customer
    * @returns The checkout preview response with grouped items and calculations
    */
   async generateCheckout(
-    dto: CheckoutRequestDto,
     customerId: string,
   ): Promise<CheckoutResponseDto> {
     // Validate customer exists
@@ -233,9 +254,7 @@ export class CartService {
     }
 
     // Validate delivery address
-    const deliveryAddress = await this.validateDeliveryAddress(
-      customerId,
-    );
+    const deliveryAddress = await this.validateDeliveryAddress(customerId);
 
     // Group cart items by vendor
     const vendorGroups = this.groupCartItemsByVendor(cart.cartItems);

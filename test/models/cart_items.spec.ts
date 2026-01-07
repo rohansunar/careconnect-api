@@ -45,7 +45,6 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
-          vendorNo: 'V00001',
         },
       });
 
@@ -73,6 +72,12 @@ describe('CartItems CRUD', () => {
         },
       });
 
+      const cart = await prisma.cart.create({
+        data: {
+          customerId: customer.id,
+        },
+      });
+
       const cartItemData = {
         customerId: customer.id,
         productId: product.id,
@@ -80,6 +85,7 @@ describe('CartItems CRUD', () => {
         addressId: address.id,
         price: product.price,
         deposit: product.deposit,
+        cartId: cart.id,
       };
 
       const cartItem = await (prisma as any).cartItem.create({
@@ -565,6 +571,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V00001',
         },
       });
 
@@ -627,6 +634,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V00001',
         },
       });
 

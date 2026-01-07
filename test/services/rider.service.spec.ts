@@ -66,6 +66,7 @@ describe('RiderService', () => {
           phone: true,
           email: true,
           address: true,
+          vendorId: true,
           created_at: true,
         },
       });
@@ -109,12 +110,12 @@ describe('RiderService', () => {
     it('should create rider with optional fields omitted', async () => {
       const data = {
         name: 'Jane Doe',
-        phone: '+0987654321',
+        phone: '+1987654321',
       };
       const mockCreatedRider = {
         id: 'riderId2',
         name: 'Jane Doe',
-        phone: '+0987654321',
+        phone: '+1987654321',
         email: null,
         address: null,
         created_at: new Date(),
@@ -134,6 +135,7 @@ describe('RiderService', () => {
           phone: true,
           email: true,
           address: true,
+          vendorId: true,
           created_at: true,
         },
       });

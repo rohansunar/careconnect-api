@@ -13,13 +13,13 @@ import { Decimal } from '@prisma/client/runtime/library';
 interface CartWithDetails {
   id: string;
   customerId: string;
-  customer: { id: string; };
+  customer: { id: string };
   cartItems: {
     price: Decimal;
     quantity: number;
     product: {
       vendorId: string;
-      vendor: { id: string; };
+      vendor: { id: string };
     };
   }[];
 }
@@ -73,7 +73,9 @@ export class PaymentService {
       this.logger.debug(`Vendor ID extracted: ${vendorId}`);
 
       // Retrieve customer's default address
-      const defaultAddress = await this.getDefaultAddressForCustomer(cart.customerId);
+      const defaultAddress = await this.getDefaultAddressForCustomer(
+        cart.customerId,
+      );
       this.logger.debug(`Default address retrieved: ${defaultAddress.id}`);
 
       // Calculate total payment amount
@@ -81,21 +83,43 @@ export class PaymentService {
       this.logger.debug(`Total amount calculated: ${totalAmount}`);
 
       // Initiate payment with provider
-      const providerResponse = await this.initiatePayment(totalAmount, cart.customerId, vendorId, dto.cartId);
+      const providerResponse = await this.initiatePayment(
+        totalAmount,
+        cart.customerId,
+        vendorId,
+        dto.cartId,
+      );
       this.logger.debug(`Payment initiated with provider`);
 
       // Create payment record in database
-      const payment = await this.createPaymentRecord(dto.cartId, cart.customerId, vendorId, totalAmount, dto.paymentMode, providerResponse);
+      const payment = await this.createPaymentRecord(
+        dto.cartId,
+        cart.customerId,
+        vendorId,
+        totalAmount,
+        dto.paymentMode,
+        providerResponse,
+      );
       this.logger.debug(`Payment record created: ${payment.id}`);
 
       // Create associated order
-      const order = await this.createOrder(cart, defaultAddress.id, totalAmount, payment);
+      const order = await this.createOrder(
+        cart,
+        defaultAddress.id,
+        totalAmount,
+        payment,
+      );
       this.logger.debug(`Order created: ${order.id}`);
 
-      this.logger.log(`Payment and order created successfully: payment ${payment.id}, order ${order.id}`);
+      this.logger.log(
+        `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
+      );
       return payment;
     } catch (error) {
-      this.logger.error(`Failed to create payment for cart ${dto.cartId}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create payment for cart ${dto.cartId}: ${error.message}`,
+        error.stack,
+      );
       throw error; // Re-throw to maintain error handling
     }
   }
@@ -107,7 +131,9 @@ export class PaymentService {
    * @throws NotFoundException if cart not found
    * @throws BadRequestException if cart is empty
    */
-  private async retrieveAndValidateCart(cartId: string): Promise<CartWithDetails> {
+  private async retrieveAndValidateCart(
+    cartId: string,
+  ): Promise<CartWithDetails> {
     this.logger.debug(`Retrieving cart: ${cartId}`);
     const cart = await this.prisma.cart.findUnique({
       where: { id: cartId },
@@ -157,14 +183,18 @@ export class PaymentService {
    * @returns The default address
    * @throws BadRequestException if no default address found
    */
-  private async getDefaultAddressForCustomer(customerId: string): Promise<CustomerAddressWithId> {
+  private async getDefaultAddressForCustomer(
+    customerId: string,
+  ): Promise<CustomerAddressWithId> {
     this.logger.debug(`Retrieving default address for customer: ${customerId}`);
     const address = await this.prisma.customerAddress.findFirst({
       where: { customerId, isDefault: true },
     });
 
     if (!address) {
-      throw new BadRequestException(`No default address found for customer ${customerId}`);
+      throw new BadRequestException(
+        `No default address found for customer ${customerId}`,
+      );
     }
 
     return address as CustomerAddressWithId;
@@ -175,8 +205,13 @@ export class PaymentService {
    * @param cartItems - The cart items
    * @returns The total amount
    */
-  private calculateTotalAmount(cartItems: CartWithDetails['cartItems']): number {
-    return cartItems.reduce((sum, item) => sum + item.price.toNumber() * item.quantity, 0);
+  private calculateTotalAmount(
+    cartItems: CartWithDetails['cartItems'],
+  ): number {
+    return cartItems.reduce(
+      (sum, item) => sum + item.price.toNumber() * item.quantity,
+      0,
+    );
   }
 
   /**
@@ -187,7 +222,12 @@ export class PaymentService {
    * @param cartId - The cart ID (used as order ID)
    * @returns The provider response
    */
-  private async initiatePayment(amount: number, customerId: string, vendorId: string, cartId: string): Promise<PaymentProviderResponse> {
+  private async initiatePayment(
+    amount: number,
+    customerId: string,
+    vendorId: string,
+    cartId: string,
+  ): Promise<PaymentProviderResponse> {
     return await this.paymentProvider.initiatePayment({
       amount,
       currency: this.CURRENCY,
@@ -215,7 +255,7 @@ export class PaymentService {
     paymentMode: string | undefined,
     providerResponse: PaymentProviderResponse,
   ): Promise<PaymentWithId> {
-    return await this.prisma.payment.create({
+    return (await this.prisma.payment.create({
       data: {
         customer_id: customerId,
         vendor_id: vendorId,
@@ -231,7 +271,7 @@ export class PaymentService {
         customer: true,
         vendor: true,
       },
-    }) as PaymentWithId;
+    })) as PaymentWithId;
   }
 
   /**
@@ -242,7 +282,12 @@ export class PaymentService {
    * @param payment - The payment record
    * @returns The created order
    */
-  private async createOrder(cart: CartWithDetails, addressId: string, totalAmount: number, payment: PaymentWithId): Promise<Order> {
+  private async createOrder(
+    cart: CartWithDetails,
+    addressId: string,
+    totalAmount: number,
+    payment: PaymentWithId,
+  ): Promise<Order> {
     // Increment order counter
     const counter = await this.prisma.counter.upsert({
       where: { type: 'order' },
@@ -491,5 +536,4 @@ export class PaymentService {
       throw new BadRequestException('Failed to initiate refund');
     }
   }
-
 }

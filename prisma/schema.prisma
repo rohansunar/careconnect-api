@@ -159,6 +159,7 @@ model Customer {
   email      String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
+  isActive Boolean @default(true)
 
   addresses CustomerAddress[]
   notifications  Notification[]
@@ -188,7 +189,9 @@ model CustomerAddress {
   pincode    String?
   location   Json?
   created_at DateTime @default(now())
+  updated_at DateTime @default(now()) @db.Timestamp
   isDefault  Boolean   @default(false)
+  isActive  Boolean   @default(true)
 
   /// orders      Order[] @relation("orders")
   subscriptions Subscription[]

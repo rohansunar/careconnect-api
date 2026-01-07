@@ -57,4 +57,19 @@ export class CustomerService {
 
     return customer;
   }
+
+  /**
+   * Validates that a customer exists.
+   * @param customerId - The unique identifier of the customer
+   * @throws BadRequestException if customer doesn't exist
+   */
+  async validateCustomer(customerId: string): Promise<void> {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new BadRequestException('Customer not found');
+    }
+  }
 }

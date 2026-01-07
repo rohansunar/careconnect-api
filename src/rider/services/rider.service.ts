@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { NotificationService } from '../../notification/services/notification.service';
 
 @Injectable()
 export class RiderService {

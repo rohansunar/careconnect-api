@@ -1,0 +1,105 @@
+import { Controller, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
+import { VendorOrderService } from '../services/vendor-order.service';
+import { UpdateOrderDto } from '../dto/update-order.dto';
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import type { User } from '../../common/interfaces/user.interface';
+import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
+
+@ApiTags('Vendor Orders')
+@Controller('vendor/orders')
+@UseGuards(VendorAuthGuard)
+export class VendorOrderController {
+  constructor(private readonly vendorOrderService: VendorOrderService) {}
+
+  /**
+   * Retrieves all orders for the authenticated vendor.
+   * @param user - The authenticated vendor user
+   * @returns Array of vendor's orders
+   */
+  @ApiOperation({
+    summary: 'Get my orders',
+    description: 'Retrieves a list of all orders for the authenticated vendor.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Orders retrieved successfully.',
+  })
+  @Get()
+  async getMyOrders(@CurrentUser() user: User) {
+    return this.vendorOrderService.getMyOrders(user);
+  }
+
+  /**
+   * Retrieves a single order by ID for the authenticated vendor.
+   * @param id - The unique identifier of the order
+   * @param user - The authenticated vendor user
+   * @returns The order
+   */
+  @ApiOperation({
+    summary: 'Get my order by ID',
+    description:
+      'Retrieves a single order by its ID, ensuring it belongs to the authenticated vendor.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order retrieved successfully.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+  })
+  @Get(':id')
+  async getMyOrder(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.vendorOrderService.getMyOrder(id, user);
+  }
+
+  /**
+   * Updates an order for the authenticated vendor.
+   * @param id - The unique identifier of the order
+   * @param dto - The update data
+   * @param user - The authenticated vendor user
+   * @returns The updated order
+   */
+  @ApiOperation({
+    summary: 'Update my order',
+    description: 'Updates an order that belongs to the authenticated vendor.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+  })
+  @ApiBody({
+    type: UpdateOrderDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order updated successfully.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor.',
+  })
+  @Patch(':id')
+  async updateMyOrder(
+    @Param('id') id: string,
+    @Body() dto: UpdateOrderDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.vendorOrderService.updateMyOrder(id, dto, user);
+  }
+}

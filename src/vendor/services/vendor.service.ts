@@ -120,4 +120,34 @@ export class VendorService {
       throw new NotFoundException('Vendor not found');
     }
   }
+
+  /**
+   * Validates that a vendor exists.
+   * @param vendorId - The unique identifier of the vendor
+   * @throws BadRequestException if vendor doesn't exist
+   */
+  async validateVendor(vendorId: string): Promise<void> {
+    const vendor = await this.prisma.vendor.findUnique({
+      where: { id: vendorId },
+    });
+
+    if (!vendor) {
+      throw new BadRequestException('Vendor not found');
+    }
+  }
+
+  /**
+   * Validates that a product exists and is active.
+   * @param productId - The unique identifier of the product
+   * @throws BadRequestException if product doesn't exist or is inactive
+   */
+  async validateProduct(productId: string): Promise<void> {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!product || !product.is_active) {
+      throw new BadRequestException('Product not found or unavailable');
+    }
+  }
 }

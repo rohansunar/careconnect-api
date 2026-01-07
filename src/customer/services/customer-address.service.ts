@@ -259,4 +259,19 @@ export class CustomerAddressService {
 
     return updatedAddress;
   }
+
+  /**
+   * Validates that an address exists.
+   * @param addressId - The unique identifier of the address
+   * @throws BadRequestException if address doesn't exist
+   */
+  async validateAddress(addressId: string): Promise<void> {
+    const address = await this.prisma.customerAddress.findUnique({
+      where: { id: addressId },
+    });
+
+    if (!address) {
+      throw new BadRequestException('Address not found');
+    }
+  }
 }
