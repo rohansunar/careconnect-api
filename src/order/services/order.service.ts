@@ -16,25 +16,29 @@ export class OrderService {
 
   /**
    * Retrieves all orders.
+   * @param where - Optional where clause
+   * @param include - Optional include for relations, defaults to customer, vendor, address, cart with cartItems and product
    * @returns Array of orders with relations
    */
-  async findAll(where = {}) {
-    return this.prisma.order.findMany({
-      where,
-      include: {
-        customer: true,
-        vendor: true,
-        address: true,
-        cart: {
-          include: {
-            cartItems: {
-              include: {
-                product: true,
-              },
+  async findAll(where = {}, include?: any) {
+    const defaultInclude = {
+      customer: true,
+      vendor: true,
+      address: true,
+      cart: {
+        include: {
+          cartItems: {
+            include: {
+              product: true,
             },
           },
         },
       },
+    };
+
+    return this.prisma.order.findMany({
+      where,
+      include: include || defaultInclude,
       orderBy: { created_at: 'desc' },
     });
   }
