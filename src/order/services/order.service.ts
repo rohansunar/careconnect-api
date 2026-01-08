@@ -14,17 +14,26 @@ export class OrderService {
     protected cartService: CartService,
   ) {}
 
-
   /**
    * Retrieves all orders.
    * @returns Array of orders with relations
    */
-  async findAll() {
+  async findAll(where = {}) {
     return this.prisma.order.findMany({
+      where,
       include: {
         customer: true,
         vendor: true,
         address: true,
+        cart: {
+          include: {
+            cartItems: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
@@ -165,9 +174,4 @@ export class OrderService {
       throw new BadRequestException('Product not found or unavailable');
     }
   }
-
-
-
-
-
 }

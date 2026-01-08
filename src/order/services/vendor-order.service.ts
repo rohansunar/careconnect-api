@@ -5,13 +5,17 @@ import type { User } from '../../common/interfaces/user.interface';
 @Injectable()
 export class VendorOrderService extends OrderService {
   /**
-   * Retrieves all orders for the authenticated vendor.
+   * Retrieves paginated orders for the authenticated vendor.
    * @param user - The authenticated vendor user
-   * @returns Array of vendor's orders with relations
+   * @param page - The page number (default: 1)
+   * @param limit - The number of orders per page (default: 10)
+   * @returns Object with orders array and total count
    */
-  async getMyOrders(user: User) {
-    const allOrders = await super.findAll();
-    return allOrders.filter((order) => order.vendorId === user.id);
+  async getMyOrders(user: User, page: number = 1, limit: number = 10) {
+    const query = { vendorId: user.id };
+    const orders = await super.findAll(query);
+    const total = await this.prisma.order.count({ where: query });
+    return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   /**

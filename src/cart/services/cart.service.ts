@@ -224,9 +224,7 @@ export class CartService {
    * @param customerId - The unique identifier of the customer
    * @returns The checkout preview response with grouped items and calculations
    */
-  async generateCheckout(
-    customerId: string,
-  ): Promise<CheckoutResponseDto> {
+  async generateCheckout(customerId: string): Promise<CheckoutResponseDto> {
     // Validate customer exists
     await this.validateCustomer(customerId);
 

@@ -1,10 +1,19 @@
-import { Controller, Get, Patch, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { VendorOrderService } from '../services/vendor-order.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
@@ -19,21 +28,40 @@ export class VendorOrderController {
   constructor(private readonly vendorOrderService: VendorOrderService) {}
 
   /**
-   * Retrieves all orders for the authenticated vendor.
+   * Retrieves paginated orders for the authenticated vendor.
    * @param user - The authenticated vendor user
-   * @returns Array of vendor's orders
+   * @param page - The page number (optional, default: 1)
+   * @param limit - The number of orders per page (optional, default: 10)
+   * @returns Paginated orders with total count
    */
   @ApiOperation({
     summary: 'Get my orders',
-    description: 'Retrieves a list of all orders for the authenticated vendor.',
+    description:
+      'Retrieves a paginated list of orders for the authenticated vendor.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of orders per page (default: 10)',
   })
   @ApiResponse({
     status: 200,
     description: 'Orders retrieved successfully.',
   })
   @Get()
-  async getMyOrders(@CurrentUser() user: User) {
-    return this.vendorOrderService.getMyOrders(user);
+  async getMyOrders(
+    @CurrentUser() user: User,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.vendorOrderService.getMyOrders(user, page, limit);
   }
 
   /**

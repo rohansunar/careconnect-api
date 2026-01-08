@@ -140,9 +140,7 @@ export class CartController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @Post('checkout')
-  async generateCheckout(
-    @CurrentUser() customer: any,
-  ) {
+  async generateCheckout(@CurrentUser() customer: any) {
     const { id } = customer;
     return this.cartService.generateCheckout(id);
   }

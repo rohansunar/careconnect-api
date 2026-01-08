@@ -26,7 +26,6 @@ import { RolesGuard } from '../../auth/guards/roles.guard';
 export class AdminOrderController {
   constructor(private readonly adminOrderService: AdminOrderService) {}
 
-
   /**
    * Retrieves all orders (admin only).
    * @returns Array of all orders
