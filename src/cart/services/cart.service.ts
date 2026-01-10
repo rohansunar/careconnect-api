@@ -11,67 +11,78 @@ import { CartStatus } from '../../common/constants/order-status.constants';
 
 @Injectable()
 export class CartService {
+  private readonly DEFAULT_QUANTITY = 1;
+
   constructor(private prisma: PrismaService) {}
 
   /**
    * Adds an item to the customer's cart with validation.
    * Handles duplicate items by updating quantity instead of creating new entries.
+   * All operations are performed within a transaction for atomicity.
    * @param dto - The cart item creation data
-   * @returns The created or updated cart item
+   * @returns The created or updated cart item with product details
    */
   async addToCart(dto: CreateCartItemDto, customerId: string) {
-    // Validate customer exists
-    await this.validateCustomer(customerId);
+    // Validate quantity
+    if (
+      dto.quantity &&
+      (dto.quantity <= 0 || !Number.isInteger(dto.quantity))
+    ) {
+      throw new BadRequestException('Quantity must be a positive integer');
+    }
+    const quantity = dto.quantity || this.DEFAULT_QUANTITY;
 
-    // Validate product exists and get current pricing
-    const product = await this.validateProduct(dto.productId);
+    return this.prisma.$transaction(async (tx) => {
+      // Validate customer exists
+      await this.validateCustomer(customerId);
 
-    // Get or create active cart for customer
-    let cart = await this.prisma.cart.findFirst({
-      where: {
-        customerId,
-        status: 'ACTIVE',
-      },
-    });
-    if (!cart) {
-      cart = await this.prisma.cart.create({
-        data: {
+      // Validate product exists and get current pricing
+      const product = await this.validateProduct(dto.productId);
+
+      // Get or create active cart for customer
+      let cart = await tx.cart.findFirst({
+        where: {
           customerId,
+          status: CartStatus.ACTIVE,
         },
       });
-    }
+      if (!cart) {
+        cart = await tx.cart.create({
+          data: {
+            customerId,
+          },
+        });
+      }
 
-    // Check if item already exists in cart
-    const existingItem = await this.prisma.cartItem.findFirst({
-      where: {
-        cartId: cart.id,
-        productId: dto.productId,
-      },
-    });
+      // Check if item already exists in cart
+      const existingItem = await tx.cartItem.findFirst({
+        where: {
+          cartId: cart.id,
+          productId: dto.productId,
+        },
+      });
 
-    if (existingItem) {
-      // Update existing item quantity
-      return this.prisma.cartItem.update({
-        where: { id: existingItem.id },
+      if (existingItem) {
+        // Update existing item quantity
+        return tx.cartItem.update({
+          where: { id: existingItem.id },
+          data: {
+            quantity: existingItem.quantity + quantity,
+            updatedAt: new Date(),
+          }
+        });
+      }
+
+      // Create new cart item
+      return tx.cartItem.create({
         data: {
-          quantity: existingItem.quantity + dto.quantity,
-          updatedAt: new Date(),
-        },
-        include: {
-          product: true,
-        },
+          cartId: cart.id,
+          productId: dto.productId,
+          quantity,
+          price: product.price,
+          deposit: product.deposit,
+        }
       });
-    }
-
-    // Create new cart item
-    return this.prisma.cartItem.create({
-      data: {
-        cartId: cart.id,
-        productId: dto.productId,
-        quantity: dto.quantity,
-        price: product.price,
-        deposit: product.deposit,
-      },
     });
   }
 
@@ -185,10 +196,14 @@ export class CartService {
    * @returns Array of cart items with product details
    */
   async getCartItems(customerId: string) {
-    return this.prisma.cartItem.findMany({
-      where: { cart: { customerId } },
+    return this.prisma.cart.findMany({
+      where: { customerId, status: CartStatus.ACTIVE },
       include: {
-        product: true,
+        cartItems: {
+          include: {
+            product: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
