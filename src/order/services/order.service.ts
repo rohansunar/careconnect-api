@@ -55,6 +55,15 @@ export class OrderService {
         customer: true,
         vendor: true,
         address: true,
+        cart: {
+          include: {
+            cartItems: {
+              include: {
+                product: true,
+              },
+            },
+          },
+        },
       },
     });
 
