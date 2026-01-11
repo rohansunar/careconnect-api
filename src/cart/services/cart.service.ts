@@ -207,25 +207,6 @@ export class CartService {
   }
 
   /**
-   * Retrieves all cart items for a specific customer.
-   * @param customerId - The unique identifier of the customer
-   * @returns Array of cart items with product details
-   */
-  async getCartItems(customerId: string) {
-    return this.prisma.cart.findFirst({
-      where: { customerId, status: CartStatus.ACTIVE },
-      include: {
-        cartItems: {
-          include: {
-            product: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  /**
    * Updates the status of a cart.
    * @param cartId - The unique identifier of the cart
    * @param status - The new status for the cart
@@ -307,7 +288,7 @@ export class CartService {
         pincode: deliveryAddress.pincode || undefined,
       },
       isAddressValid,
-      vendors: vendorGroups,
+      cartItems: vendorGroups.flatMap((group) => group.items),
       totalItems: cart.cartItems.reduce((sum, item) => sum + item.quantity, 0),
       subtotal: calculations.subtotal,
       totalDeposit: calculations.totalDeposit,
@@ -342,30 +323,23 @@ export class CartService {
         });
       }
 
-      const vendorGroup = vendorGroups.get(vendorId);
-      const totalPrice = Number(item.price) * item.quantity;
-      const totalDeposit = item.deposit
-        ? Number(item.deposit) * item.quantity
-        : 0;
-
-      vendorGroup.items.push({
+      const group = vendorGroups.get(vendorId);
+      const checkoutItem = {
         id: item.id,
-        product: {
-          id: item.product.id,
-          name: item.product.name,
-          images: item.product.images,
-          description: item.product.description,
-        },
+        productId: item.product.id,
+        name: item.product.name,
+        images: item.product.images,
+        description: item.product.description,
         quantity: item.quantity,
-        price: Number(item.price),
-        deposit: item.deposit ? Number(item.deposit) : undefined,
-        totalPrice,
-        totalDeposit: totalDeposit > 0 ? totalDeposit : undefined,
-      });
-
-      vendorGroup.vendorSubtotal += totalPrice;
-      if (totalDeposit > 0) {
-        vendorGroup.vendorTotalDeposit += totalDeposit;
+        price: item.price,
+        deposit: item.deposit,
+        totalPrice: item.price * item.quantity,
+        totalDeposit: item.deposit ? item.deposit * item.quantity : undefined,
+      };
+      group.items.push(checkoutItem);
+      group.vendorSubtotal += checkoutItem.totalPrice;
+      if (checkoutItem.totalDeposit) {
+        group.vendorTotalDeposit += checkoutItem.totalDeposit;
       }
     });
 

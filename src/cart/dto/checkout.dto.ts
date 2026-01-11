@@ -217,16 +217,16 @@ export class CheckoutResponseDto {
   isAddressValid: boolean;
 
   /**
-   * Array of vendor groups with their items
+   * Array of cart items
    */
   @ApiProperty({
-    description: 'Array of vendor groups with their items',
-    type: [CheckoutVendorDto],
+    description: 'Array of cart items',
+    type: [CheckoutItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => CheckoutVendorDto)
-  vendors: CheckoutVendorDto[];
+  @Type(() => CheckoutItemDto)
+  cartItems: CheckoutItemDto[];
 
   /**
    * Total number of items in cart

@@ -118,32 +118,6 @@ export class CartController {
   @Get()
   async getCart(@CurrentUser() customer: any) {
     const { id } = customer;
-    return this.cartService.getCartItems(id);
-  }
-
-  /**
-   * Business logic rationale: Generate a preview of the order summary based on current cart contents and delivery address.
-   * Security consideration: JWT authentication ensures only the authenticated customer can preview their cart.
-   * Design decision: Groups items by vendor, calculates totals, validates delivery address, returns structured preview without creating orders.
-   */
-  @ApiOperation({
-    summary: 'Generate checkout preview',
-    description:
-      'Generate a preview of the order summary including itemized breakdown, vendor grouping, subtotals, and delivery address validation.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Checkout preview generated successfully.',
-    type: CheckoutResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request - invalid address or empty cart.',
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @Post('checkout')
-  async generateCheckout(@CurrentUser() customer: any) {
-    const { id } = customer;
     return this.cartService.generateCheckout(id);
   }
 }
