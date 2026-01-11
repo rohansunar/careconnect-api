@@ -83,13 +83,6 @@ export class SearchService {
         orderBy,
         skip,
         take,
-        include: {
-          categories: {
-            select: {
-              name: true,
-            },
-          },
-        },
       }),
       this.prisma.product.count({ where }),
     ]);

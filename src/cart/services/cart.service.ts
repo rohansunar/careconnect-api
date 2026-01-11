@@ -69,7 +69,7 @@ export class CartService {
           data: {
             quantity: existingItem.quantity + quantity,
             updatedAt: new Date(),
-          }
+          },
         });
       }
 
@@ -81,28 +81,44 @@ export class CartService {
           quantity,
           price: product.price,
           deposit: product.deposit,
-        }
+        },
       });
     });
   }
 
   /**
    * Updates the quantity of a cart item.
-   * @param cartItemId - The unique identifier of the cart item
+   * @param customerId - The unique identifier of the customer
+   * @param productId - The unique identifier of the product
    * @param dto - The update data containing new quantity
    * @returns The updated cart item
    */
-  async updateQuantity(cartItemId: string, dto: UpdateCartItemDto) {
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { id: cartItemId },
+  async updateQuantity(
+    customerId: string,
+    productId: string,
+    dto: UpdateCartItemDto,
+  ) {
+    // Get the active cart for the customer
+    const cart = await this.prisma.cart.findFirst({
+      where: {
+        customerId,
+        status: CartStatus.ACTIVE,
+      },
+      include: {
+        cartItems: {
+          where: { productId },
+        },
+      },
     });
 
-    if (!cartItem) {
+    if (!cart || cart.cartItems.length === 0) {
       throw new NotFoundException('Cart item not found');
     }
 
+    const cartItem = cart.cartItems[0];
+
     return this.prisma.cartItem.update({
-      where: { id: cartItemId },
+      where: { id: cartItem.id },
       data: {
         quantity: dto.quantity,
         updatedAt: new Date(),

@@ -63,7 +63,7 @@ export class CartController {
     description:
       'Enable customers to update the quantity of items in their cart.',
   })
-  @ApiParam({ name: 'id', description: 'Cart item ID' })
+  @ApiParam({ name: 'productId', description: 'Product ID' })
   @ApiBody({ type: UpdateCartItemDto })
   @ApiResponse({
     status: 200,
@@ -72,12 +72,14 @@ export class CartController {
   @ApiResponse({ status: 400, description: 'Bad request - invalid quantity.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Cart item not found.' })
-  @Put(':id')
+  @Put(':productId')
   async updateQuantity(
-    @Param('id') cartItemId: string,
+    @Param('productId') productId: string,
     @Body() dto: UpdateCartItemDto,
+    @CurrentUser() customer: any,
   ) {
-    return this.cartService.updateQuantity(cartItemId, dto);
+    const { id: customerId } = customer;
+    return this.cartService.updateQuantity(customerId, productId, dto);
   }
 
   /**
