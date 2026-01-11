@@ -212,7 +212,7 @@ export class CartService {
    * @returns Array of cart items with product details
    */
   async getCartItems(customerId: string) {
-    return this.prisma.cart.findMany({
+    return this.prisma.cart.findFirst({
       where: { customerId, status: CartStatus.ACTIVE },
       include: {
         cartItems: {
