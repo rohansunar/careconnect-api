@@ -39,20 +39,12 @@ export class CustomerOrderService extends OrderService {
    * @param user - The authenticated customer user
    * @returns Array of customer's orders with relations
    */
-  async getMyOrders(user: User) {
+  async getMyOrders(user: User , page: number = 1, limit: number = 10) {
     const query = { customerId: user.id };
-    const include = {
-      cart: {
-        include: {
-          cartItems: {
-            include: {
-              product: true,
-            },
-          },
-        },
-      },
-    };
-    return await super.findAll(query, include);
+    const include = {};
+    const orders = await super.findAll(query, include);
+    const total = await this.prisma.order.count({ where: query });
+    return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
 
   /**
