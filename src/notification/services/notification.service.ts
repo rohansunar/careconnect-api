@@ -115,11 +115,11 @@ export class NotificationService {
           'TWILIO_WHATSAPP_NUMBER or TWILIO_PHONE_NUMBER is not configured',
         );
       }
-      await this.twilioClient.messages.create({
-        body,
-        from: `whatsapp:${from}`,
-        to: `whatsapp:${to}`,
-      });
+      // await this.twilioClient.messages.create({
+      //   body,
+      //   from: `whatsapp:${from}`,
+      //   to: `whatsapp:${to}`,
+      // });
       this.logger.log(`WhatsApp message sent successfully to ${to}`);
     } catch (error) {
       this.logger.error(

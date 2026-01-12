@@ -84,7 +84,7 @@ export class CustomerOrderService extends OrderService {
    * @returns The cancelled order with relations
    */
   async cancelOrder(orderId: string, dto: CancelOrderDto, currentUser: User) {
-    return super.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       // Find the order with related data
       const order = await tx.order.findUnique({
         where: { id: orderId },
@@ -156,7 +156,10 @@ export class CustomerOrderService extends OrderService {
       // Send cancellation notification
       await this.sendOrderCancellationNotification(updatedOrder);
 
-      return updatedOrder;
+      return {
+        status:200,
+        message:"Order Cancelled"
+      };
     });
   }
 
@@ -218,13 +221,12 @@ export class CustomerOrderService extends OrderService {
       // Send notification to vendor
       if (order.vendor?.phone) {
         const message = `🚫 Order Cancelled
+          Order ID: ${order.orderNo}
+          Customer: ${order.customer?.name || 'N/A'}
+          Amount: ₹${order.total_amount}
+          Reason: ${order.cancelReason}
 
-Order ID: ${order.orderNo}
-Customer: ${order.customer?.name || 'N/A'}
-Amount: ₹${order.total_amount}
-Reason: ${order.cancelReason}
-
-Please update your inventory accordingly.`;
+          Please update your inventory accordingly.`;
 
         await this.notificationService.sendWhatsApp(
           order.vendor.phone,
