@@ -40,8 +40,19 @@ export class CustomerOrderService extends OrderService {
    * @returns Array of customer's orders with relations
    */
   async getMyOrders(user: User) {
-    const allOrders = await super.findAll();
-    return allOrders.filter((order) => order.customerId === user.id);
+    const query = { customerId: user.id };
+    const include = {
+      cart: {
+        include: {
+          cartItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      },
+    };
+    return await super.findAll(query, include);
   }
 
   /**
