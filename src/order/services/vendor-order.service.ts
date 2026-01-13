@@ -13,7 +13,7 @@ export class VendorOrderService extends OrderService {
    */
   async getMyOrders(user: User, page: number = 1, limit: number = 10) {
     const query = { vendorId: user.id };
-    const orders = await super.findAll(query, { address: true });
+    const orders = await super.findAll(query, 0, undefined, { address: true });
     const total = await this.prisma.order.count({ where: query });
     return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
   }

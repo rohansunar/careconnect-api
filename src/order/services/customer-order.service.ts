@@ -37,12 +37,35 @@ export class CustomerOrderService extends OrderService {
   /**
    * Retrieves all orders for the authenticated customer.
    * @param user - The authenticated customer user
+   * @param status - Optional status filter, can be string or array of strings
+   * @param page - Page number for pagination
+   * @param limit - Number of items per page
    * @returns Array of customer's orders with relations
    */
-  async getMyOrders(user: User , page: number = 1, limit: number = 10) {
-    const query = { customerId: user.id };
-    const include = {};
-    const orders = await super.findAll(query, include);
+  async getMyOrders(
+    user: User,
+    status?: string[],
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const statuses = status || [OrderStatus.PENDING, OrderStatus.OUT_FOR_DELIVERY];
+    const query = { customerId: user.id, status: { in: statuses } };
+    const include = {
+      address: {
+        include: { city: true },
+      },
+      cart: {
+        include: {
+          cartItems: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      },
+    };
+    const skip = (page - 1) * limit;
+    const orders = await super.findAll(query, skip, limit, include);
     const total = await this.prisma.order.count({ where: query });
     return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
@@ -157,8 +180,8 @@ export class CustomerOrderService extends OrderService {
       await this.sendOrderCancellationNotification(updatedOrder);
 
       return {
-        status:200,
-        message:"Order Cancelled"
+        status: 200,
+        message: 'Order Cancelled',
       };
     });
   }

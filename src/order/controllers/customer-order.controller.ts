@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { CustomerOrderService } from '../services/customer-order.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
@@ -19,22 +28,65 @@ export class CustomerOrderController {
   constructor(private readonly customerOrderService: CustomerOrderService) {}
 
   /**
-   * Retrieves all orders for the authenticated customer.
+   * Retrieves all orders for the authenticated customer with optional filtering.
    * @param user - The authenticated customer user
+   * @param status - Optional status filter (string or array)
+   * @param page - Page number for pagination (default 1)
+   * @param limit - Number of items per page (default 10)
    * @returns Array of customer's orders
    */
   @ApiOperation({
     summary: 'Get my orders',
     description:
-      'Retrieves a list of all orders for the authenticated customer.',
+      'Retrieves a list of orders for the authenticated customer, with optional status filtering and pagination.',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    schema: {
+      type: 'array',
+      items: { type: 'string' },
+      default: ['PENDING', 'OUT_FOR_DELIVERY'],
+    },
+    description:
+      'Filter by order status(es). Can be a single status or comma-separated string.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    schema: { type: 'integer', default: 1 },
+    description: 'Page number for pagination.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    schema: { type: 'integer', default: 10 },
+    description: 'Number of items per page.',
   })
   @ApiResponse({
     status: 200,
     description: 'Orders retrieved successfully.',
   })
   @Get()
-  async getMyOrders(@CurrentUser() user: User) {
-    return this.customerOrderService.getMyOrders(user);
+  async getMyOrders(
+    @CurrentUser() user: User,
+    @Query('status') status?: string | string[],
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const statuses = status
+      ? Array.isArray(status)
+        ? status
+        : status.split(',').map((s) => s.trim())
+      : undefined;
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const limitNum = limit ? parseInt(limit, 10) : 10;
+    return this.customerOrderService.getMyOrders(
+      user,
+      statuses,
+      pageNum,
+      limitNum,
+    );
   }
 
   /**
