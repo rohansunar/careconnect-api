@@ -362,7 +362,6 @@ model Rider {
 enum SubscriptionStatus {
   ACTIVE
   INACTIVE
-  CANCELLED
   PENDING
 }
 
@@ -374,10 +373,11 @@ model Subscription {
   vendor             Vendor?            @relation(fields: [vendorId], references: [id])
   productId          String?
   product            Product?           @relation(fields: [productId], references: [id])
-  jars_per_delivery  Int
+  quantity           Int
   frequency          String
   next_delivery_date DateTime?
   status             SubscriptionStatus @default(ACTIVE)
+  start_date         DateTime
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now())
 

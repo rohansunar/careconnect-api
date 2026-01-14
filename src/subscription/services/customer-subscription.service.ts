@@ -1,0 +1,168 @@
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../../common/database/prisma.service';
+import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
+import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
+import type { User } from '../../common/interfaces/user.interface';
+
+@Injectable()
+export class CustomerSubscriptionService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Creates a new subscription for the authenticated customer.
+   * @param user - The authenticated customer user
+   * @param dto - The subscription data
+   * @returns The created subscription
+   */
+   async createSubscription(user: User, dto: CreateSubscriptionDto) {
+     const customerAddress = await this.prisma.customerAddress.findFirst({
+       where: { customerId: user.id, isActive: true, isDefault:true },
+     });
+     if (!customerAddress) {
+       throw new NotFoundException('No active customer address found for the user');
+     }
+     const product = await this.prisma.product.findUnique({
+       where: { id: dto.productId },
+     });
+     if (!product) {
+       throw new NotFoundException('Product not found');
+     }
+     return this.prisma.subscription.create({
+       data: {
+         customerAddressId: customerAddress.id,
+         vendorId: product.vendorId,
+         productId: dto.productId,
+         quantity: dto.quantity,
+         frequency: dto.frequency,
+         start_date: new Date(dto.start_date),
+       },
+     });
+   }
+
+  /**
+   * Retrieves all subscriptions for the authenticated customer.
+   * @param user - The authenticated customer user
+   * @param status - Optional status filter, can be string or array of strings
+   * @param page - Page number for pagination
+   * @param limit - Number of items per page
+   * @returns Array of customer's subscriptions with relations
+   */
+  async getMySubscriptions(
+    user: User,
+    status?: string[],
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    const statuses = status || ['ACTIVE', 'INACTIVE'];
+    const query = { customerAddress: { customerId: user.id }, status: { in: statuses as any } };
+    const skip = (page - 1) * limit;
+    const subscriptions = await this.prisma.subscription.findMany({
+      where: query,
+      skip,
+      take: limit,
+    });
+    const total = await this.prisma.subscription.count({ where: query });
+    return { subscriptions, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  /**
+   * Retrieves a single subscription by ID, ensuring it belongs to the customer.
+   * @param id - The unique identifier of the subscription
+   * @param user - The authenticated customer user
+   * @returns The subscription with relations
+   */
+  async getMySubscription(id: string, user: User) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { customerAddress: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.customerAddress?.customerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+    return subscription;
+  }
+
+  /**
+   * Updates a subscription, ensuring it belongs to the customer.
+   * @param id - The unique identifier of the subscription
+   * @param dto - The subscription data
+   * @param user - The authenticated customer user
+   * @returns The updated subscription
+   */
+  async updateMySubscription(id: string, dto: UpdateSubscriptionDto, user: User) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { customerAddress: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.customerAddress?.customerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+    const updateData: any = {};
+    if (dto.quantity !== undefined) {
+      updateData.quantity = dto.quantity;
+    }
+    if (dto.frequency !== undefined) {
+      updateData.frequency = dto.frequency;
+    }
+    if (dto.start_date !== undefined) {
+      updateData.start_date = new Date(dto.start_date);
+    }
+    return this.prisma.subscription.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
+  /**
+   * Pauses a subscription, ensuring it belongs to the customer.
+   * @param id - The unique identifier of the subscription
+   * @param user - The authenticated customer user
+   * @returns The paused subscription
+   */
+  async pauseMySubscription(id: string, user: User) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { customerAddress: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.customerAddress?.customerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.subscription.update({
+      where: { id },
+      data: {
+        status: 'INACTIVE',
+      },
+    });
+  }
+
+  /**
+   * Deletes a subscription, ensuring it belongs to the customer.
+   * @param id - The unique identifier of the subscription
+   * @param user - The authenticated customer user
+   * @returns The deleted subscription
+   */
+  async deleteMySubscription(id: string, user: User) {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { id },
+      include: { customerAddress: true },
+    });
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+    if (subscription.customerAddress?.customerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+    return this.prisma.subscription.delete({
+      where: { id },
+    });
+  }
+}
