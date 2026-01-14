@@ -1,21 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsInt, IsEnum } from 'class-validator';
-
-enum SubscriptionFrequency {
-  DAILY = 'DAILY',
-  ALTERNATIVE_DAYS = 'ALTERNATIVE_DAYS',
-  CUSTOM_DAYS = 'CUSTOM_DAYS',
-}
-
-enum DayOfWeek {
-  MONDAY = 'MONDAY',
-  TUESDAY = 'TUESDAY',
-  WEDNESDAY = 'WEDNESDAY',
-  THURSDAY = 'THURSDAY',
-  FRIDAY = 'FRIDAY',
-  SATURDAY = 'SATURDAY',
-  SUNDAY = 'SUNDAY',
-}
+import { DayOfWeek, SubscriptionFrequency } from '../interfaces/delivery-frequency.interface';
 
 export class UpdateSubscriptionDto {
   @ApiProperty({ description: 'Quantity of the product' })

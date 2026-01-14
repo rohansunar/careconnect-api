@@ -365,6 +365,22 @@ enum SubscriptionStatus {
   PENDING
 }
 
+enum SubscriptionFrequency {
+  DAILY
+  ALTERNATIVE_DAYS
+  CUSTOM_DAYS
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
 model Subscription {
   id                 String             @id @default(uuid())
   customerAddressId  String?
@@ -374,7 +390,8 @@ model Subscription {
   productId          String?
   product            Product?           @relation(fields: [productId], references: [id])
   quantity           Int
-  frequency          String
+  frequency          SubscriptionFrequency
+  custom_days        DayOfWeek[]
   next_delivery_date DateTime?
   status             SubscriptionStatus @default(ACTIVE)
   start_date         DateTime
