@@ -152,29 +152,31 @@ export class CustomerSubscriptionService {
    }
 
   /**
-   * Pauses a subscription, ensuring it belongs to the customer.
+   * Toggles the status of a subscription between ACTIVE and INACTIVE.
    * @param id - The unique identifier of the subscription
    * @param user - The authenticated customer user
-   * @returns The paused subscription
+   * @param action - The action to perform (pause or resume)
+   * @returns The updated subscription
    */
-  async pauseMySubscription(id: string, user: User) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { id },
-      include: { customerAddress: true },
-    });
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-    if (subscription.customerAddress?.customerId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
-    return this.prisma.subscription.update({
-      where: { id },
-      data: {
-        status: 'INACTIVE',
-      },
-    });
-  }
+   async toggleSubscriptionStatus(id: string, user: User) {
+     const subscription = await this.prisma.subscription.findUnique({
+       where: { id },
+       include: { customerAddress: true },
+     });
+     if (!subscription) {
+       throw new NotFoundException('Subscription not found');
+     }
+     if (subscription.customerAddress?.customerId !== user.id) {
+       throw new ForbiddenException('Access denied');
+     }
+     const newStatus = subscription.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+     return this.prisma.subscription.update({
+       where: { id },
+       data: {
+         status: newStatus,
+       },
+     });
+   }
 
   /**
    * Deletes a subscription, ensuring it belongs to the customer.

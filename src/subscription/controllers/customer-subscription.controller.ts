@@ -188,31 +188,35 @@ export class CustomerSubscriptionController {
   }
 
   /**
-   * Pauses a subscription for the authenticated customer.
+   * Toggles the status of a subscription for the authenticated customer.
    * @param id - The unique identifier of the subscription
    * @param user - The authenticated customer user
-   * @returns The paused subscription
+   * @param action - The action to perform (pause or resume)
+   * @returns The updated subscription
    */
-  @ApiOperation({
-    summary: 'Pause my subscription',
-    description: 'Pauses a subscription that belongs to the authenticated customer.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique identifier of the subscription (UUID)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Subscription paused successfully.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - subscription does not belong to customer.',
-  })
-  @Post(':id/pause')
-  async pauseMySubscription(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.customerSubscriptionService.pauseMySubscription(id, user);
-  }
+   @ApiOperation({
+     summary: 'Toggle subscription status',
+     description: 'Toggles the status of a subscription between ACTIVE and INACTIVE.',
+   })
+   @ApiParam({
+     name: 'id',
+     description: 'Unique identifier of the subscription (UUID)',
+   })
+   @ApiResponse({
+     status: 200,
+     description: 'Subscription status toggled successfully.',
+   })
+   @ApiResponse({
+     status: 403,
+     description: 'Forbidden - subscription does not belong to customer.',
+   })
+   @Post(':id/toggle')
+   async toggleSubscriptionStatus(
+     @Param('id') id: string,
+     @CurrentUser() user: User,
+   ) {
+     return this.customerSubscriptionService.toggleSubscriptionStatus(id, user);
+   }
 
   /**
    * Deletes a subscription for the authenticated customer.
