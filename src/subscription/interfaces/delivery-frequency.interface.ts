@@ -15,8 +15,18 @@ export enum SubscriptionFrequency {
 }
 
 export interface DeliveryFrequencyService {
-  validateFrequency(frequency: SubscriptionFrequency, customDays?: DayOfWeek[]): void;
+  validateFrequency(
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): void;
   validateCustomDays(customDays: DayOfWeek[]): void;
-  getNextDeliveryDate(startDate: Date, frequency: SubscriptionFrequency, customDays?: DayOfWeek[]): Date;
-  getDeliveryDays(frequency: SubscriptionFrequency, customDays?: DayOfWeek[]): DayOfWeek[];
+  getNextDeliveryDate(
+    startDate: Date,
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): Date;
+  getDeliveryDays(
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): DayOfWeek[];
 }

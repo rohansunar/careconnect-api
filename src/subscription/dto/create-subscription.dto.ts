@@ -1,6 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsInt, IsDateString, IsOptional, IsArray, IsEnum } from 'class-validator';
-import { DayOfWeek, SubscriptionFrequency } from '../interfaces/delivery-frequency.interface';
+import {
+  IsNotEmpty,
+  IsString,
+  IsInt,
+  IsDateString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+} from 'class-validator';
+import {
+  DayOfWeek,
+  SubscriptionFrequency,
+} from '../interfaces/delivery-frequency.interface';
 
 export class CreateSubscriptionDto {
   @ApiProperty({ description: 'ID of the product' })
@@ -13,7 +24,10 @@ export class CreateSubscriptionDto {
   @IsInt()
   quantity: number;
 
-  @ApiProperty({ description: 'Frequency of the subscription', enum: SubscriptionFrequency })
+  @ApiProperty({
+    description: 'Frequency of the subscription',
+    enum: SubscriptionFrequency,
+  })
   @IsNotEmpty()
   @IsEnum(SubscriptionFrequency)
   frequency: SubscriptionFrequency;
@@ -23,7 +37,10 @@ export class CreateSubscriptionDto {
   @IsDateString()
   start_date: string;
 
-  @ApiProperty({ description: 'Custom days for delivery (required if frequency is CUSTOM_DAYS)' })
+  @ApiProperty({
+    description:
+      'Custom days for delivery (required if frequency is CUSTOM_DAYS)',
+  })
   @IsOptional()
   @IsArray()
   @IsEnum(DayOfWeek, { each: true })

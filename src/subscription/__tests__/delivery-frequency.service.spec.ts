@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeliveryFrequencyService } from '../services/delivery-frequency.service';
-import { DayOfWeek, SubscriptionFrequency } from '../interfaces/delivery-frequency.interface';
+import {
+  DayOfWeek,
+  SubscriptionFrequency,
+} from '../interfaces/delivery-frequency.interface';
 import { BadRequestException } from '@nestjs/common';
 
 describe('DeliveryFrequencyService', () => {
@@ -65,7 +68,11 @@ describe('DeliveryFrequencyService', () => {
 
     it('should not throw for valid unique days', () => {
       expect(() => {
-        service.validateCustomDays([DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY]);
+        service.validateCustomDays([
+          DayOfWeek.MONDAY,
+          DayOfWeek.TUESDAY,
+          DayOfWeek.WEDNESDAY,
+        ]);
       }).not.toThrow();
     });
   });
@@ -74,24 +81,41 @@ describe('DeliveryFrequencyService', () => {
     const baseDate = new Date('2023-01-01T00:00:00Z'); // Sunday
 
     it('should return next day for DAILY frequency', () => {
-      const nextDate = service.getNextDeliveryDate(baseDate, SubscriptionFrequency.DAILY);
+      const nextDate = service.getNextDeliveryDate(
+        baseDate,
+        SubscriptionFrequency.DAILY,
+      );
       expect(nextDate).toEqual(new Date('2023-01-02T00:00:00Z'));
     });
 
     it('should return day after next for ALTERNATIVE_DAYS frequency', () => {
-      const nextDate = service.getNextDeliveryDate(baseDate, SubscriptionFrequency.ALTERNATIVE_DAYS);
+      const nextDate = service.getNextDeliveryDate(
+        baseDate,
+        SubscriptionFrequency.ALTERNATIVE_DAYS,
+      );
       expect(nextDate).toEqual(new Date('2023-01-03T00:00:00Z'));
     });
 
     it('should return next custom day for CUSTOM_DAYS frequency', () => {
-      const customDays = [DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY];
-      const nextDate = service.getNextDeliveryDate(baseDate, SubscriptionFrequency.CUSTOM_DAYS, customDays);
+      const customDays = [
+        DayOfWeek.MONDAY,
+        DayOfWeek.WEDNESDAY,
+        DayOfWeek.FRIDAY,
+      ];
+      const nextDate = service.getNextDeliveryDate(
+        baseDate,
+        SubscriptionFrequency.CUSTOM_DAYS,
+        customDays,
+      );
       expect(nextDate).toEqual(new Date('2023-01-02T00:00:00Z')); // Monday
     });
 
     it('should throw for CUSTOM_DAYS without custom days', () => {
       expect(() => {
-        service.getNextDeliveryDate(baseDate, SubscriptionFrequency.CUSTOM_DAYS);
+        service.getNextDeliveryDate(
+          baseDate,
+          SubscriptionFrequency.CUSTOM_DAYS,
+        );
       }).toThrow(BadRequestException);
     });
   });
@@ -103,7 +127,9 @@ describe('DeliveryFrequencyService', () => {
     });
 
     it('should return alternative days for ALTERNATIVE_DAYS frequency', () => {
-      const days = service.getDeliveryDays(SubscriptionFrequency.ALTERNATIVE_DAYS);
+      const days = service.getDeliveryDays(
+        SubscriptionFrequency.ALTERNATIVE_DAYS,
+      );
       expect(days).toEqual([
         DayOfWeek.MONDAY,
         DayOfWeek.WEDNESDAY,
@@ -114,7 +140,10 @@ describe('DeliveryFrequencyService', () => {
 
     it('should return custom days for CUSTOM_DAYS frequency', () => {
       const customDays = [DayOfWeek.TUESDAY, DayOfWeek.THURSDAY];
-      const days = service.getDeliveryDays(SubscriptionFrequency.CUSTOM_DAYS, customDays);
+      const days = service.getDeliveryDays(
+        SubscriptionFrequency.CUSTOM_DAYS,
+        customDays,
+      );
       expect(days).toEqual(customDays);
     });
 

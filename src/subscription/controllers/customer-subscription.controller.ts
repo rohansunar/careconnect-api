@@ -40,8 +40,7 @@ export class CustomerSubscriptionController {
    */
   @ApiOperation({
     summary: 'Create a new subscription',
-    description:
-      'Creates a new subscription for the authenticated customer.',
+    description: 'Creates a new subscription for the authenticated customer.',
   })
   @ApiBody({
     type: CreateSubscriptionDto,
@@ -161,7 +160,8 @@ export class CustomerSubscriptionController {
    */
   @ApiOperation({
     summary: 'Update my subscription',
-    description: 'Updates a subscription that belongs to the authenticated customer.',
+    description:
+      'Updates a subscription that belongs to the authenticated customer.',
   })
   @ApiParam({
     name: 'id',
@@ -194,29 +194,30 @@ export class CustomerSubscriptionController {
    * @param action - The action to perform (pause or resume)
    * @returns The updated subscription
    */
-   @ApiOperation({
-     summary: 'Toggle subscription status',
-     description: 'Toggles the status of a subscription between ACTIVE and INACTIVE.',
-   })
-   @ApiParam({
-     name: 'id',
-     description: 'Unique identifier of the subscription (UUID)',
-   })
-   @ApiResponse({
-     status: 200,
-     description: 'Subscription status toggled successfully.',
-   })
-   @ApiResponse({
-     status: 403,
-     description: 'Forbidden - subscription does not belong to customer.',
-   })
-   @Post(':id/toggle')
-   async toggleSubscriptionStatus(
-     @Param('id') id: string,
-     @CurrentUser() user: User,
-   ) {
-     return this.customerSubscriptionService.toggleSubscriptionStatus(id, user);
-   }
+  @ApiOperation({
+    summary: 'Toggle subscription status',
+    description:
+      'Toggles the status of a subscription between ACTIVE and INACTIVE.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the subscription (UUID)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription status toggled successfully.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - subscription does not belong to customer.',
+  })
+  @Post(':id/toggle')
+  async toggleSubscriptionStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.customerSubscriptionService.toggleSubscriptionStatus(id, user);
+  }
 
   /**
    * Deletes a subscription for the authenticated customer.
@@ -226,7 +227,8 @@ export class CustomerSubscriptionController {
    */
   @ApiOperation({
     summary: 'Delete my subscription',
-    description: 'Deletes a subscription that belongs to the authenticated customer.',
+    description:
+      'Deletes a subscription that belongs to the authenticated customer.',
   })
   @ApiParam({
     name: 'id',
@@ -241,7 +243,10 @@ export class CustomerSubscriptionController {
     description: 'Forbidden - subscription does not belong to customer.',
   })
   @Delete(':id')
-  async deleteMySubscription(@Param('id') id: string, @CurrentUser() user: User) {
+  async deleteMySubscription(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
     return this.customerSubscriptionService.deleteMySubscription(id, user);
   }
 }

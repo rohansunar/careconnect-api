@@ -48,7 +48,10 @@ export class CustomerOrderService extends OrderService {
     page: number = 1,
     limit: number = 10,
   ) {
-    const statuses = status || [OrderStatus.PENDING, OrderStatus.OUT_FOR_DELIVERY];
+    const statuses = status || [
+      OrderStatus.PENDING,
+      OrderStatus.OUT_FOR_DELIVERY,
+    ];
     const query = { customerId: user.id, status: { in: statuses } };
     const include = {
       address: {
