@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { DeliveryFrequencyService } from '../services/delivery-frequency.service';
+import { DeliveryFrequencyService } from '../../../src/subscription/services/delivery-frequency.service';
 import {
   DayOfWeek,
   SubscriptionFrequency,
-} from '../interfaces/delivery-frequency.interface';
+} from '../../../src/subscription/interfaces/delivery-frequency.interface';
 import { BadRequestException } from '@nestjs/common';
 
 describe('DeliveryFrequencyService', () => {

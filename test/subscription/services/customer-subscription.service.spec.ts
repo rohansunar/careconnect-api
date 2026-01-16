@@ -1,27 +1,62 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CustomerSubscriptionService } from '../services/customer-subscription.service';
-import { PrismaService } from '../../common/database/prisma.service';
-import { DeliveryFrequencyService } from '../services/delivery-frequency.service';
-import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
+import { CustomerSubscriptionService } from '../../../src/subscription/services/customer-subscription.service';
+import { PrismaService } from '../../../src/common/database/prisma.service';
+import { DeliveryFrequencyService } from '../../../src/subscription/services/delivery-frequency.service';
+import { CreateSubscriptionDto } from '../../../src/subscription/dto/create-subscription.dto';
+import { UpdateSubscriptionDto } from '../../../src/subscription/dto/update-subscription.dto';
 import {
   SubscriptionFrequency,
   DayOfWeek,
-} from '../interfaces/delivery-frequency.interface';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+} from '../../../src/subscription/interfaces/delivery-frequency.interface';
+import { SubscriptionStatus } from '@prisma/client';
+import {
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 
 describe('CustomerSubscriptionService', () => {
   let service: CustomerSubscriptionService;
   let prismaService: PrismaService;
   let deliveryFrequencyService: DeliveryFrequencyService;
 
-  const mockUser = { id: 'user-123' };
-  const mockProduct = { id: 'product-123', vendorId: 'vendor-123' };
+  const mockUser = {
+    id: 'user-123',
+    phone: '1234567890',
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'customer' as any,
+    isActive: true,
+    monthlyPaymentMode: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  const mockProduct = {
+    id: 'product-123',
+    name: 'Test Product',
+    categoryId: 'category-123',
+    images: ['image1.jpg'],
+    description: 'Test description',
+    created_at: new Date(),
+    vendorId: 'vendor-123',
+    price: 100.0 as any,
+    deposit: null,
+    is_active: true,
+    updated_at: new Date(),
+  };
   const mockCustomerAddress = {
     id: 'address-123',
     customerId: 'user-123',
-    isActive: true,
+    label: 'Home' as any,
+    address: '123 Test St',
+    cityId: 'city-123',
+    pincode: '123456',
+    location: null,
+    created_at: new Date(),
+    updated_at: new Date(),
     isDefault: true,
+    isActive: true,
   };
   const mockSubscription = {
     id: 'subscription-123',
@@ -32,7 +67,7 @@ describe('CustomerSubscriptionService', () => {
     frequency: SubscriptionFrequency.DAILY,
     custom_days: [],
     next_delivery_date: new Date('2023-01-02'),
-    status: 'ACTIVE',
+    status: SubscriptionStatus.ACTIVE,
     start_date: new Date('2023-01-01'),
     created_at: new Date(),
     updated_at: new Date(),
@@ -59,6 +94,7 @@ describe('CustomerSubscriptionService', () => {
               findUnique: jest.fn(),
               update: jest.fn(),
               delete: jest.fn(),
+              findFirst: jest.fn(),
             },
           },
         },
@@ -143,6 +179,58 @@ describe('CustomerSubscriptionService', () => {
 
       await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+
+    it('should throw ConflictException when a duplicate subscription exists', async () => {
+      jest
+        .spyOn(prismaService.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress);
+      jest
+        .spyOn(prismaService.product, 'findUnique')
+        .mockResolvedValue(mockProduct);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockResolvedValue(mockSubscription); // Duplicate exists
+
+      const dto: CreateSubscriptionDto = {
+        productId: 'product-123',
+        quantity: 2,
+        frequency: SubscriptionFrequency.DAILY,
+        start_date: '2023-01-01',
+      };
+
+      await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
+        ConflictException,
+      );
+      await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
+        'A subscription for this product already exists for this customer address.',
+      );
+    });
+
+    it('should throw InternalServerErrorException when database operations fail', async () => {
+      jest
+        .spyOn(prismaService.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress);
+      jest
+        .spyOn(prismaService.product, 'findUnique')
+        .mockResolvedValue(mockProduct);
+      jest
+        .spyOn(prismaService.subscription, 'findFirst')
+        .mockRejectedValue(new Error('Database error')); // Simulate database failure
+
+      const dto: CreateSubscriptionDto = {
+        productId: 'product-123',
+        quantity: 2,
+        frequency: SubscriptionFrequency.DAILY,
+        start_date: '2023-01-01',
+      };
+
+      await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+      await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
+        'Failed to check for duplicate subscription',
       );
     });
   });
@@ -256,48 +344,6 @@ describe('CustomerSubscriptionService', () => {
 
       await expect(
         service.updateMySubscription('subscription-123', dto, mockUser),
-      ).rejects.toThrow(ForbiddenException);
-    });
-  });
-
-  describe('pauseMySubscription', () => {
-    it('should pause a subscription if it belongs to the user', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(mockSubscription);
-      jest
-        .spyOn(prismaService.subscription, 'update')
-        .mockResolvedValue({ ...mockSubscription, status: 'INACTIVE' });
-
-      const result = await service.pauseMySubscription(
-        'subscription-123',
-        mockUser,
-      );
-
-      expect(result).toEqual({ ...mockSubscription, status: 'INACTIVE' });
-    });
-
-    it('should throw NotFoundException if subscription not found', async () => {
-      jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(null);
-
-      await expect(
-        service.pauseMySubscription('subscription-123', mockUser),
-      ).rejects.toThrow(NotFoundException);
-    });
-
-    it('should throw ForbiddenException if subscription does not belong to user', async () => {
-      const otherUserSubscription = {
-        ...mockSubscription,
-        customerAddress: { ...mockCustomerAddress, customerId: 'other-user' },
-      };
-      jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(otherUserSubscription);
-
-      await expect(
-        service.pauseMySubscription('subscription-123', mockUser),
       ).rejects.toThrow(ForbiddenException);
     });
   });

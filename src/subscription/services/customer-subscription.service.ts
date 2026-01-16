@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  ConflictException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
@@ -21,23 +23,39 @@ export class CustomerSubscriptionService {
   ) {}
 
   /**
-   * Creates a new subscription for the authenticated customer.
-   * @param user - The authenticated customer user
+   * Validates the inputs for creating a subscription.
    * @param dto - The subscription data
-   * @returns The created subscription
+   * @param user - The authenticated customer user
+   * @returns The customer address and product
    */
-  async createSubscription(user: User, dto: CreateSubscriptionDto) {
-    const customerAddress = await this.prisma.customerAddress.findFirst({
-      where: { customerId: user.id, isActive: true, isDefault: true },
-    });
-    if (!customerAddress) {
-      throw new NotFoundException(
-        'No active customer address found for the user',
+  private async validateSubscriptionInputs(
+    dto: CreateSubscriptionDto,
+    user: User,
+  ) {
+    let customerAddress;
+    try {
+      customerAddress = await this.prisma.customerAddress.findFirst({
+        where: { customerId: user.id, isActive: true, isDefault: true },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to retrieve customer address',
       );
     }
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
-    });
+
+    if (!customerAddress) {
+      throw new NotFoundException('Customer Address not found');
+    }
+
+    let product;
+    try {
+      product = await this.prisma.product.findUnique({
+        where: { id: dto.productId },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to retrieve product');
+    }
+
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -45,6 +63,21 @@ export class CustomerSubscriptionService {
     this.deliveryFrequencyService.validateFrequency(
       dto.frequency,
       dto.custom_days,
+    );
+
+    return { customerAddress, product };
+  }
+
+  /**
+   * Creates a new subscription for the authenticated customer.
+   * @param user - The authenticated customer user
+   * @param dto - The subscription data
+   * @returns The created subscription
+   */
+  async createSubscription(user: User, dto: CreateSubscriptionDto) {
+    const { customerAddress, product } = await this.validateSubscriptionInputs(
+      dto,
+      user,
     );
 
     const customDays =
@@ -57,18 +90,42 @@ export class CustomerSubscriptionService {
       customDays,
     );
 
-    return this.prisma.subscription.create({
-      data: {
-        customerAddressId: customerAddress.id,
-        vendorId: product.vendorId,
-        productId: dto.productId,
-        quantity: dto.quantity,
-        frequency: dto.frequency,
-        custom_days: customDays,
-        next_delivery_date: nextDeliveryDate,
-        start_date: new Date(dto.start_date),
-      },
-    });
+    let hasDuplicate;
+    try {
+      hasDuplicate = await this.prisma.subscription.findFirst({
+        where: {
+          customerAddressId: customerAddress.id,
+          productId: dto.productId,
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to check for duplicate subscription',
+      );
+    }
+
+    if (hasDuplicate) {
+      throw new ConflictException(
+        'A subscription for this product already exists for this customer address.',
+      );
+    }
+
+    try {
+      return this.prisma.subscription.create({
+        data: {
+          customerAddressId: customerAddress.id,
+          vendorId: product.vendorId,
+          productId: dto.productId,
+          quantity: dto.quantity,
+          frequency: dto.frequency,
+          custom_days: customDays,
+          next_delivery_date: nextDeliveryDate,
+          start_date: new Date(dto.start_date),
+        },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to create subscription');
+    }
   }
 
   /**
