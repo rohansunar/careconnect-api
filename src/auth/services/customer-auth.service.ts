@@ -81,7 +81,7 @@ export class CustomerAuthService {
 
     return {
       token,
-      vendor: customer,
+      data: customer,
       expiresIn,
     };
   }

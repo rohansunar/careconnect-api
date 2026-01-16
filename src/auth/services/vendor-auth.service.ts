@@ -75,7 +75,7 @@ export class VendorAuthService {
 
       return {
         token,
-        vendor,
+        data:vendor,
         expiresIn: this.VENDOR_JWT_EXPIRES_IN,
       };
     } catch (error) {

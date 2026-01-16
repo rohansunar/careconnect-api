@@ -28,7 +28,7 @@ export class VerifyOtpResponseDto {
   @ApiProperty({
     description: 'Vendor or Customer Details',
   })
-  vendor: any;
+  data: any;
 
   expiresIn: number;
 }

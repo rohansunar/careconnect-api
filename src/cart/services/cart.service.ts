@@ -38,6 +38,7 @@ export class CartService {
 
       // Validate product exists and get current pricing
       const product = await this.validateProduct(dto.productId);
+      await this.validateDeliveryAddress(customerId)
 
       // Get or create active cart for customer
       let cart = await tx.cart.findFirst({
@@ -378,14 +379,14 @@ export class CartService {
    */
   async validateDeliveryAddress(customerId: string) {
     const address = await this.prisma.customerAddress.findFirst({
-      where: { customerId, isDefault: true },
+      where: { customerId, isDefault: true, isActive:true },
       include: {
         city: true,
       },
     });
 
     if (!address) {
-      throw new BadRequestException('Delivery address not found');
+      throw new BadRequestException('Please add address!');
     }
 
     if (address.customerId !== customerId) {
