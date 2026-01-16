@@ -136,19 +136,33 @@ export class CartService {
    * @returns Confirmation of deletion
    */
   async removeFromCart(cartItemId: string) {
-    const cartItem = await this.prisma.cartItem.findUnique({
-      where: { id: cartItemId },
+    return this.prisma.$transaction(async (tx) => {
+      const cartItem = await tx.cartItem.findUnique({
+        where: { id: cartItemId },
+      });
+
+      if (!cartItem) {
+        throw new NotFoundException('Cart item not found');
+      }
+
+      const cartId = cartItem.cartId;
+
+      await tx.cartItem.delete({
+        where: { id: cartItemId },
+      });
+
+      const remainingItemsCount = await tx.cartItem.count({
+        where: { cartId },
+      });
+
+      if (remainingItemsCount === 0) {
+        await tx.cart.delete({
+          where: { id: cartId },
+        });
+      }
+
+      return { message: 'Cart item removed successfully' };
     });
-
-    if (!cartItem) {
-      throw new NotFoundException('Cart item not found');
-    }
-
-    await this.prisma.cartItem.delete({
-      where: { id: cartItemId },
-    });
-
-    return { message: 'Cart item removed successfully' };
   }
 
   /**
@@ -241,11 +255,11 @@ export class CartService {
     // Validate customer exists
     await this.validateCustomer(customerId);
 
-    // Get customer's active cart with items and product details
-    const cart = await this.prisma.cart.findFirst({
+    // Get or create active cart for customer
+    let cart = await this.prisma.cart.findFirst({
       where: {
         customerId,
-        status: 'ACTIVE',
+        status: CartStatus.ACTIVE,
       },
       include: {
         cartItems: {
@@ -260,12 +274,27 @@ export class CartService {
       },
     });
 
-    if (!cart || cart.cartItems.length === 0) {
-      throw new BadRequestException('Cart is empty or not found');
-    }
-
     // Validate delivery address
     const deliveryAddress = await this.validateDeliveryAddress(customerId);
+    if (!cart || cart.cartItems.length === 0) {
+      return {
+        cartId: "",
+        deliveryAddress: {
+          id: deliveryAddress.id,
+          label: deliveryAddress.label || undefined,
+          address: deliveryAddress.address || undefined,
+          city: deliveryAddress.city?.name,
+          pincode: deliveryAddress.pincode || undefined,
+        },
+        isAddressValid: true,
+        cartItems: [],
+        totalItems: 0,
+        subtotal: 0,
+        totalDeposit: undefined,
+        grandTotal: 0,
+        deliveryNotes: undefined,
+      };
+    }
 
     // Group cart items by vendor
     const vendorGroups = this.groupCartItemsByVendor(cart.cartItems);
