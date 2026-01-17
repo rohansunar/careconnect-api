@@ -19,11 +19,11 @@ export class CreateAddressDto {
   @IsNotEmpty()
   pincode: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsNumber()
   lng?: number;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsNumber()
   lat?: number;
 

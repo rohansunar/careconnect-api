@@ -136,6 +136,6 @@ export class AddressController {
         HttpStatus.UNAUTHORIZED,
       );
     }
-    await this.addressService.deleteAddress(existingAddress.id);
+    return await this.addressService.deleteAddress(existingAddress.id);
   }
 }

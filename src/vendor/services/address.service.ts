@@ -105,8 +105,8 @@ export class AddressService {
    * Deletes a VendorAddress by ID.
    * @param id - The unique identifier of the address.
    */
-  async deleteAddress(id: string): Promise<void> {
-    await this.prisma.vendorAddress.delete({
+  async deleteAddress(id: string): Promise<any> {
+    return await this.prisma.vendorAddress.delete({
       where: { id },
     });
   }
