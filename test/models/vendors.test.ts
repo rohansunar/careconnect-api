@@ -40,7 +40,6 @@ describe('Vendors CRUD', () => {
         name: 'Test Vendor',
         phone: '1234567890',
         city: city.id,
-        location: 'POINT(0 0)' as any,
       };
 
       const vendor = await prisma.vendor.create({ data: vendorData });
@@ -49,7 +48,6 @@ describe('Vendors CRUD', () => {
       expect(vendor.name).toBe('Test Vendor');
       expect(vendor.phone).toBe('1234567890');
       expect(vendor.city).toBe(city.id);
-      expect(vendor.location).toBe('POINT(0 0)');
       expect(vendor.is_active).toBe(true);
       expect(vendor.created_at).toBeInstanceOf(Date);
       expect(vendor.updated_at).toBeInstanceOf(Date);
@@ -74,25 +72,6 @@ describe('Vendors CRUD', () => {
       );
     });
 
-    it('should throw error for invalid location geometry', async () => {
-      const city = await prisma.city.create({
-        data: {
-          name: 'Test City',
-          bbox: 'POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))' as any,
-        },
-      });
-
-      const vendorData = {
-        name: 'Test Vendor',
-        phone: '1234567890',
-        city: city.id,
-        location: 'INVALID_GEOMETRY' as any,
-      };
-
-      await expect(prisma.vendor.create({ data: vendorData })).rejects.toThrow(
-        Prisma.PrismaClientKnownRequestError,
-      );
-    });
 
     it('should throw error for invalid city (foreign key violation)', async () => {
       const vendorData = {
@@ -213,14 +192,6 @@ describe('Vendors CRUD', () => {
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
 
-    it('should throw error for invalid location geometry on update', async () => {
-      await expect(
-        prisma.vendor.update({
-          where: { id: vendorId },
-          data: { location: 'INVALID' as any },
-        }),
-      ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
-    });
 
     it('should throw error for invalid city on update', async () => {
       await expect(

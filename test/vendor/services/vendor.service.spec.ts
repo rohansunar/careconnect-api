@@ -41,11 +41,22 @@ describe('VendorService', () => {
         name: 'Test Vendor',
         phone: '+1234567890',
         email: 'test@example.com',
-        address: 'Test Address',
+        address: {
+          id: 'addressId',
+          vendorId: '123',
+          service_radius_m: 5000,
+          cityId: 'cityId',
+          state: 'State',
+          lng: 12.34,
+          lat: 56.78,
+          pincode: '123456',
+          address: 'Test Address',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
         is_active: true,
         is_available_today: true,
         service_radius_m: 5000,
-        delivery_time_msg: '30 mins',
       };
       jest
         .spyOn(prisma.vendor, 'findUnique')
@@ -54,6 +65,8 @@ describe('VendorService', () => {
       const result = await service.getProfile('123');
 
       expect(result).toEqual(mockVendor);
+      expect(result.address.lng).toBe(12.34);
+      expect(result.address.lat).toBe(56.78);
       expect(prisma.vendor.findUnique).toHaveBeenCalledWith({
         where: { id: '123' },
         include: {

@@ -21,23 +21,12 @@ enum CartStatus {
 }
 
 model Cart {
-  /// Unique identifier for the cart
   id         String     @id @default(uuid())
-
-  /// Reference to the customer who owns this cart
   customerId String
   customer   Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  /// Status of the cart
   status     CartStatus @default(ACTIVE)
-
-  /// Timestamp when cart was created
   createdAt  DateTime   @default(now())
-
-  /// Timestamp when cart was last updated
   updatedAt  DateTime   @default(now())
-
-  /// Cart items in this cart
   cartItems  CartItem[]
   orders     Order[] @relation("orders")
 
@@ -193,10 +182,10 @@ model CustomerAddress {
   isDefault  Boolean   @default(false)
   isActive  Boolean   @default(true)
 
-  /// orders      Order[] @relation("orders")
   subscriptions Subscription[]
   orders Order[] @relation("orders")
   @@index([customerId])
+  @@index([customerId, isDefault])
 
 }
 
@@ -408,7 +397,7 @@ model Vendor {
   id                 String   @id @default(uuid())
   vendorNo           String   @unique
   name               String
-  owner_name         String?
+  business_name         String?
   phone              String   @unique
   email              String?
   is_active          Boolean  @default(true)
@@ -434,13 +423,12 @@ model VendorAddress {
   vendorId  String   @unique
   vendor    Vendor?  @relation(fields: [vendorId], references: [id])
   service_radius_m   Int?
-  delivery_time_msg  String?
-  street    String?
   cityId    String?
   city      City?    @relation(fields: [cityId], references: [id])
   state     String?
-  zipCode   String?
-  location  Json?  // For coordinates or additional location info
+  lng       Float?
+  lat       Float?
+  pincode   String?
   address   String    // For any additional address data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

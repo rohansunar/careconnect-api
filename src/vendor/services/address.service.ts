@@ -37,16 +37,10 @@ export class AddressService {
       throw new BadRequestException('City does not exist');
     }
 
-    // Stringify location if present
-    const createData: any = { ...data };
-    if (createData.location) {
-      createData.location = JSON.stringify(createData.location);
-    }
-
     const address = await this.prisma.vendorAddress.create({
       data: {
         vendorId,
-        ...createData,
+        ...data,
       },
     });
 
@@ -77,13 +71,9 @@ export class AddressService {
    * @returns The updated VendorAddress.
    */
   async updateAddress(id: string, data: UpdateAddressDto): Promise<any> {
-    const updateData: any = { ...data };
-    if (updateData.location) {
-      updateData.location = JSON.stringify(updateData.location);
-    }
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { id },
-      data: updateData,
+      data,
     });
 
     return updatedAddress;
@@ -107,10 +97,6 @@ export class AddressService {
         (address as any).city = city.name;
         delete (address as any).cityId;
       }
-    }
-    // Parse location back to object if it's a string
-    if (address && address.location && typeof address.location === 'string') {
-      address.location = JSON.parse(address.location);
     }
     return address;
   }

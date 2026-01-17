@@ -2,14 +2,14 @@ model Vendor {
   id                 String   @id @default(uuid())
   vendorNo           String   @unique
   name               String
-  owner_name         String?
+  business_name      String?
   phone              String   @unique
   email              String?
   is_active          Boolean  @default(true)
   is_available_today Boolean  @default(true)
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
-  address            VendorAddress?
+  address            VendorAddress? @relation("VendorAddress")
   @@index([vendorNo])
 
   products           Product[]

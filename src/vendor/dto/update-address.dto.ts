@@ -3,14 +3,10 @@ import {
   IsOptional,
   IsInt,
   IsNotEmpty,
-  IsObject,
+  IsNumber,
 } from 'class-validator';
 
 export class UpdateAddressDto {
-  @IsNotEmpty()
-  @IsString()
-  street: string;
-
   @IsNotEmpty()
   @IsString()
   cityId: string;
@@ -21,20 +17,16 @@ export class UpdateAddressDto {
 
   @IsNotEmpty()
   @IsString()
-  zipCode: string;
+  pincode: string;
 
   @IsOptional()
-  @IsObject()
-  location: { lat: string; lng: string };
+  @IsNumber()
+  lng?: number;
+
+  @IsOptional()
+  @IsNumber()
+  lat?: number;
 
   @IsNotEmpty()
   address: any;
-
-  @IsNotEmpty()
-  @IsInt()
-  service_radius_m: number;
-
-  @IsOptional()
-  @IsString()
-  delivery_time_msg?: string;
 }

@@ -1,15 +1,13 @@
 model VendorAddress {
   id        String   @id @default(cuid())
   vendorId  String   @unique
-  vendor    Vendor?  @relation(fields: [vendorId], references: [id])
-  service_radius_m   Int?
-  delivery_time_msg  String?
-  street    String?
+  vendor    Vendor   @relation("VendorAddress", fields: [vendorId], references: [id])
   cityId    String?
   city      City?    @relation(fields: [cityId], references: [id])
   state     String?
-  zipCode   String?
-  location  Json?  // For coordinates or additional location info
+  lng       Float?
+  lat       Float?
+  pincode   String?
   address   String    // For any additional address data
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -3,14 +3,10 @@ import {
   IsNotEmpty,
   IsOptional,
   IsInt,
-  IsObject,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateAddressDto {
-  @IsString()
-  @IsNotEmpty()
-  street: string;
-
   @IsString()
   @IsNotEmpty()
   cityId: string;
@@ -21,20 +17,16 @@ export class CreateAddressDto {
 
   @IsString()
   @IsNotEmpty()
-  zipCode: string;
+  pincode: string;
 
   @IsOptional()
-  @IsObject()
-  location?: { lat: string; lng: string };
+  @IsNumber()
+  lng?: number;
 
   @IsOptional()
-  address?: any;
+  @IsNumber()
+  lat?: number;
 
-  @IsOptional()
-  @IsInt()
-  service_radius_m?: number;
-
-  @IsOptional()
-  @IsString()
-  delivery_time_msg?: string;
+  @IsNotEmpty()
+  address: any;
 }
