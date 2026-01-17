@@ -1,10 +1,9 @@
 import {
   IsString,
   IsNotEmpty,
-  IsOptional,
   Length,
-  IsObject,
   IsEnum,
+  IsNumber,
 } from 'class-validator';
 
 export enum AddressLabel {
@@ -16,7 +15,7 @@ export enum AddressLabel {
 }
 
 export class CreateCustomerAddressDto {
-  @IsOptional()
+  @IsNotEmpty()
   @IsEnum(AddressLabel)
   label?: AddressLabel;
 
@@ -34,6 +33,10 @@ export class CreateCustomerAddressDto {
   pincode?: string;
 
   @IsNotEmpty()
-  @IsObject()
-  location: object;
+  @IsNumber()
+  lng: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  lat: number;
 }

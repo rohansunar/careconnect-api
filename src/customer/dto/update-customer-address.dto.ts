@@ -3,8 +3,8 @@ import {
   IsOptional,
   Length,
   IsNotEmpty,
-  IsObject,
   IsEnum,
+  IsNumber,
 } from 'class-validator';
 
 export enum AddressLabel {
@@ -34,6 +34,10 @@ export class UpdateCustomerAddressDto {
   pincode?: string;
 
   @IsNotEmpty()
-  @IsObject()
-  location: object;
+  @IsNumber()
+  lng: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  lat: number;
 }

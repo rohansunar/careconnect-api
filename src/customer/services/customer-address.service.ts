@@ -52,7 +52,7 @@ export class CustomerAddressService {
   }
 
   /**
-   * Checks for duplicate addresses based on address, location, pincode, and cityId.
+   * Checks for duplicate addresses based on address, lng, lat, pincode, and cityId.
    * Excludes a specific address ID if updating.
    * Throws BadRequestException if a duplicate is found.
    * @param customerId - The customer ID.
@@ -67,7 +67,8 @@ export class CustomerAddressService {
     const where: any = {
       customerId,
       address: data.address,
-      // location: data.location, @TODO - Check Later
+      lng: data.lng,
+      lat: data.lat,
       isActive: true,
     };
     if (excludeId) {
@@ -83,7 +84,7 @@ export class CustomerAddressService {
     const duplicate = await this.prisma.customerAddress.findFirst({ where });
     if (duplicate) {
       throw new BadRequestException(
-        'An address with the same pincode, city, location, and address already exists. Please provide a different address.',
+        'An address with the same pincode, city, lng, lat, and address already exists. Please provide a different address.',
       );
     }
   }

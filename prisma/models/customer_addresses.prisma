@@ -15,7 +15,8 @@ model CustomerAddress {
   cityId     String?
   city       City?    @relation(fields: [cityId], references: [id])
   pincode    String?
-  location   Json?
+  lng        Float?
+  lat        Float?
   created_at DateTime @default(now())
   updated_at DateTime @default(now()) @db.Timestamp
   isDefault  Boolean   @default(false)
@@ -27,5 +28,3 @@ model CustomerAddress {
   @@index([customerId, isDefault])
 
 }
-
-// location    Unsupported("geometry(POINT, 4326)")
