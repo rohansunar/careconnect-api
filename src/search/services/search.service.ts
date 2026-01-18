@@ -4,9 +4,10 @@ import { ProximitySearchService } from './proximity-search.service';
 
 @Injectable()
 export class SearchService {
+  private readonly logger = new Logger(SearchService.name)
+  
   constructor(
     private proximitySearchService: ProximitySearchService,
-    private readonly logger = new Logger(SearchService.name)
   ) {}
 
   /**
