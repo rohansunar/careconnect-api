@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { SearchQueryDto } from '../dto/search-query.dto';
 import { ProximitySearchService } from './proximity-search.service';
 
 @Injectable()
 export class SearchService {
-  constructor(private proximitySearchService: ProximitySearchService) {}
+  constructor(
+    private proximitySearchService: ProximitySearchService,
+    private readonly logger = new Logger(SearchService.name)
+  ) {}
 
   /**
     * Searches for products based on proximity to customer's location.
@@ -13,6 +16,7 @@ export class SearchService {
     * @returns Paginated list of products with distances
   */
   async searchProducts(query: SearchQueryDto, customer: { id: any }) {
+    this.logger.log(`Product Search Request with Query: ${query.limit} ${query.page}`);
     return this.proximitySearchService.searchProducts(query, String(customer.id));
   }
 }
