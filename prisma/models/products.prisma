@@ -14,8 +14,13 @@ model Product {
   deposit     Decimal?  @db.Decimal(10, 2) 
   is_active   Boolean    @default(true)
   updated_at  DateTime   @default(now())
-
+ 
   subscriptions Subscription[]
   cartItems CartItem[]
   @@index([categoryId])
+  @@index([vendorId])
+  @@index([is_active])
+  @@index([created_at])
+  @@index([vendorId, is_active])
+  @@index([vendorId, created_at])
 }

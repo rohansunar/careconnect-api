@@ -72,7 +72,6 @@ describe('Vendors CRUD', () => {
       );
     });
 
-
     it('should throw error for invalid city (foreign key violation)', async () => {
       const vendorData = {
         name: 'Test Vendor',
@@ -191,7 +190,6 @@ describe('Vendors CRUD', () => {
         }),
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
-
 
     it('should throw error for invalid city on update', async () => {
       await expect(
