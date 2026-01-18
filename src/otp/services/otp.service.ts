@@ -1,12 +1,14 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpPurpose } from '@prisma/client';
 import { createHash } from 'crypto';
+import { OtpVerificationDto } from '../dto/otp-verification.dto';
 
 @Injectable()
 export class OtpService {
   private readonly salt: string;
+  private readonly logger = new Logger(OtpService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -45,69 +47,80 @@ export class OtpService {
       },
     });
 
+    this.logger.log(`Your OTP code is ${code} for ${phone} and Purpose ${purpose}`)
+
     return code; // Return plain code for sending via SMS/email
   }
 
-  async verifyOtp(
-    phone: string,
-    code: string,
-    purpose: OtpPurpose,
-  ): Promise<boolean> {
-    const otpRecord = await this.prisma.otpCode.findUnique({
-      where: {
-        phone_purpose: {
-          phone,
-          purpose,
+
+  async verifyOtp(dto: OtpVerificationDto): Promise<boolean> {
+    try {
+
+      const otpRecord = await this.prisma.otpCode.findUnique({
+        where: {
+          phone_purpose: {
+            phone: dto.phone,
+            purpose: dto.purpose,
+          },
         },
-      },
-    });
+      });
 
-    if (!otpRecord) {
-      throw new UnauthorizedException('OTP not found');
-    }
+      if (!otpRecord) {
+        throw new UnauthorizedException('OTP not found');
+      }
 
-    if (otpRecord.isUsed) {
-      throw new UnauthorizedException('OTP already used');
-    }
+      if (otpRecord.isUsed) {
+        throw new UnauthorizedException('OTP already used');
+      }
 
-    if (otpRecord.expiresAt < new Date()) {
-      throw new UnauthorizedException('OTP expired');
-    }
+      if (otpRecord.expiresAt < new Date()) {
+        throw new UnauthorizedException('OTP expired');
+      }
 
-    if (otpRecord.attempts >= 3) {
-      throw new UnauthorizedException('Too many attempts');
-    }
+      if (otpRecord.attempts >= 3) {
+        throw new UnauthorizedException('Too many attempts');
+      }
 
-    const hashedCode = this.hashCode(code);
-    if (otpRecord.code !== hashedCode) {
+      const hashedCode = this.hashCode(dto.code);
+      if (otpRecord.code !== hashedCode) {
+        await this.prisma.otpCode.update({
+          where: {
+            phone_purpose: {
+              phone: dto.phone,
+              purpose: dto.purpose,
+            },
+          },
+          data: {
+            attempts: otpRecord.attempts + 1,
+          },
+        });
+        throw new UnauthorizedException('Invalid OTP');
+      }
+
       await this.prisma.otpCode.update({
         where: {
           phone_purpose: {
-            phone,
-            purpose,
+            phone: dto.phone,
+            purpose: dto.purpose,
           },
         },
         data: {
-          attempts: otpRecord.attempts + 1,
+          isUsed: true,
+          usedAt: new Date(),
         },
       });
-      throw new UnauthorizedException('Invalid OTP');
+
+      return true;
+    } catch (error) {
+      // Log the error with contextual details
+      this.logger.error(
+        `OTP verification failed for phone: ${dto.phone}, purpose: ${dto.purpose}`,
+        error.stack,
+      );
+
+      // Re-throw the error
+      throw error;
     }
-
-    await this.prisma.otpCode.update({
-      where: {
-        phone_purpose: {
-          phone,
-          purpose,
-        },
-      },
-      data: {
-        isUsed: true,
-        usedAt: new Date(),
-      },
-    });
-
-    return true;
   }
 
   async cleanupExpiredOtps(): Promise<number> {

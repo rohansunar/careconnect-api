@@ -6,7 +6,7 @@ import { VendorJwtStrategy } from './strategies/vendor-jwt.strategy';
 import { VendorAuthGuard } from './guards/vendor-auth.guard';
 import { VendorAuthService } from './services/vendor-auth.service';
 import { PrismaService } from '../common/database/prisma.service';
-import { OtpService } from '../otp/services/otp.service';
+import { OtpModule } from '../otp/otp.module';
 import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { AdminVendorGuard } from './guards/admin-vendor.guard';
 import { CustomerAuthGuard } from './guards/customer-auth.guard';
@@ -21,6 +21,7 @@ import { CustomerAuthService } from './services/customer-auth.service';
 @Module({
   imports: [
     ConfigModule, // ensure ConfigService is available
+    OtpModule,
     PassportModule.register({ defaultStrategy: 'admin-jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -36,7 +37,6 @@ import { CustomerAuthService } from './services/customer-auth.service';
     AdminAuthService,
     CustomerAuthService,
     PrismaService,
-    OtpService,
     AdminJwtStrategy,
     VendorAuthGuard,
     VendorJwtStrategy,

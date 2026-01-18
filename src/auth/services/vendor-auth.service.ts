@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
 import { OtpPurpose } from '@prisma/client';
@@ -9,6 +9,8 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class VendorAuthService {
+  private readonly logger = new Logger(VendorAuthService.name);
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
@@ -22,11 +24,12 @@ export class VendorAuthService {
    * @returns A response indicating success and OTP expiration time.
    */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
-    const otp = await this.otpService.generateOtp(
+    this.logger.log(`OTP request initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`);
+    await this.otpService.generateOtp(
       phone,
       OtpPurpose.VENDOR_LOGIN,
     );
-    console.log(`SMS to ${phone}: Your OTP code is ${otp}`);
+    this.logger.log(`OTP generated and sent to ${phone} for ${OtpPurpose.VENDOR_LOGIN}`);
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }
 
@@ -48,13 +51,13 @@ export class VendorAuthService {
     dto: VerifyOtpDto,
   ): Promise<VerifyOtpResponseDto> {
     try {
-      // Validate input parameters
-      this.validateVerifyOtpDto(dto);
       const { phone, code } = dto;
+
+      this.logger.log(`OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`);
 
       // Step 1: Verify the OTP code for vendor login
       // This ensures the user has received and entered the correct OTP, preventing unauthorized access.
-      await this.otpService.verifyOtp(phone, code, OtpPurpose.VENDOR_LOGIN);
+      await this.otpService.verifyOtp({ phone, code, purpose: OtpPurpose.VENDOR_LOGIN });
 
       // Step 2: Handle vendor creation or update atomically
       // Using a transaction ensures data consistency and prevents partial updates.
@@ -92,26 +95,6 @@ export class VendorAuthService {
     }
   }
 
-  /**
-   * Validates the VerifyOtpDto input.
-   * Ensures phone and code are provided and in expected formats.
-   * @param dto - The DTO to validate.
-   * @throws BadRequestException if validation fails.
-   */
-  private validateVerifyOtpDto(dto: VerifyOtpDto): void {
-    if (!dto.phone || !dto.code) {
-      throw new BadRequestException('Phone and OTP code are required.');
-    }
-    // Additional validation: Ensure phone is a valid format (basic check)
-    const phoneRegex = /^\+?[1-9]\d{1,14}$/; // E.164 format
-    if (!phoneRegex.test(dto.phone.replace('-', ''))) {
-      throw new BadRequestException('Invalid phone number format.');
-    }
-    // Ensure code is numeric and of expected length (assuming 6 digits)
-    if (!/^\d{6}$/.test(dto.code)) {
-      throw new BadRequestException('OTP code must be a 6-digit number.');
-    }
-  }
 
   /**
    * Handles the creation of a new vendor or updates an existing one.

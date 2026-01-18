@@ -15,11 +15,10 @@ export interface ICustomerAddress {
 }
 
 /**
- * Result of a proximity search, including product and distance.
+ * Result of a proximity search, with product including distance.
  */
 export interface IProximitySearchResult {
-  product: any; // Framework-agnostic, actual type from domain
-  distance?: IDistance; // Optional to maintain backward compatibility
+  product: any; // Framework-agnostic, actual type from domain, now includes distance
 }
 
 /**

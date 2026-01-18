@@ -23,7 +23,7 @@ export class SearchController {
    })
    @ApiResponse({
      status: 200,
-     description: 'Proximity search results with products, distances, and pagination information.',
+     description: 'Proximity search results with products (including distances) and pagination information.',
    })
    @ApiQuery({
      name: 'page',

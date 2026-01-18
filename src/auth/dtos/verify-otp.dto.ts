@@ -1,14 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsPhoneNumber } from 'class-validator';
 
 export class VerifyOtpDto {
-  @ApiProperty({
-    description: 'Vendor/Customer phone number',
-    example: '+91-9832012345',
-  })
   @IsString()
-  @IsNotEmpty()
-  phone: string;
+   @ApiProperty({
+     description: 'Vendor/Customer phone number',
+     example: '+91-9832012345',
+   })
+   @IsPhoneNumber('IN', { message: 'Invalid phone number' })
+   @IsNotEmpty()
+   phone: string;
 
   @ApiProperty({
     description: 'OTP code received',

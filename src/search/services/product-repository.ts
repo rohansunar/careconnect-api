@@ -15,7 +15,7 @@ export class ProductRepository implements IProductRepository {
    * @param radiusKm Search radius in kilometers
    * @param page Page number (1-based)
    * @param limit Number of items per page
-   * @returns Paginated results with products and distances
+   * @returns Paginated results with products including distances
    */
   async findProductsWithinRadius(
     customerLocation: ICustomerAddress,
@@ -71,10 +71,12 @@ export class ProductRepository implements IProductRepository {
 
       // Map results to IProximitySearchResult
       const proximityResults: IProximitySearchResult[] = (results as any[]).map((row) => {
-        const { distance, ...product } = row; // Exclude distance from product
+        const { distance, is_active, ...product } = row;
         return {
-          product, // Product without distance field
-          distance: this.formatDistance(row.distance),
+          product: {
+            ...product,
+            distance: this.formatDistance(row.distance),
+          },
         };
       });
 
