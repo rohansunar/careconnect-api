@@ -73,10 +73,8 @@ export class ProductRepository implements IProductRepository {
       const proximityResults: IProximitySearchResult[] = (results as any[]).map((row) => {
         const { distance, is_active, ...product } = row;
         return {
-          product: {
             ...product,
             distance: this.formatDistance(row.distance),
-          },
         };
       });
 

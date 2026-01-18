@@ -15,10 +15,20 @@ export interface ICustomerAddress {
 }
 
 /**
- * Result of a proximity search, with product including distance.
+ * Result of a proximity search, representing a product with its distance from the customer's location.
  */
 export interface IProximitySearchResult {
-  product: any; // Framework-agnostic, actual type from domain, now includes distance
+  id: string;
+  name: string;
+  categoryId: string;
+  images: string[];
+  description: string | null;
+  created_at: Date;
+  vendorId: string;
+  price: number;
+  deposit: number | null;
+  updated_at: Date;
+  distance: IDistance;
 }
 
 /**
