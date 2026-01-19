@@ -17,11 +17,12 @@ describe('CustomerAddressService', () => {
         update: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn(),
+        count: jest.fn(),
       },
       customer: {
         findFirst: jest.fn(),
       },
-      city: {
+      location: {
         findUnique: jest.fn(),
       },
     };
@@ -112,7 +113,7 @@ describe('CustomerAddressService', () => {
           isDefault: true,
         },
         include: {
-          city: true,
+          location: true,
         },
       });
     });
@@ -263,36 +264,39 @@ describe('CustomerAddressService', () => {
   describe('create', () => {
     it('should create a customer address successfully', async () => {
       const mockCustomerId = 'customer-123';
-      const mockCityId = 'city-123';
+      const mockLocationId = 'location-123';
       const mockData = {
         address: '123 Main St',
-        cityId: mockCityId,
+        locationId: mockLocationId,
         pincode: '123456',
-        location: { lat: 12.34, lng: 56.78 },
+        lng: 56.78,
+        lat: 12.34,
       };
 
-      const mockCity = {
-        id: mockCityId,
-        name: 'Test City',
+      const mockLocation = {
+        id: mockLocationId,
+        name: 'Test Location',
       };
 
       const mockCreatedAddress = {
         id: 'address-123',
         customerId: mockCustomerId,
         address: mockData.address,
-        cityId: mockData.cityId,
+        locationId: mockData.locationId,
         pincode: mockData.pincode,
-        location: mockData.location,
+        lng: mockData.lng,
+        lat: mockData.lat,
         created_at: new Date(),
         isDefault: false,
-        city: mockCity,
+        location: mockLocation,
       };
 
       mockPrismaService.customer.findFirst.mockResolvedValue({
         id: mockCustomerId,
         isActive: true,
       });
-      mockPrismaService.city.findUnique.mockResolvedValue(mockCity);
+      mockPrismaService.location.findUnique.mockResolvedValue(mockLocation);
+      mockPrismaService.customerAddress.count.mockResolvedValue(0);
       mockPrismaService.customerAddress.create.mockResolvedValue(
         mockCreatedAddress,
       );
@@ -300,35 +304,42 @@ describe('CustomerAddressService', () => {
       const result = await service.create(mockCustomerId, mockData);
 
       expect(result).toEqual(mockCreatedAddress);
-      expect(mockPrismaService.city.findUnique).toHaveBeenCalledWith({
-        where: { id: mockCityId },
+      expect(mockPrismaService.location.findUnique).toHaveBeenCalledWith({
+        where: { id: mockLocationId },
       });
       expect(mockPrismaService.customerAddress.create).toHaveBeenCalledWith({
         data: {
           customerId: mockCustomerId,
           ...mockData,
+          isDefault: true,
         },
         include: {
-          city: true,
+          location: true,
         },
       });
     });
 
-    it('should throw BadRequestException when city not found', async () => {
+    it('should throw BadRequestException when location not found', async () => {
       const mockCustomerId = 'customer-123';
       const mockData = {
-        cityId: 'invalid-city-id',
+        address: '123 Main St',
+        locationId: 'invalid-location-id',
+        lng: 56.78,
+        lat: 12.34,
       };
 
       mockPrismaService.customer.findFirst.mockResolvedValue({
         id: mockCustomerId,
         isActive: true,
       });
-      mockPrismaService.city.findUnique.mockResolvedValue(null);
+      mockPrismaService.location.findUnique.mockResolvedValue(null);
 
       await expect(service.create(mockCustomerId, mockData)).rejects.toThrow(
         BadRequestException,
       );
+      expect(mockPrismaService.location.findUnique).toHaveBeenCalledWith({
+        where: { id: 'invalid-location-id' },
+      });
     });
   });
 
@@ -340,7 +351,7 @@ describe('CustomerAddressService', () => {
           id: 'address-1',
           customerId: mockCustomerId,
           label: 'Home',
-          cityId: null,
+          locationId: null,
           pincode: null,
           created_at: new Date(),
           isDefault: true,
@@ -349,7 +360,7 @@ describe('CustomerAddressService', () => {
           id: 'address-2',
           customerId: mockCustomerId,
           label: 'Work',
-          cityId: null,
+          locationId: null,
           pincode: null,
           created_at: new Date(),
           isDefault: false,
@@ -370,11 +381,9 @@ describe('CustomerAddressService', () => {
       expect(mockPrismaService.customerAddress.findMany).toHaveBeenCalledWith({
         where: { customerId: mockCustomerId, isActive: true },
         include: {
-          city: true,
+          location: true,
         },
-        orderBy: {
-          created_at: 'desc',
-        },
+        orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
       });
     });
 

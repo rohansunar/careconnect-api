@@ -13,7 +13,6 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AddressService } from '../services/address.service';
 import { VendorService } from '../services/vendor.service';
-import { CitiesService } from '../../cities/services/cities.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
@@ -26,7 +25,6 @@ export class AddressController {
   constructor(
     private readonly addressService: AddressService,
     private readonly vendorService: VendorService,
-    private readonly citiesService: CitiesService,
   ) {}
 
   /**
@@ -70,10 +68,6 @@ export class AddressController {
   async getAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
     const address = await this.addressService.getAddressByVendorId(id);
-    if (address && address.cityId) {
-      const city = await this.citiesService.findById(address.cityId);
-      return { ...address, city: city?.name, cityId: undefined };
-    }
     return address;
   }
 

@@ -12,17 +12,17 @@ export class CustomerAddressService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Validates that a city with the given ID exists in the database.
+   * Validates that a location with the given ID exists in the database.
    * Throws BadRequestException if not found.
-   * @param cityId - The city ID to validate.
+   * @param locationId - The location ID to validate.
    */
-  private async validateCity(cityId: string | undefined): Promise<void> {
-    if (!cityId) return;
-    const city = await this.prisma.city.findUnique({
-      where: { id: cityId },
+  private async validateLocation(locationId: string | undefined): Promise<void> {
+    if (!locationId) return;
+    const location = await this.prisma.location.findUnique({
+      where: { id: locationId },
     });
-    if (!city) {
-      throw new BadRequestException('City not found');
+    if (!location) {
+      throw new BadRequestException('Location not found');
     }
   }
 
@@ -52,7 +52,7 @@ export class CustomerAddressService {
   }
 
   /**
-   * Checks for duplicate addresses based on address, lng, lat, pincode, and cityId.
+   * Checks for duplicate addresses based on address, lng, lat, pincode, and locationId.
    * Excludes a specific address ID if updating.
    * Throws BadRequestException if a duplicate is found.
    * @param customerId - The customer ID.
@@ -77,14 +77,14 @@ export class CustomerAddressService {
     if (data.pincode) {
       where.pincode = data.pincode;
     }
-    if (data.cityId) {
-      where.cityId = data.cityId;
+    if (data.locationId) {
+      where.locationId = data.locationId;
     }
 
     const duplicate = await this.prisma.customerAddress.findFirst({ where });
     if (duplicate) {
       throw new BadRequestException(
-        'An address with the same pincode, city, lng, lat, and address already exists. Please provide a different address.',
+        'An address with the same pincode, location, lng, lat, and address already exists. Please provide a different address.',
       );
     }
   }
@@ -107,11 +107,11 @@ export class CustomerAddressService {
    * Creates a new customer address for the authenticated customer.
    * @param customerId - The unique identifier of the customer.
    * @param data - The address data to create.
-   * @returns The created customer address with city relation.
+   * @returns The created customer address with location relation.
    */
   async create(customerId: string, data: CreateCustomerAddressDto) {
     await this.validateCustomerExists(customerId);
-    await this.validateCity(data.cityId);
+    await this.validateLocation(data.locationId);
     await this.checkDuplicateAddress(customerId, data);
     const existingAddressesCount = await this.prisma.customerAddress.count({
       where: { customerId, isActive: true } as any,
@@ -124,7 +124,7 @@ export class CustomerAddressService {
         isDefault,
       },
       include: {
-        city: true,
+        location: true,
       },
     });
 
@@ -134,7 +134,7 @@ export class CustomerAddressService {
   /**
    * Retrieves all active addresses for a specific customer.
    * @param customerId - The unique identifier of the customer.
-   * @returns A list of customer addresses with city relations.
+   * @returns A list of customer addresses with location relations.
    */
   async findAll(customerId: string) {
     await this.validateCustomerExists(customerId);
@@ -144,7 +144,7 @@ export class CustomerAddressService {
         isActive: true,
       } as any,
       include: {
-        city: true,
+        location: true,
       },
       orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
     });
@@ -156,7 +156,7 @@ export class CustomerAddressService {
    * Retrieves a specific active customer address by ID for the authenticated customer.
    * @param customerId - The unique identifier of the customer.
    * @param addressId - The unique identifier of the address.
-   * @returns The customer address with city relation.
+   * @returns The customer address with location relation.
    */
   async findOne(customerId: string, addressId: string) {
     await this.validateCustomerExists(customerId);
@@ -167,7 +167,7 @@ export class CustomerAddressService {
         isActive: true,
       } as any,
       include: {
-        city: true,
+        location: true,
       },
     });
 
@@ -183,7 +183,7 @@ export class CustomerAddressService {
    * @param customerId - The unique identifier of the customer.
    * @param addressId - The unique identifier of the address.
    * @param data - The fields to update.
-   * @returns The updated customer address with city relation.
+   * @returns The updated customer address with location relation.
    */
   async update(
     customerId: string,
@@ -193,13 +193,13 @@ export class CustomerAddressService {
     await this.validateCustomerExists(customerId);
     await this.findCustomerAddress(customerId, addressId);
     await this.checkDuplicateAddress(customerId, data, addressId);
-    await this.validateCity(data.cityId);
+    await this.validateLocation(data.locationId);
 
     const updatedAddress = await this.prisma.customerAddress.update({
       where: { id: addressId },
       data,
       include: {
-        city: true,
+        location: true,
       },
     });
 
@@ -229,7 +229,7 @@ export class CustomerAddressService {
    * Sets a customer address as the default for the authenticated customer.
    * @param customerId - The unique identifier of the customer.
    * @param addressId - The unique identifier of the address.
-   * @returns The updated customer address with city relation.
+   * @returns The updated customer address with location relation.
    */
   async setDefaultAddress(customerId: string, addressId: string) {
     await this.validateCustomerExists(customerId);
@@ -254,7 +254,7 @@ export class CustomerAddressService {
         isDefault: true,
       } as any,
       include: {
-        city: true,
+        location: true,
       },
     });
 

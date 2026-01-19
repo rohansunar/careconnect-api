@@ -1,13 +1,15 @@
-model City {
+model Location {
   id         String   @id @default(uuid())
   name       String
   state      String?
   country    String?
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
+  isServiceable Boolean @default(false)
+  lat Float
+  lng Float
+  serviceRadiusKm Float
 
   customerAddresses CustomerAddress[]
   vendorAddress   VendorAddress[]
 }
-
-// bbox      Unsupported("geometry")

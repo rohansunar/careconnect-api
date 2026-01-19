@@ -6,13 +6,11 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
-import { CitiesService } from '../../cities/services/cities.service';
 
 @Injectable()
 export class AddressService {
   constructor(
     private prisma: PrismaService,
-    private citiesService: CitiesService,
   ) {}
 
   /**
@@ -29,12 +27,12 @@ export class AddressService {
     if (existingAddress) {
       throw new BadRequestException('Vendor already has an address');
     }
-    // Check if city exists
-    const cityExists = await this.prisma.city.findUnique({
-      where: { id: data.cityId },
+    // Check if location exists
+    const locationExists = await this.prisma.location.findUnique({
+      where: { id: data.locationId },
     });
-    if (!cityExists) {
-      throw new BadRequestException('City does not exist');
+    if (!locationExists) {
+      throw new BadRequestException('Location does not exist');
     }
 
     const address = await this.prisma.vendorAddress.create({
@@ -88,14 +86,14 @@ export class AddressService {
     const address = await this.prisma.vendorAddress.findUnique({
       where: { vendorId },
     });
-    if (address && address.cityId) {
-      const city = await this.prisma.city.findUnique({
-        where: { id: address.cityId },
+    if (address && address.locationId) {
+      const location = await this.prisma.location.findUnique({
+        where: { id: address.locationId },
         select: { name: true },
       });
-      if (city) {
-        (address as any).city = city.name;
-        delete (address as any).cityId;
+      if (location) {
+        (address as any).location = location.name;
+        delete (address as any).locationId;
       }
     }
     return address;

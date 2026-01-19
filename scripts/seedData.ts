@@ -153,21 +153,21 @@ async function main() {
     }
   }
 
-  const cities = [
-    { name: 'Mumbai', state: 'Maharashtra', country: 'India' },
-    { name: 'Delhi', state: 'Delhi', country: 'India' },
-    { name: 'Bangalore', state: 'Karnataka', country: 'India' },
-    { name: 'Chennai', state: 'Tamil Nadu', country: 'India' }
+  const locations = [
+    { name: 'Mumbai', state: 'Maharashtra', country: 'India', lat: 19.0760, lng: 72.8777, serviceRadiusKm: 50 },
+    { name: 'Delhi', state: 'Delhi', country: 'India', lat: 28.7041, lng: 77.1025, serviceRadiusKm: 50 },
+    { name: 'Bangalore', state: 'Karnataka', country: 'India', lat: 12.9716, lng: 77.5946, serviceRadiusKm: 50 },
+    { name: 'Chennai', state: 'Tamil Nadu', country: 'India', lat: 13.0827, lng: 80.2707, serviceRadiusKm: 50 }
   ];
 
-  for (const city of cities) {
+  for (const location of locations) {
     try {
-      await prisma.city.create({
-        data: city
+      await prisma.location.create({
+        data: location
       });
-      console.log(`Created city: ${city.name}`);
+      console.log(`Created location: ${location.name}`);
     } catch (error) {
-      console.error(`Error creating city ${city.name}:`, error);
+      console.error(`Error creating location ${location.name}:`, error);
     }
   }
 }

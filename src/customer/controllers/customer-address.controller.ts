@@ -70,7 +70,7 @@ export class CustomerAddressController {
         value: {
           label: 'Home',
           address: '123 Main Street, Apartment 4B',
-          cityId: '550e8400-e29b-41d4-a716-446655440000',
+          locationId: '550e8400-e29b-41d4-a716-446655440000',
           pincode: '110001',
           lng: 77.209,
           lat: 28.6139,
@@ -102,7 +102,7 @@ export class CustomerAddressController {
         value: {
           label: 'Office',
           address: '456 Business Avenue, Floor 5',
-          cityId: '550e8400-e29b-41d4-a716-446655440001',
+          locationId: '550e8400-e29b-41d4-a716-446655440001',
           pincode: '400001',
           lng: 72.8777,
           lat: 19.076,

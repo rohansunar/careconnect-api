@@ -2,8 +2,8 @@ model VendorAddress {
   id        String   @id @default(cuid())
   vendorId  String   @unique
   vendor    Vendor   @relation("VendorAddress", fields: [vendorId], references: [id])
-  cityId    String?
-  city      City?    @relation(fields: [cityId], references: [id])
+  locationId String?
+  location   Location?    @relation(fields: [locationId], references: [id])
   state     String?
   lng       Float?
   lat       Float?

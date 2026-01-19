@@ -283,7 +283,7 @@ export class CartService {
           id: deliveryAddress.id,
           label: deliveryAddress.label || undefined,
           address: deliveryAddress.address || undefined,
-          city: deliveryAddress.city?.name,
+          city: deliveryAddress.location?.name,
           pincode: deliveryAddress.pincode || undefined,
         },
         isAddressValid: true,
@@ -314,7 +314,7 @@ export class CartService {
         id: deliveryAddress.id,
         label: deliveryAddress.label || undefined,
         address: deliveryAddress.address || undefined,
-        city: deliveryAddress.city?.name,
+        city: deliveryAddress.location?.name,
         pincode: deliveryAddress.pincode || undefined,
       },
       isAddressValid,
@@ -410,7 +410,7 @@ export class CartService {
     const address = await this.prisma.customerAddress.findFirst({
       where: { customerId, isDefault: true, isActive: true },
       include: {
-        city: true,
+        location: true,
       },
     });
 

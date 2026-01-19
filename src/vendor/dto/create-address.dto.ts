@@ -5,28 +5,53 @@ import {
   IsInt,
   IsNumber,
 } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateAddressDto {
-  @IsString()
-  @IsNotEmpty()
-  cityId: string;
+   @ApiProperty({
+     description: 'ID of the location',
+     example: '550e8400-e29b-41d4-a716-446655440000',
+   })
+   @IsString()
+   @IsNotEmpty()
+   locationId: string;
 
-  @IsString()
-  @IsNotEmpty()
-  state: string;
+   @ApiProperty({
+     description: 'State of the address',
+     example: 'Maharashtra',
+   })
+   @IsString()
+   @IsNotEmpty()
+   state: string;
 
-  @IsString()
-  @IsNotEmpty()
-  pincode: string;
+   @ApiProperty({
+     description: 'Pincode of the address',
+     example: '400001',
+   })
+   @IsString()
+   @IsNotEmpty()
+   pincode: string;
 
-  @IsNotEmpty()
-  @IsNumber()
-  lng?: number;
+   @ApiPropertyOptional({
+     description: 'Longitude coordinate',
+     example: 72.8777,
+   })
+   @IsNotEmpty()
+   @IsNumber()
+   lng?: number;
 
-  @IsNotEmpty()
-  @IsNumber()
-  lat?: number;
+   @ApiPropertyOptional({
+     description: 'Latitude coordinate',
+     example: 19.076,
+   })
+   @IsNotEmpty()
+   @IsNumber()
+   lat?: number;
 
-  @IsNotEmpty()
-  address: any;
+   @ApiProperty({
+     description: 'Detailed address string',
+     example: '123 Main Street, Building A',
+   })
+   @IsNotEmpty()
+   address: any;
 }

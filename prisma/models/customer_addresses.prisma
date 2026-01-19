@@ -12,8 +12,8 @@ model CustomerAddress {
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
   label      AddressLabel?
   address    String?
-  cityId     String?
-  city       City?    @relation(fields: [cityId], references: [id])
+  locationId String?
+  location   Location?    @relation(fields: [locationId], references: [id])
   pincode    String?
   lng        Float?
   lat        Float?

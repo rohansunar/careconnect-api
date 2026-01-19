@@ -502,6 +502,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
@@ -723,6 +724,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
