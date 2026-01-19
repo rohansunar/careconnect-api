@@ -2,13 +2,13 @@ model Location {
   id         String   @id @default(uuid())
   name       String
   state      String?
-  country    String?
+  country    String?  @default("India")
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt()
   isServiceable Boolean @default(false)
-  lat Float
-  lng Float
-  serviceRadiusKm Float
+  lat Float @default(0.0)
+  lng Float @default(0.0)
+  serviceRadiusKm Float @default(50)
 
   customerAddresses CustomerAddress[]
   vendorAddress   VendorAddress[]

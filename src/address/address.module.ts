@@ -5,10 +5,16 @@ import { CustomerAddressService } from './services/customer-address.service';
 import { VendorAddressController } from './controllers/vendor-address.controller';
 import { VendorAddressService } from './services/vendor-address.service';
 import { VendorService } from '../vendor/services/vendor.service';
+import { LocationService } from 'src/common/services/location.service';
 @Module({
   imports: [PrismaModule],
   controllers: [CustomerAddressController, VendorAddressController],
-  providers: [VendorService, CustomerAddressService, VendorAddressService],
+  providers: [
+    VendorService,
+    CustomerAddressService,
+    VendorAddressService,
+    LocationService,
+  ],
   exports: [],
 })
 export class AddressModule {}

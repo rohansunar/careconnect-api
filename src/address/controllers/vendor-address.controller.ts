@@ -16,7 +16,7 @@ import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { VendorService } from 'src/vendor/services/vendor.service';
+import { VendorService } from '../../vendor/services/vendor.service';
 
 @ApiTags('Vendor Addresses')
 @Controller('vendor')
@@ -66,67 +66,48 @@ export class VendorAddressController {
   @Get('addresses')
   async getAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
-    return await this.vendorAddressService.getAddressByVendorId(id);
+    return await this.vendorAddressService.getAddressByVendorIdWithLocation(id);
   }
 
   /**
-   * Updates the address with the given ID.
-   * @param id - The ID of the address.
+   * Updates the address for the current vendor.
    * @param dto - The updated address data.
    * @param vendor - The current authenticated vendor.
    * @returns The updated address.
    */
   @ApiOperation({
     summary: 'Update vendor address',
-    description: 'Updates the address with the given ID.',
+    description: "Updates the current vendor's address.",
   })
   @ApiResponse({ status: 200, description: 'Address updated successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  @Put('addresses/:id')
+  @Put('addresses')
   async updateAddress(
     @Body() dto: UpdateAddressDto,
     @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
     await this.vendorService.validateVendorExists(id);
-    const existingAddress = await this.vendorAddressService.getAddressById(id);
-    if (!existingAddress || existingAddress.vendorId !== id) {
-      throw new HttpException(
-        'Unauthorized or not found',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    return await this.vendorAddressService.updateAddress(
-      existingAddress.id,
-      dto,
-    );
+    return await this.vendorAddressService.updateAddress(id, dto);
   }
 
   /**
-   * Deletes the address with the given ID.
-   * @param id - The ID of the address.
+   * Deletes the address for the current vendor.
    * @param vendor - The current authenticated vendor.
    */
   @ApiOperation({
     summary: 'Delete vendor address',
-    description: 'Deletes the address with the given ID.',
+    description: "Deletes the current vendor's address.",
   })
   @ApiResponse({ status: 204, description: 'Address deleted successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
-  @Delete('addresses/:id')
+  @Delete('addresses')
   async deleteAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
     await this.vendorService.validateVendorExists(id);
-    const existingAddress = await this.vendorAddressService.getAddressById(id);
-    if (!existingAddress || existingAddress.vendorId !== vendor.id) {
-      throw new HttpException(
-        'Unauthorized or not found',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
-    return await this.vendorAddressService.deleteAddress(existingAddress.id);
+    return await this.vendorAddressService.deleteAddress(id);
   }
 }

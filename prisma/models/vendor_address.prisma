@@ -4,7 +4,6 @@ model VendorAddress {
   vendor    Vendor   @relation("VendorAddress", fields: [vendorId], references: [id])
   locationId String?
   location   Location?    @relation(fields: [locationId], references: [id])
-  state     String?
   lng       Float?
   lat       Float?
   pincode   String?
