@@ -18,8 +18,8 @@ import {
 import { CustomerAddressService } from '../services/customer-address.service';
 import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { CreateAddressDto } from '../dto/create-address.dto';
-import { UpdateAddressDto } from '../dto/update-address.dto';
+import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
+import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 
 @ApiTags('Customer Addresses')
 @Controller('customer/addresses')
@@ -63,7 +63,7 @@ export class CustomerAddressController {
     description: 'Create a new address for the authenticated customer.',
   })
   @ApiBody({
-    type: CreateAddressDto,
+    type: CreateCustomerAddressDto,
     examples: {
       'home-address': {
         summary: 'Create a home address',
@@ -84,7 +84,7 @@ export class CustomerAddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   async create(
     @Body()
-    createDto: CreateAddressDto,
+    createDto: CreateCustomerAddressDto,
     @CurrentUser() customer: any,
   ) {
     return this.customerAddressService.create(customer.id, createDto);
@@ -96,14 +96,14 @@ export class CustomerAddressController {
     description: 'Update an existing address for the authenticated customer.',
   })
   @ApiBody({
-    type: UpdateAddressDto,
+    type: UpdateCustomerAddressDto,
     examples: {
       'office-address': {
         summary: 'Update to an office address',
         value: {
           label: 'Office',
+          state: 'Maharashtra',
           address: '456 Business Avenue, Floor 5',
-          locationId: '550e8400-e29b-41d4-a716-446655440001',
           pincode: '400001',
           lng: 72.8777,
           lat: 19.076,
@@ -119,7 +119,7 @@ export class CustomerAddressController {
   async update(
     @Param('id') id: string,
     @Body()
-    updateDto: UpdateAddressDto,
+    updateDto: UpdateCustomerAddressDto,
     @CurrentUser() customer: any,
   ) {
     return this.customerAddressService.update(customer.id, id, updateDto);

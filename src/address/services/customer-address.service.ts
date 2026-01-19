@@ -4,27 +4,53 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CreateAddressDto } from '../dto/create-address.dto';
-import { UpdateAddressDto } from '../dto/update-address.dto';
+import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
+import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 
 @Injectable()
 export class CustomerAddressService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Validates that a location with the given ID exists in the database.
-   * Throws BadRequestException if not found.
-   * @param locationId - The location ID to validate.
+   * Finds an existing location or creates a new one based on address data.
+   * @param data - The address data containing lat, lng, address, city, state.
+   * @returns The location ID.
    */
-  private async validateLocation(
-    locationId: string | undefined,
-  ): Promise<void> {
-    if (!locationId) return;
-    const location = await this.prisma.location.findUnique({
-      where: { id: locationId },
+  private async findOrCreateLocation(data: {
+    lat: number;
+    lng: number;
+    city?: string;
+    state?: string;
+  }): Promise<string> {
+    const where: any = {
+      lat: data.lat,
+      lng: data.lng,
+    };
+    if (data.state) {
+      where.state = data.state;
+    }
+    if (data.city) {
+      where.name = data.city;
+    }
+
+    const existingLocation = await this.prisma.location.findFirst({
+      where,
     });
-    if (!location) {
-      throw new BadRequestException('Location not found');
+
+    if (existingLocation) {
+      return existingLocation.id;
+    } else {
+      const newLocation = await this.prisma.location.create({
+        data: {
+          name: data.city || ``,
+          state: data.state || ``,
+          lat: 0,
+          lng: 0,
+          serviceRadiusKm: 50,
+          country: 'India',
+        },
+      });
+      return newLocation.id;
     }
   }
 
@@ -63,7 +89,7 @@ export class CustomerAddressService {
    */
   private async checkDuplicateAddress(
     customerId: string,
-    data: CreateAddressDto | UpdateAddressDto,
+    data: CreateCustomerAddressDto | UpdateCustomerAddressDto,
     excludeId?: string,
   ): Promise<void> {
     const where: any = {
@@ -108,43 +134,25 @@ export class CustomerAddressService {
    * @param data - The address data to create.
    * @returns The created customer address with location relation.
    */
-  async create(customerId: string, data: CreateAddressDto) {
+  async create(customerId: string, data: CreateCustomerAddressDto) {
     // 1. Validate the customer ID
     await this.validateCustomerExists(customerId);
-    await this.checkDuplicateAddress(customerId,data);
+    await this.checkDuplicateAddress(customerId, data);
 
     // Check if lat and lng are provided
     if (data.lat === undefined || data.lng === undefined) {
       throw new BadRequestException('Latitude and longitude are required');
     }
 
-    // 2. Query the locations schema for duplicates based on address fields
-    const existingLocation = await this.prisma.location.findFirst({
-      where: {
-        lat: data.lat,
-        lng: data.lng,
-        name: data.address,
-        state: data.state,
+    // 2. Find or create location
+    const locationId = await this.findOrCreateLocation(
+      data as {
+        lat: number;
+        lng: number;
+        city: string;
+        state: string;
       },
-    });
-
-    let locationId: string;
-    if (existingLocation) {
-      locationId = existingLocation.id;
-    } else {
-      // 3. Create a new location entry
-      const newLocation = await this.prisma.location.create({
-        data: {
-          name: data.city,
-          state: data.state,
-          lat: data.lat,
-          lng: data.lng,
-          serviceRadiusKm: 50,
-          country:"India" // Default value
-        },
-      });
-      locationId = newLocation.id;
-    }
+    );
 
     // 4. Save the customer_address record
     const existingAddressesCount = await this.prisma.customerAddress.count({
@@ -162,9 +170,6 @@ export class CustomerAddressService {
         lng: data.lng,
         lat: data.lat,
         isDefault,
-      },
-      include: {
-        location: true,
       },
     });
 
@@ -225,21 +230,34 @@ export class CustomerAddressService {
    * @param data - The fields to update.
    * @returns The updated customer address with location relation.
    */
-  async update(customerId: string, addressId: string, data: UpdateAddressDto) {
+  async update(customerId: string, addressId: string, data: UpdateCustomerAddressDto) {
+    // 1. Validate the customer.
     await this.validateCustomerExists(customerId);
-    await this.findCustomerAddress(customerId, addressId);
+
+    // 2. Find the customer address; if it does not exist, throw a human-readable error message.
+    const address = await this.findCustomerAddress(customerId, addressId);
+
+    // 3. Check for duplicate addresses with the same content, including address, latitude, longitude, and pincode but addressId.
     await this.checkDuplicateAddress(customerId, data, addressId);
-    await this.validateLocation(data.locationId);
 
-    const updatedAddress = await this.prisma.customerAddress.update({
+    // 4. Find the location; if it does not exist, create one.
+    let locationId = address.locationId;
+    if (data.lat !== undefined && data.lng !== undefined) {
+      locationId = await this.findOrCreateLocation({
+        lat: data.lat,
+        lng: data.lng,
+        state: data.state || address.location?.state,
+        city: data.city || address.location?.name,
+      });
+    }
+    (data as any).locationId = locationId;
+    const {city, state , ...updateData} = data
+
+    return await this.prisma.customerAddress.update({
       where: { id: addressId },
-      data,
-      include: {
-        location: true,
-      },
+      data:updateData,
+      include: { location: true },
     });
-
-    return updatedAddress;
   }
 
   /**
@@ -284,17 +302,12 @@ export class CustomerAddressService {
     });
 
     // Then set the selected address as default
-    const updatedAddress = await this.prisma.customerAddress.update({
+    return await this.prisma.customerAddress.update({
       where: { id: addressId },
       data: {
         isDefault: true,
       } as any,
-      include: {
-        location: true,
-      },
     });
-
-    return updatedAddress;
   }
 
   /**

@@ -28,15 +28,16 @@ export class VendorAddressController {
   ) {}
 
   /**
-    * Creates a new vendor address, validating the vendor and managing location creation or reuse.
-    * @param dto - The address data from CreateAddressDto.
-    * @param vendor - The current authenticated vendor.
-    * @returns The created vendor address.
-    */
-   @ApiOperation({
-     summary: 'Create vendor address',
-     description: 'Creates a new vendor address, reusing existing locations if a duplicate is found based on address data, or creating a new location otherwise.',
-   })
+   * Creates a new vendor address, validating the vendor and managing location creation or reuse.
+   * @param dto - The address data from CreateAddressDto.
+   * @param vendor - The current authenticated vendor.
+   * @returns The created vendor address.
+   */
+  @ApiOperation({
+    summary: 'Create vendor address',
+    description:
+      'Creates a new vendor address, reusing existing locations if a duplicate is found based on address data, or creating a new location otherwise.',
+  })
   @ApiResponse({ status: 201, description: 'Address created successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
