@@ -38,7 +38,9 @@ describe('CustomerAddressController', () => {
       .useValue(mockCustomerAuthGuard)
       .compile();
 
-    controller = module.get<CustomerAddressController>(CustomerAddressController);
+    controller = module.get<CustomerAddressController>(
+      CustomerAddressController,
+    );
     service = module.get<CustomerAddressService>(CustomerAddressService);
   });
 
@@ -193,11 +195,9 @@ describe('CustomerAddressController', () => {
 
       mockCustomerAddressService.update.mockResolvedValue(mockUpdatedAddress);
 
-      const result = await controller.update(
-        addressId,
-        updateDto,
-        { id: customerId },
-      );
+      const result = await controller.update(addressId, updateDto, {
+        id: customerId,
+      });
 
       expect(service.update).toHaveBeenCalledWith(
         customerId,

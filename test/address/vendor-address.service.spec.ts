@@ -103,9 +103,9 @@ describe('VendorAddressService', () => {
         address: '123 Main Street',
       };
 
-      await expect(service.createAddress(vendorId, invalidDto as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.createAddress(vendorId, invalidDto as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -124,9 +124,7 @@ describe('VendorAddressService', () => {
         locationId: 'location-id',
       };
 
-      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(
-        mockAddress,
-      );
+      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(mockAddress);
 
       const result = await service.getAddressByVendorId(vendorId);
 
@@ -229,9 +227,7 @@ describe('VendorAddressService', () => {
         locationId: 'location-id',
       };
 
-      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(
-        mockAddress,
-      );
+      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(mockAddress);
 
       const result = await service.getAddressByVendorIdWithLocation(vendorId);
 

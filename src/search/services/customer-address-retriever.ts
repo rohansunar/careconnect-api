@@ -27,16 +27,15 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
           isDefault: true,
           isActive: true,
         },
-        select: {
-          lat: true,
-          lng: true,
+        include: {
+          location: true, // whatever fields exist
         },
       });
-
       if (address && address.lat !== null && address.lng !== null) {
         return {
           lat: address.lat,
           lng: address.lng,
+          location:address.location,
         };
       }
 

@@ -34,9 +34,16 @@ export class ProximitySearchService {
       limit: number;
       totalPages: number;
     };
-  }> {
+  } | { message:string; status:number }> {
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
+
+    if (!address?.location.isServiceable) {
+      return {
+        status:503,
+        message:"SERVICE_NOT_AVAILABLE"
+      };
+    }
 
     if (!address) {
       // No address found, return empty results

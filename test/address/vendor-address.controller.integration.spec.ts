@@ -73,7 +73,8 @@ describe('VendorAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .post('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(createDto)
@@ -97,7 +98,8 @@ describe('VendorAddressController (Integration)', () => {
           address: '123 Main Street',
         };
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .post('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(invalidDto)
@@ -118,7 +120,8 @@ describe('VendorAddressController (Integration)', () => {
           },
         });
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .get('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -134,7 +137,8 @@ describe('VendorAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if address does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .get('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(404);
@@ -163,7 +167,8 @@ describe('VendorAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .put('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(updateDto)
@@ -184,7 +189,8 @@ describe('VendorAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .put('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(updateDto)
@@ -205,7 +211,8 @@ describe('VendorAddressController (Integration)', () => {
           },
         });
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .delete('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -217,7 +224,8 @@ describe('VendorAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if address does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .delete('/vendor/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(404);

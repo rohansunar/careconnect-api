@@ -20,12 +20,16 @@ export class SearchController {
   @ApiOperation({
     summary: 'Search products by proximity',
     description:
-      "Search products based on proximity to customer's location, with pagination.",
+      "Search products based on proximity to customer's location, with pagination. Returns service availability information.",
   })
   @ApiResponse({
     status: 200,
     description:
-      'Proximity search results with products (including distances) and pagination information.',
+      'Proximity search results with products (including distances) and pagination information, or service availability message.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: "Service unavailable at the customer's location.",
   })
   @ApiQuery({
     name: 'page',

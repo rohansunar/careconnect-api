@@ -75,7 +75,9 @@ describe('CustomerAddressService', () => {
         },
       ];
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findMany.mockResolvedValue(
         mockAddresses,
       );
@@ -122,7 +124,9 @@ describe('CustomerAddressService', () => {
         location: { id: 'location-id', name: 'Mumbai', state: 'Maharashtra' },
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockAddress,
       );
@@ -143,7 +147,9 @@ describe('CustomerAddressService', () => {
       const customerId = 'customer-id';
       const addressId = 'non-existent-address-id';
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(service.findOne(customerId, addressId)).rejects.toThrow(
@@ -173,7 +179,9 @@ describe('CustomerAddressService', () => {
         isDefault: true,
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
       mockLocationService.findOrCreateLocation.mockResolvedValue(
         mockLocation.id,
@@ -219,9 +227,9 @@ describe('CustomerAddressService', () => {
         address: '123 Main Street',
       };
 
-      await expect(service.create(customerId, invalidDto as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.create(customerId, invalidDto as any),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if duplicate address exists', async () => {
@@ -236,7 +244,9 @@ describe('CustomerAddressService', () => {
         lat: 19.076,
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue({
         id: 'existing-address-id',
       });
@@ -283,17 +293,19 @@ describe('CustomerAddressService', () => {
         location: { id: mockLocation.id, name: 'Mumbai', state: 'Maharashtra' },
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
-        mockPrismaService.customerAddress.findFirst.mockResolvedValueOnce(
-          mockExistingAddress,
-        );
-        mockPrismaService.customerAddress.findFirst.mockResolvedValueOnce(null);
-        mockLocationService.findOrCreateLocation.mockResolvedValue(
-          mockLocation.id,
-        );
-        mockPrismaService.customerAddress.update.mockResolvedValue(
-          mockUpdatedAddress,
-        );
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
+      mockPrismaService.customerAddress.findFirst.mockResolvedValueOnce(
+        mockExistingAddress,
+      );
+      mockPrismaService.customerAddress.findFirst.mockResolvedValueOnce(null);
+      mockLocationService.findOrCreateLocation.mockResolvedValue(
+        mockLocation.id,
+      );
+      mockPrismaService.customerAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
 
       const result = await service.update(customerId, addressId, updateDto);
 
@@ -337,12 +349,14 @@ describe('CustomerAddressService', () => {
         lat: 19.076,
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
-      await expect(service.update(customerId, addressId, updateDto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.update(customerId, addressId, updateDto),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -363,7 +377,9 @@ describe('CustomerAddressService', () => {
         isActive: true,
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
@@ -383,14 +399,18 @@ describe('CustomerAddressService', () => {
         where: { id: addressId },
         data: { isActive: false },
       });
-      expect(result).toEqual({ message: 'Customer address deleted successfully' });
+      expect(result).toEqual({
+        message: 'Customer address deleted successfully',
+      });
     });
 
     it('should throw NotFoundException if address does not exist', async () => {
       const customerId = 'customer-id';
       const addressId = 'non-existent-address-id';
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(service.delete(customerId, addressId)).rejects.toThrow(
@@ -420,7 +440,9 @@ describe('CustomerAddressService', () => {
         isDefault: true,
       };
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(
         mockExistingAddress,
       );
@@ -452,7 +474,9 @@ describe('CustomerAddressService', () => {
       const customerId = 'customer-id';
       const addressId = 'non-existent-address-id';
 
-      mockPrismaService.customer.findFirst.mockResolvedValue({ id: customerId });
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
       mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
 
       await expect(

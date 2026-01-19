@@ -72,7 +72,9 @@ describe('VendorAddressController', () => {
         mockCreatedAddress,
       );
 
-      const result = await controller.createAddress(createDto, { id: vendorId });
+      const result = await controller.createAddress(createDto, {
+        id: vendorId,
+      });
 
       expect(service.createAddress).toHaveBeenCalledWith(vendorId, createDto);
       expect(result).toEqual(mockCreatedAddress);
@@ -117,9 +119,9 @@ describe('VendorAddressController', () => {
 
       const result = await controller.getAddress({ id: vendorId });
 
-      expect(
-        service.getAddressByVendorIdWithLocation,
-      ).toHaveBeenCalledWith(vendorId);
+      expect(service.getAddressByVendorIdWithLocation).toHaveBeenCalledWith(
+        vendorId,
+      );
       expect(result).toEqual(mockAddress);
     });
 
@@ -157,7 +159,9 @@ describe('VendorAddressController', () => {
         mockUpdatedAddress,
       );
 
-      const result = await controller.updateAddress(updateDto, { id: vendorId });
+      const result = await controller.updateAddress(updateDto, {
+        id: vendorId,
+      });
 
       expect(service.updateAddress).toHaveBeenCalledWith(vendorId, updateDto);
       expect(result).toEqual(mockUpdatedAddress);

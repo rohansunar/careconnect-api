@@ -74,7 +74,8 @@ describe('CustomerAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .post('/customer/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(createDto)
@@ -101,7 +102,8 @@ describe('CustomerAddressController (Integration)', () => {
           address: '123 Main Street',
         };
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .post('/customer/addresses')
           .set('Authorization', 'Bearer test-token')
           .send(invalidDto)
@@ -124,7 +126,8 @@ describe('CustomerAddressController (Integration)', () => {
           },
         });
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .get('/customer/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -136,7 +139,8 @@ describe('CustomerAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if customer does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .get('/customer/addresses')
           .set('Authorization', 'Bearer test-token')
           .expect(404);
@@ -158,7 +162,8 @@ describe('CustomerAddressController (Integration)', () => {
           },
         });
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .get(`/customer/addresses/${address.id}`)
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -169,7 +174,8 @@ describe('CustomerAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if address does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .get('/customer/addresses/non-existent-address-id')
           .set('Authorization', 'Bearer test-token')
           .expect(404);
@@ -201,7 +207,8 @@ describe('CustomerAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .put(`/customer/addresses/${address.id}`)
           .set('Authorization', 'Bearer test-token')
           .send(updateDto)
@@ -223,7 +230,8 @@ describe('CustomerAddressController (Integration)', () => {
           lat: 19.076,
         };
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .put('/customer/addresses/non-existent-address-id')
           .set('Authorization', 'Bearer test-token')
           .send(updateDto)
@@ -246,7 +254,8 @@ describe('CustomerAddressController (Integration)', () => {
           },
         });
 
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .delete(`/customer/addresses/${address.id}`)
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -258,7 +267,8 @@ describe('CustomerAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if address does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .delete('/customer/addresses/non-existent-address-id')
           .set('Authorization', 'Bearer test-token')
           .expect(404);
@@ -280,7 +290,8 @@ describe('CustomerAddressController (Integration)', () => {
           },
         });
 
-        const response = await request.default(app.getHttpServer())
+        const response = await request
+          .default(app.getHttpServer())
           .put(`/customer/addresses/${address.id}/set-default`)
           .set('Authorization', 'Bearer test-token')
           .expect(200);
@@ -297,7 +308,8 @@ describe('CustomerAddressController (Integration)', () => {
       });
 
       it('should throw NotFoundException if address does not exist', async () => {
-        await request.default(app.getHttpServer())
+        await request
+          .default(app.getHttpServer())
           .put('/customer/addresses/non-existent-address-id/set-default')
           .set('Authorization', 'Bearer test-token')
           .expect(404);
