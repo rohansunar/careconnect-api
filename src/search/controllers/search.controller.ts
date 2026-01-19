@@ -17,24 +17,26 @@ export class SearchController {
    * Security consideration: Customer authentication required
    * Design decision: Supports pagination for proximity search
    */
-   @ApiOperation({
-     summary: 'Search products by proximity',
-     description: 'Search products based on proximity to customer\'s location, with pagination.',
-   })
-   @ApiResponse({
-     status: 200,
-     description: 'Proximity search results with products (including distances) and pagination information.',
-   })
-   @ApiQuery({
-     name: 'page',
-     required: false,
-     description: 'Page number',
-   })
-   @ApiQuery({
-     name: 'limit',
-     required: false,
-     description: 'Items per page',
-   })
+  @ApiOperation({
+    summary: 'Search products by proximity',
+    description:
+      "Search products based on proximity to customer's location, with pagination.",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Proximity search results with products (including distances) and pagination information.',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page',
+  })
   @Get('products')
   async searchProducts(
     @Query() queryDto: SearchQueryDto,

@@ -13,6 +13,7 @@ import { OrderModule } from 'src/order/order.module';
 import { PaymentModule } from 'src/payment/payment.module';
 import { RiderModule } from 'src/rider/rider.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
+import { AddressModule } from 'src/address/address.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { SubscriptionModule } from 'src/subscription/subscription.module';
     PaymentModule,
     RiderModule,
     SubscriptionModule,
+    AddressModule,
   ],
   controllers: [AppController],
   providers: [AppService],

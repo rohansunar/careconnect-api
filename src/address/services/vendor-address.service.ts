@@ -8,37 +8,60 @@ import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 
 @Injectable()
-export class AddressService {
-  constructor(
-    private prisma: PrismaService,
-  ) {}
+export class VendorAddressService {
+  constructor(private prisma: PrismaService) {}
 
   /**
-   * Creates a new VendorAddress for the given vendorId, ensuring no duplicate address exists for the vendor.
+   * Creates a new VendorAddress for the given vendorId.
    * @param vendorId - The unique identifier of the vendor.
    * @param data - The address data to create.
    * @returns The created VendorAddress.
    */
   async createAddress(vendorId: string, data: CreateAddressDto): Promise<any> {
-    // Check if vendor already has an address
-    const existingAddress = await this.prisma.vendorAddress.findUnique({
-      where: { vendorId },
-    });
-    if (existingAddress) {
-      throw new BadRequestException('Vendor already has an address');
+    // Query for duplicate location
+    const whereClause: any = {
+      name: data.address,
+      state: data.state,
+    };
+    if (data.lat !== undefined) {
+      whereClause.lat = data.lat;
     }
-    // Check if location exists
-    const locationExists = await this.prisma.location.findUnique({
-      where: { id: data.locationId },
+    if (data.lng !== undefined) {
+      whereClause.lng = data.lng;
+    }
+    let location = await this.prisma.location.findFirst({
+      where: whereClause,
     });
-    if (!locationExists) {
-      throw new BadRequestException('Location does not exist');
+
+    let locationId: string;
+    if (location) {
+      locationId = location.id;
+    } else {
+      // Create new location
+      location = await this.prisma.location.create({
+        data: {
+          name: data.city,
+          state: data.state,
+          country: 'India', // Default country
+          lat: data.lat!,
+          lng: data.lng!,
+          serviceRadiusKm: 50, // Default radius
+          isServiceable: false, // Default
+        },
+      });
+      locationId = location.id;
     }
 
+    // Create vendor address
     const address = await this.prisma.vendorAddress.create({
       data: {
         vendorId,
-        ...data,
+        locationId,
+        state: data.state,
+        lng: data.lng,
+        lat: data.lat,
+        pincode: data.pincode,
+        address: data.address,
       },
     });
 

@@ -1,4 +1,8 @@
-import { IDistance, ICustomerAddress, IDistanceCalculator } from '../interfaces/search.interfaces';
+import {
+  IDistance,
+  ICustomerAddress,
+  IDistanceCalculator,
+} from '../interfaces/search.interfaces';
 
 /**
  * Calculates distance between two geographical points using Haversine formula.

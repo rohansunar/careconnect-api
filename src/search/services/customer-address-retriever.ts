@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { ICustomerAddress, ICustomerAddressRetriever } from '../interfaces/search.interfaces';
+import {
+  ICustomerAddress,
+  ICustomerAddressRetriever,
+} from '../interfaces/search.interfaces';
 
 /**
  * Retrieves customer's default active address from the database.
@@ -14,7 +17,9 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
    * @param customerId The customer's ID
    * @returns Customer's address or null if not found
    */
-  async getCustomerAddress(customerId: string): Promise<ICustomerAddress | null> {
+  async getCustomerAddress(
+    customerId: string,
+  ): Promise<ICustomerAddress | null> {
     try {
       const address = await this.prisma.customerAddress.findFirst({
         where: {

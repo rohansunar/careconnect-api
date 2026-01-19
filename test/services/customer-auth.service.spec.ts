@@ -64,7 +64,10 @@ describe('CustomerAuthService', () => {
 
       const result = await service.requestOtp(phone);
 
-      expect(otpService.generateOtp).toHaveBeenCalledWith(phone, OtpPurpose.CUSTOMER_LOGIN);
+      expect(otpService.generateOtp).toHaveBeenCalledWith(
+        phone,
+        OtpPurpose.CUSTOMER_LOGIN,
+      );
       expect(result).toEqual({
         success: true,
         message: 'OTP sent successfully',
@@ -76,13 +79,24 @@ describe('CustomerAuthService', () => {
   describe('verifyOtpAndCreateCustomer', () => {
     it('should verify OTP and create customer', async () => {
       const dto = { phone: '+1234567890', code: '123456' };
-      const mockCustomer = { id: 1, phone: dto.phone, name: '', updated_at: new Date() };
+      const mockCustomer = {
+        id: 1,
+        phone: dto.phone,
+        name: '',
+        updated_at: new Date(),
+      };
 
-      jest.spyOn(prisma.customer, 'upsert').mockResolvedValue(mockCustomer as any);
+      jest
+        .spyOn(prisma.customer, 'upsert')
+        .mockResolvedValue(mockCustomer as any);
 
       const result = await service.verifyOtpAndCreateCustomer(dto);
 
-      expect(otpService.verifyOtp).toHaveBeenCalledWith({ phone: dto.phone, code: dto.code, purpose: OtpPurpose.CUSTOMER_LOGIN });
+      expect(otpService.verifyOtp).toHaveBeenCalledWith({
+        phone: dto.phone,
+        code: dto.code,
+        purpose: OtpPurpose.CUSTOMER_LOGIN,
+      });
       expect(prisma.customer.upsert).toHaveBeenCalledWith({
         where: { phone: dto.phone },
         update: { updated_at: expect.any(Date) },

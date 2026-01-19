@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { ICustomerAddress, IProductRepository, IProximitySearchResult, IDistance } from '../interfaces/search.interfaces';
+import {
+  ICustomerAddress,
+  IProductRepository,
+  IProximitySearchResult,
+  IDistance,
+} from '../interfaces/search.interfaces';
 
 /**
  * Repository for product-related database operations, specifically for proximity searches.
@@ -70,13 +75,15 @@ export class ProductRepository implements IProductRepository {
       const total = parseInt((countResult as any)[0].total, 10);
 
       // Map results to IProximitySearchResult
-      const proximityResults: IProximitySearchResult[] = (results as any[]).map((row) => {
-        const { distance, is_active, ...product } = row;
-        return {
+      const proximityResults: IProximitySearchResult[] = (results as any[]).map(
+        (row) => {
+          const { distance, is_active, ...product } = row;
+          return {
             ...product,
             distance: this.formatDistance(row.distance),
-        };
-      });
+          };
+        },
+      );
 
       return {
         results: proximityResults,

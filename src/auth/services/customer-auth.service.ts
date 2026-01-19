@@ -35,12 +35,13 @@ export class CustomerAuthService {
    * @returns A response indicating success and OTP expiration time.
    */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
-    this.logger.log(`OTP request initiated for phone: ${phone}, purpose: ${OtpPurpose.CUSTOMER_LOGIN}`);
-    await this.otpService.generateOtp(
-      phone,
-      OtpPurpose.CUSTOMER_LOGIN,
+    this.logger.log(
+      `OTP request initiated for phone: ${phone}, purpose: ${OtpPurpose.CUSTOMER_LOGIN}`,
     );
-    this.logger.log(`OTP generated and sent to ${phone} for ${OtpPurpose.CUSTOMER_LOGIN}`);
+    await this.otpService.generateOtp(phone, OtpPurpose.CUSTOMER_LOGIN);
+    this.logger.log(
+      `OTP generated and sent to ${phone} for ${OtpPurpose.CUSTOMER_LOGIN}`,
+    );
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }
 
@@ -54,10 +55,16 @@ export class CustomerAuthService {
   ): Promise<VerifyOtpResponseDto> {
     const { phone, code } = dto;
 
-    this.logger.log(`OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.CUSTOMER_LOGIN}`);
+    this.logger.log(
+      `OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.CUSTOMER_LOGIN}`,
+    );
 
     // Verify the OTP code for customer login
-    await this.otpService.verifyOtp({ phone, code, purpose: OtpPurpose.CUSTOMER_LOGIN });
+    await this.otpService.verifyOtp({
+      phone,
+      code,
+      purpose: OtpPurpose.CUSTOMER_LOGIN,
+    });
 
     // Create or update the customer record (upsert: update if exists, create if not)
     const customer = await this.prisma.customer.upsert({

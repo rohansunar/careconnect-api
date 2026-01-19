@@ -47,15 +47,15 @@ export class OtpService {
       },
     });
 
-    this.logger.log(`Your OTP code is ${code} for ${phone} and Purpose ${purpose}`)
+    this.logger.log(
+      `Your OTP code is ${code} for ${phone} and Purpose ${purpose}`,
+    );
 
     return code; // Return plain code for sending via SMS/email
   }
 
-
   async verifyOtp(dto: OtpVerificationDto): Promise<boolean> {
     try {
-
       const otpRecord = await this.prisma.otpCode.findUnique({
         where: {
           phone_purpose: {

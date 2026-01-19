@@ -34,7 +34,9 @@ describe('VendorAuthService', () => {
             counter: {
               upsert: jest.fn().mockResolvedValue({ lastNumber: 1 }),
             },
-            $transaction: jest.fn().mockImplementation((callback) => callback(prisma)),
+            $transaction: jest
+              .fn()
+              .mockImplementation((callback) => callback(prisma)),
           },
         },
         {
@@ -70,7 +72,10 @@ describe('VendorAuthService', () => {
 
       const result = await service.requestOtp(phone);
 
-      expect(otpService.generateOtp).toHaveBeenCalledWith(phone, OtpPurpose.VENDOR_LOGIN);
+      expect(otpService.generateOtp).toHaveBeenCalledWith(
+        phone,
+        OtpPurpose.VENDOR_LOGIN,
+      );
       expect(result).toEqual({
         success: true,
         message: 'OTP sent successfully',
@@ -82,14 +87,24 @@ describe('VendorAuthService', () => {
   describe('verifyOtpAndCreateVendor', () => {
     it('should verify OTP and create vendor', async () => {
       const dto = { phone: '+1234567890', code: '123456' };
-      const mockVendor = { id: 1, phone: dto.phone, name: '', vendorNo: 'V000001', is_active: true };
+      const mockVendor = {
+        id: 1,
+        phone: dto.phone,
+        name: '',
+        vendorNo: 'V000001',
+        is_active: true,
+      };
 
       jest.spyOn(prisma.vendor, 'findUnique').mockResolvedValue(null);
       jest.spyOn(prisma.vendor, 'create').mockResolvedValue(mockVendor as any);
 
       const result = await service.verifyOtpAndCreateVendor(dto);
 
-      expect(otpService.verifyOtp).toHaveBeenCalledWith({ phone: dto.phone, code: dto.code, purpose: OtpPurpose.VENDOR_LOGIN });
+      expect(otpService.verifyOtp).toHaveBeenCalledWith({
+        phone: dto.phone,
+        code: dto.code,
+        purpose: OtpPurpose.VENDOR_LOGIN,
+      });
       expect(jwtService.sign).toHaveBeenCalled();
       expect(result).toHaveProperty('token');
       expect(result.data).toEqual(mockVendor);

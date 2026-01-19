@@ -35,7 +35,8 @@ export class ProximitySearchService {
       totalPages: number;
     };
   }> {
-    const address = await this.customerAddressRetriever.getCustomerAddress(customerId);
+    const address =
+      await this.customerAddressRetriever.getCustomerAddress(customerId);
 
     if (!address) {
       // No address found, return empty results
@@ -54,12 +55,13 @@ export class ProximitySearchService {
     const limit = query.limit || 10;
     const radiusKm = this.DEFAULT_RADIUS_KM; // Could be made configurable
 
-    const { results, total } = await this.productRepository.findProductsWithinRadius(
-      address,
-      radiusKm,
-      page,
-      limit,
-    );
+    const { results, total } =
+      await this.productRepository.findProductsWithinRadius(
+        address,
+        radiusKm,
+        page,
+        limit,
+      );
 
     return {
       data: results,

@@ -8,7 +8,12 @@ import { ProductRepository } from './services/product-repository';
 @Module({
   imports: [],
   controllers: [SearchController],
-  providers: [SearchService, ProximitySearchService, CustomerAddressRetriever, ProductRepository],
+  providers: [
+    SearchService,
+    ProximitySearchService,
+    CustomerAddressRetriever,
+    ProductRepository,
+  ],
   exports: [SearchService],
 })
 export class SearchModule {}

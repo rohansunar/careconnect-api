@@ -4,8 +4,8 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
-import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
+import { CreateAddressDto } from '../dto/create-address.dto';
+import { UpdateAddressDto } from '../dto/update-address.dto';
 
 @Injectable()
 export class CustomerAddressService {
@@ -16,7 +16,9 @@ export class CustomerAddressService {
    * Throws BadRequestException if not found.
    * @param locationId - The location ID to validate.
    */
-  private async validateLocation(locationId: string | undefined): Promise<void> {
+  private async validateLocation(
+    locationId: string | undefined,
+  ): Promise<void> {
     if (!locationId) return;
     const location = await this.prisma.location.findUnique({
       where: { id: locationId },
@@ -61,7 +63,7 @@ export class CustomerAddressService {
    */
   private async checkDuplicateAddress(
     customerId: string,
-    data: CreateCustomerAddressDto | UpdateCustomerAddressDto,
+    data: CreateAddressDto | UpdateAddressDto,
     excludeId?: string,
   ): Promise<void> {
     const where: any = {
@@ -76,9 +78,6 @@ export class CustomerAddressService {
     }
     if (data.pincode) {
       where.pincode = data.pincode;
-    }
-    if (data.locationId) {
-      where.locationId = data.locationId;
     }
 
     const duplicate = await this.prisma.customerAddress.findFirst({ where });
@@ -109,18 +108,59 @@ export class CustomerAddressService {
    * @param data - The address data to create.
    * @returns The created customer address with location relation.
    */
-  async create(customerId: string, data: CreateCustomerAddressDto) {
+  async create(customerId: string, data: CreateAddressDto) {
+    // 1. Validate the customer ID
     await this.validateCustomerExists(customerId);
-    await this.validateLocation(data.locationId);
-    await this.checkDuplicateAddress(customerId, data);
+    await this.checkDuplicateAddress(customerId,data);
+
+    // Check if lat and lng are provided
+    if (data.lat === undefined || data.lng === undefined) {
+      throw new BadRequestException('Latitude and longitude are required');
+    }
+
+    // 2. Query the locations schema for duplicates based on address fields
+    const existingLocation = await this.prisma.location.findFirst({
+      where: {
+        lat: data.lat,
+        lng: data.lng,
+        name: data.address,
+        state: data.state,
+      },
+    });
+
+    let locationId: string;
+    if (existingLocation) {
+      locationId = existingLocation.id;
+    } else {
+      // 3. Create a new location entry
+      const newLocation = await this.prisma.location.create({
+        data: {
+          name: data.city,
+          state: data.state,
+          lat: data.lat,
+          lng: data.lng,
+          serviceRadiusKm: 50,
+          country:"India" // Default value
+        },
+      });
+      locationId = newLocation.id;
+    }
+
+    // 4. Save the customer_address record
     const existingAddressesCount = await this.prisma.customerAddress.count({
-      where: { customerId, isActive: true } as any,
+      where: { customerId, isActive: true },
     });
     const isDefault = existingAddressesCount === 0;
+
     const customerAddress = await this.prisma.customerAddress.create({
       data: {
         customerId,
-        ...data,
+        label: data.label,
+        address: data.address,
+        locationId,
+        pincode: data.pincode,
+        lng: data.lng,
+        lat: data.lat,
         isDefault,
       },
       include: {
@@ -185,11 +225,7 @@ export class CustomerAddressService {
    * @param data - The fields to update.
    * @returns The updated customer address with location relation.
    */
-  async update(
-    customerId: string,
-    addressId: string,
-    data: UpdateCustomerAddressDto,
-  ) {
+  async update(customerId: string, addressId: string, data: UpdateAddressDto) {
     await this.validateCustomerExists(customerId);
     await this.findCustomerAddress(customerId, addressId);
     await this.checkDuplicateAddress(customerId, data, addressId);

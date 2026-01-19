@@ -24,12 +24,13 @@ export class VendorAuthService {
    * @returns A response indicating success and OTP expiration time.
    */
   async requestOtp(phone: string): Promise<OtpResponseDto> {
-    this.logger.log(`OTP request initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`);
-    await this.otpService.generateOtp(
-      phone,
-      OtpPurpose.VENDOR_LOGIN,
+    this.logger.log(
+      `OTP request initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`,
     );
-    this.logger.log(`OTP generated and sent to ${phone} for ${OtpPurpose.VENDOR_LOGIN}`);
+    await this.otpService.generateOtp(phone, OtpPurpose.VENDOR_LOGIN);
+    this.logger.log(
+      `OTP generated and sent to ${phone} for ${OtpPurpose.VENDOR_LOGIN}`,
+    );
     return { success: true, message: 'OTP sent successfully', expiresIn: 30 };
   }
 
@@ -53,11 +54,17 @@ export class VendorAuthService {
     try {
       const { phone, code } = dto;
 
-      this.logger.log(`OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`);
+      this.logger.log(
+        `OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.VENDOR_LOGIN}`,
+      );
 
       // Step 1: Verify the OTP code for vendor login
       // This ensures the user has received and entered the correct OTP, preventing unauthorized access.
-      await this.otpService.verifyOtp({ phone, code, purpose: OtpPurpose.VENDOR_LOGIN });
+      await this.otpService.verifyOtp({
+        phone,
+        code,
+        purpose: OtpPurpose.VENDOR_LOGIN,
+      });
 
       // Step 2: Handle vendor creation or update atomically
       // Using a transaction ensures data consistency and prevents partial updates.
@@ -94,7 +101,6 @@ export class VendorAuthService {
       );
     }
   }
-
 
   /**
    * Handles the creation of a new vendor or updates an existing one.

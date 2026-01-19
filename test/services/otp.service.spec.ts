@@ -77,7 +77,9 @@ describe('OtpService', () => {
         attempts: 0,
       };
 
-      jest.spyOn(prisma.otpCode, 'findUnique').mockResolvedValue(mockOtpRecord as any);
+      jest
+        .spyOn(prisma.otpCode, 'findUnique')
+        .mockResolvedValue(mockOtpRecord as any);
       jest.spyOn(prisma.otpCode, 'update').mockResolvedValue({} as any);
 
       const result = await service.verifyOtp({ phone, code, purpose });
@@ -94,13 +96,17 @@ describe('OtpService', () => {
 
       jest.spyOn(prisma.otpCode, 'findUnique').mockResolvedValue(null);
 
-      await expect(service.verifyOtp({ phone, code, purpose })).rejects.toThrow(UnauthorizedException);
+      await expect(service.verifyOtp({ phone, code, purpose })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
   describe('cleanupExpiredOtps', () => {
     it('should delete expired OTPs', async () => {
-      jest.spyOn(prisma.otpCode, 'deleteMany').mockResolvedValue({ count: 5 } as any);
+      jest
+        .spyOn(prisma.otpCode, 'deleteMany')
+        .mockResolvedValue({ count: 5 } as any);
 
       const result = await service.cleanupExpiredOtps();
 
@@ -110,7 +116,12 @@ describe('OtpService', () => {
 
   describe('getOtpStats', () => {
     it('should return OTP statistics', async () => {
-      jest.spyOn(prisma.otpCode, 'count').mockResolvedValueOnce(10).mockResolvedValueOnce(5).mockResolvedValueOnce(2).mockResolvedValueOnce(3);
+      jest
+        .spyOn(prisma.otpCode, 'count')
+        .mockResolvedValueOnce(10)
+        .mockResolvedValueOnce(5)
+        .mockResolvedValueOnce(2)
+        .mockResolvedValueOnce(3);
 
       const result = await service.getOtpStats();
 
