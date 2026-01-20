@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CustomerAddressService } from '../../src/customer/services/customer-address.service';
+import { CustomerAddressService } from '../../src/address/services/customer-address.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
@@ -387,7 +387,7 @@ describe('CustomerAddressService', () => {
       });
     });
 
-    describe('createAddress', () => {
+    describe('create', () => {
       it('should create a customer address successfully with duplicate check', async () => {
         const mockCustomerId = 'customer-123';
         const mockCityId = 'city-123';
@@ -427,7 +427,7 @@ describe('CustomerAddressService', () => {
           mockCreatedAddress,
         );
 
-        const result = await service.createAddress(mockCustomerId, mockData);
+        const result = await service.create(mockCustomerId, mockData);
 
         expect(result).toEqual(mockCreatedAddress);
         expect(

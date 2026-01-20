@@ -57,13 +57,9 @@ describe('Model Relationships', () => {
     expect(prisma.monthlyBill.fields.vendor).toBeDefined();
   });
 
-  it('Payment should have order, customer, and vendor relations', () => {
+  it('Payment should have order relation', () => {
     expect(prisma.payment.fields.order_id).toBeDefined();
     expect(prisma.payment.fields.order).toBeDefined();
-    expect(prisma.payment.fields.customer_id).toBeDefined();
-    expect(prisma.payment.fields.customer).toBeDefined();
-    expect(prisma.payment.fields.vendor_id).toBeDefined();
-    expect(prisma.payment.fields.vendor).toBeDefined();
   });
 
   it('Notification should have customer and vendor relations', () => {

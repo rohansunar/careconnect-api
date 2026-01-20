@@ -1,0 +1,30 @@
+model OrderItem {
+  id          String     @id @default(uuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  /// Reference to the product in the order
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  /// Quantity of the product in order
+  quantity    Int      @default(1)
+
+  /// Price of the product at time of order (snapshotted)
+  price       Decimal  @db.Decimal(10, 2)
+
+  /// Deposit amount for the product at time of order (snapshotted)
+  deposit     Decimal? @db.Decimal(10, 2)
+
+  /// Timestamp when item was added to order
+  createdAt   DateTime @default(now())
+
+  /// Timestamp when item was last updated
+  updatedAt   DateTime @default(now())
+
+  /// Index for efficient order queries
+  @@index([orderId])
+
+  /// Index for efficient product-based queries
+  @@index([productId])
+}

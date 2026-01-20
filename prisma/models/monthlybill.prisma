@@ -7,6 +7,8 @@ model MonthlyBill {
   month         String
   total_amount  Decimal  @db.Decimal(10, 2)
   paid_amount   Decimal  @db.Decimal(10, 2) @default(0)
+  billing_period_start DateTime
+  billing_period_end   DateTime
   status        MonthlyBillStatus @default(PENDING)
   generated_at  DateTime @default(now())
   updated_at    DateTime @default(now())

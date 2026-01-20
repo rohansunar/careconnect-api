@@ -18,6 +18,5 @@ model Vendor {
   bankAccounts       BankAccount[]
   orders             Order[] @relation("orders")
   monthlyBills       MonthlyBill[]
-  payments           Payment[]
   riders             Rider[]
 }

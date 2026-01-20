@@ -257,8 +257,6 @@ export class PaymentService {
   ): Promise<PaymentWithId> {
     return (await this.prisma.payment.create({
       data: {
-        customer_id: customerId,
-        vendor_id: vendorId,
         amount,
         currency: this.CURRENCY,
         payment_mode: paymentMode || this.DEFAULT_PAYMENT_MODE,
@@ -446,8 +444,6 @@ export class PaymentService {
       const payment = await this.prisma.payment.create({
         data: {
           order_id: orderId,
-          customer_id: customerId,
-          vendor_id: vendorId,
           amount,
           currency: this.CURRENCY,
           payment_mode: 'ONLINE',

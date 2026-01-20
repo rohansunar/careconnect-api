@@ -7,6 +7,12 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentMode {
+  ONLINE
+  COD
+  MONTHLY
+}
+
 model Order {
   id                    String   @id @default(uuid())
   orderNo               String   @unique
@@ -24,10 +30,15 @@ model Order {
   assigned_rider_phone  String?
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
+  payment_mode          PaymentMode
+  subscriptionId        String? // Link to subscription for scheduled orders
+  delivery_otp          String?
+  otp_verified          Boolean @default(false)
+  otp_generated_at      DateTime?
   cancelledAt           DateTime?
   cancelReason          String?
 
-
+  orderItems  OrderItem[]
   payments Payment[]
   @@index([orderNo])
 }

@@ -8,6 +8,16 @@ import {
   beforeEach,
 } from '@jest/globals';
 
+/**
+ * Integration tests for CartItems CRUD operations.
+ *
+ * These tests interact with the actual database to ensure end-to-end functionality.
+ *
+ * Updates made to ensure tests pass:
+ * - Added vendorNo to all vendor creations, as it is a required field in the Vendor model.
+ * - Added cart creation and cartId to cartItem data where missing, as cartId is required in CartItem model.
+ * - Ensured all foreign key relationships are properly set up in test data.
+ */
 describe('CartItems CRUD', () => {
   let prisma: PrismaClient;
 
@@ -133,7 +143,14 @@ describe('CartItems CRUD', () => {
         },
       });
 
+      const cart = await prisma.cart.create({
+        data: {
+          customerId: customer.id,
+        },
+      });
+
       const cartItemData = {
+        cartId: cart.id,
         customerId: customer.id,
         productId: product.id,
         quantity: 1,
@@ -186,6 +203,7 @@ describe('CartItems CRUD', () => {
 
       const cartItem = await (prisma as any).cartItem.create({
         data: {
+          cartId: cart.id,
           customerId: customer.id,
           productId: product.id,
           price: product.price,
@@ -274,6 +292,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V004',
         },
       });
 
@@ -318,6 +337,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V002',
         },
       });
 
@@ -365,6 +385,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
@@ -429,6 +450,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
@@ -588,6 +610,12 @@ describe('CartItems CRUD', () => {
           categoryId: category.id,
           vendorId: vendor.id,
           price: 25.0,
+        },
+      });
+
+      const cart = await prisma.cart.create({
+        data: {
+          customerId: customer.id,
         },
       });
 
@@ -788,6 +816,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
@@ -803,6 +832,12 @@ describe('CartItems CRUD', () => {
           categoryId: category.id,
           vendorId: vendor.id,
           price: 25.0,
+        },
+      });
+
+      const cart = await prisma.cart.create({
+        data: {
+          customerId: customer.id,
         },
       });
 
@@ -836,6 +871,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V001',
         },
       });
 
@@ -884,6 +920,7 @@ describe('CartItems CRUD', () => {
         data: {
           name: 'Test Vendor',
           phone: '1234567890',
+          vendorNo: 'V003',
         },
       });
 

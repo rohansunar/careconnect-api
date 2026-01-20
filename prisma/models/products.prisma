@@ -1,3 +1,9 @@
+enum ProductApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model Product {
   id          String @id @default(uuid())
   name        String
@@ -13,10 +19,16 @@ model Product {
   price       Decimal  @db.Decimal(10, 2)  
   deposit     Decimal?  @db.Decimal(10, 2) 
   is_active   Boolean    @default(true)
+  approval_status ProductApprovalStatus @default(PENDING)
+  approved_by String? // Admin ID
+  approved_at DateTime?
+  is_schedulable Boolean @default(false) // Vendor can select for scheduling
   updated_at  DateTime   @default(now())
  
   subscriptions Subscription[]
   cartItems CartItem[]
+  orderItems OrderItem[]
+  
   @@index([categoryId])
   @@index([vendorId])
   @@index([is_active])

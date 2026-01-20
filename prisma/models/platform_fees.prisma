@@ -1,0 +1,13 @@
+model PlatformFee {
+  id              String @id @default(uuid())
+  categoryId      String
+  /// Relation to Categories (on delete -> CASCADE)
+  categories      Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  product_listing_fee Decimal @db.Decimal  @default(5.00) // Platform fee percentage on each order
+  platform_fee    Decimal  @db.Decimal(8, 2) @default(5.00) // Platform fee per on each order
+  transaction_fee Decimal  @db.Decimal(8, 2) @default(2.00) // Fee for online transactions
+  sms_fee         Decimal  @db.Decimal(5, 2) @default(1.00) // Fee per SMS sent
+  whatsapp_fee    Decimal  @db.Decimal(5, 2) @default(2.00) // Fee per WhatsApp message sent
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now())
+}

@@ -11,6 +11,7 @@ model Cart {
   status     CartStatus @default(ACTIVE)
   createdAt  DateTime   @default(now())
   updatedAt  DateTime   @default(now())
+
   cartItems  CartItem[]
   orders     Order[] @relation("orders")
 

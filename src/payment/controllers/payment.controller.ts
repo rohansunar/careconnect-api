@@ -93,8 +93,6 @@ export class PaymentController {
       example: {
         id: 'payment-uuid-123',
         order_id: 'order-uuid-123',
-        customer_id: 'customer-uuid-456',
-        vendor_id: 'vendor-uuid-789',
         amount: 100.0,
         currency: 'INR',
         payment_mode: 'ONLINE',
