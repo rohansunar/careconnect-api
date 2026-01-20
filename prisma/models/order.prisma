@@ -37,8 +37,10 @@ model Order {
   otp_generated_at      DateTime?
   cancelledAt           DateTime?
   cancelReason          String?
+  paymentId             String?
+  payment               Payment? @relation("orderPayment", fields: [paymentId], references: [id])
 
   orderItems  OrderItem[]
-  payments Payment[]
+  payments    Payment[] @relation("paymentOrder")
   @@index([orderNo])
 }

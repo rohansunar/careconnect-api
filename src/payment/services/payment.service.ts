@@ -66,21 +66,16 @@ export class PaymentService {
     try {
       // Retrieve and validate cart details
       const cart = await this.retrieveAndValidateCart(dto.cartId);
-      this.logger.debug(`Cart retrieved and validated: ${cart.id}`);
 
       // Extract vendor ID from cart items
       const vendorId = this.getVendorIdFromCart(cart);
-      this.logger.debug(`Vendor ID extracted: ${vendorId}`);
 
       // Retrieve customer's default address
       const defaultAddress = await this.getDefaultAddressForCustomer(
         cart.customerId,
       );
-      this.logger.debug(`Default address retrieved: ${defaultAddress.id}`);
-
       // Calculate total payment amount
       const totalAmount = this.calculateTotalAmount(cart.cartItems);
-      this.logger.debug(`Total amount calculated: ${totalAmount}`);
 
       // Initiate payment with provider
       const providerResponse = await this.initiatePayment(
@@ -93,11 +88,7 @@ export class PaymentService {
 
       // Create payment record in database
       const payment = await this.createPaymentRecord(
-        dto.cartId,
-        cart.customerId,
-        vendorId,
         totalAmount,
-        dto.paymentMode,
         providerResponse,
       );
       this.logger.debug(`Payment record created: ${payment.id}`);
@@ -109,7 +100,6 @@ export class PaymentService {
         totalAmount,
         payment,
       );
-      this.logger.debug(`Order created: ${order.id}`);
 
       this.logger.log(
         `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
@@ -248,26 +238,17 @@ export class PaymentService {
    * @returns The created payment
    */
   private async createPaymentRecord(
-    cartId: string,
-    customerId: string,
-    vendorId: string,
     amount: number,
-    paymentMode: string | undefined,
     providerResponse: PaymentProviderResponse,
   ): Promise<PaymentWithId> {
     return (await this.prisma.payment.create({
       data: {
         amount,
         currency: this.CURRENCY,
-        payment_mode: paymentMode || this.DEFAULT_PAYMENT_MODE,
         provider: providerResponse.provider,
         provider_payment_id: providerResponse.providerPaymentId,
         provider_payload: providerResponse.payload,
         status: this.PENDING_STATUS,
-      },
-      include: {
-        customer: true,
-        vendor: true,
       },
     })) as PaymentWithId;
   }
@@ -304,8 +285,10 @@ export class PaymentService {
         addressId,
         cartId: cart.id,
         total_amount: totalAmount,
+        payment_mode:"ONLINE",
         status: 'PENDING',
         payment_status: 'PENDING',
+        paymentId: payment.id,
       },
       include: {
         customer: true,
@@ -346,8 +329,6 @@ export class PaymentService {
       where: { id },
       include: {
         order: true,
-        customer: true,
-        vendor: true,
       },
     });
 
@@ -446,7 +427,6 @@ export class PaymentService {
           order_id: orderId,
           amount,
           currency: this.CURRENCY,
-          payment_mode: 'ONLINE',
           provider: providerResponse.provider,
           provider_payment_id: providerResponse.providerPaymentId,
           provider_payload: providerResponse.payload,
@@ -512,8 +492,6 @@ export class PaymentService {
         },
         include: {
           order: true,
-          customer: true,
-          vendor: true,
         },
       });
       // Update order payment status

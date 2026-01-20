@@ -100,7 +100,7 @@ export class PaymentController {
         provider_payment_id: 'mock_1234567890_order-uuid-123',
         status: 'PENDING',
         created_at: '2023-12-01T10:00:00.000Z',
-        order: { id: 'order-uuid-123', total_amount: 100.0 },
+        order: { id: 'order-uuid-123', total_amount: 100.0, paymentId: 'payment-uuid-123' },
         customer: { id: 'customer-uuid-456', name: 'John Doe' },
         vendor: { id: 'vendor-uuid-789', name: 'Vendor Inc' },
       },
