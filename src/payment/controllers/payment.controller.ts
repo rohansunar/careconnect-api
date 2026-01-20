@@ -24,7 +24,7 @@ export class PaymentController {
   @ApiOperation({
     summary: 'Create a new payment',
     description:
-      'Creates a new payment for the specified cart. For ONLINE mode, initiates payment with provider and checks out the cart. For COD/MONTHLY modes, creates an order and links the payment to it without provider initiation.',
+      'Creates a new payment for the specified cart. For ONLINE mode, initiates payment with provider (Razorpay or Mock) and checks out the cart. For COD/MONTHLY modes, creates an order and links the payment to it without provider initiation.',
   })
   @ApiBody({
     type: CreatePaymentDto,
@@ -55,7 +55,7 @@ export class PaymentController {
   @ApiResponse({
     status: 201,
     description:
-      'Payment created successfully. For ONLINE mode, payment is initiated with provider and cart is checked out. For COD/MONTHLY modes, order is created and payment is linked to the order.',
+      'Payment created successfully. For ONLINE mode, payment is initiated with provider (Razorpay or Mock) and cart is checked out. For COD/MONTHLY modes, order is created and payment is linked to the order.',
     schema: {
       examples: {
         online: {
@@ -66,8 +66,21 @@ export class PaymentController {
             currency: 'INR',
             status: 'PENDING',
             payment_mode: 'ONLINE',
-            provider: 'MOCK',
-            provider_payment_id: 'mock_1234567890_cart-uuid-123',
+            provider: 'RAZORPAY',
+            provider_payment_id: 'order_1234567890_cart-uuid-123',
+            created_at: '2023-12-01T10:00:00.000Z',
+          },
+        },
+        online_razorpay: {
+          summary: 'Online payment response with Razorpay',
+          value: {
+            id: 'payment-uuid-123',
+            amount: 100.0,
+            currency: 'INR',
+            status: 'PENDING',
+            payment_mode: 'ONLINE',
+            provider: 'RAZORPAY',
+            provider_payment_id: 'order_1234567890_cart-uuid-123',
             created_at: '2023-12-01T10:00:00.000Z',
           },
         },
@@ -144,8 +157,8 @@ export class PaymentController {
         amount: 100.0,
         currency: 'INR',
         payment_mode: 'ONLINE',
-        provider: 'MOCK',
-        provider_payment_id: 'mock_1234567890_order-uuid-123',
+        provider: 'RAZORPAY',
+        provider_payment_id: 'order_1234567890_order-uuid-123',
         status: 'PENDING',
         created_at: '2023-12-01T10:00:00.000Z',
         order: {
@@ -192,7 +205,17 @@ export class PaymentController {
         summary: 'Webhook example',
         value: {
           payload: {
-            paymentId: 'mock_1234567890_order-uuid-123',
+            paymentId: 'order_1234567890_order-uuid-123',
+            status: 'COMPLETED',
+            amount: 100.0,
+          },
+        },
+      },
+      example2: {
+        summary: 'Razorpay webhook example',
+        value: {
+          payload: {
+            paymentId: 'order_1234567890_order-uuid-123',
             status: 'COMPLETED',
             amount: 100.0,
           },

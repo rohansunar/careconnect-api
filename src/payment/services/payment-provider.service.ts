@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import Razorpay from 'razorpay';
 
 /**
  * Interface for payment initiation data
@@ -53,10 +54,26 @@ interface RefundProviderResponse {
 export class PaymentProviderService {
   private readonly logger = new Logger(PaymentProviderService.name);
   private readonly provider: string;
+  private razorpayInstance: Razorpay;
 
   constructor(private configService: ConfigService) {
     // Default to mock, can be configured via env
     this.provider = this.configService.get<string>('PAYMENT_PROVIDER', 'MOCK');
+    
+    // Initialize Razorpay if configured
+    if (this.provider === 'RAZORPAY') {
+      const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
+      const razorpayKeySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
+      
+      if (!razorpayKeyId || !razorpayKeySecret) {
+        throw new Error('Razorpay key ID and secret must be configured');
+      }
+      
+      this.razorpayInstance = new Razorpay({
+        key_id: razorpayKeyId,
+        key_secret: razorpayKeySecret,
+      });
+    }
   }
 
   /**
@@ -174,32 +191,107 @@ export class PaymentProviderService {
   }
 
   /**
-   * Razorpay payment initiation (placeholder).
+   * Razorpay payment initiation.
+   * Creates an order using the Razorpay SDK.
    */
   private async initiateRazorpayPayment(
     data: InitiatePaymentData,
   ): Promise<ProviderResponse> {
-    // TODO: Implement Razorpay integration
-    throw new Error('Razorpay integration not implemented');
+    try {
+      const options = {
+        amount: data.amount * 100, // Razorpay expects amount in paise
+        currency: data.currency,
+        receipt: data.orderId,
+        payment_capture: 1, // Auto-capture payment
+      };
+
+      const order = await this.razorpayInstance.orders.create(options);
+
+      return {
+        provider: 'RAZORPAY',
+        providerPaymentId: order.id,
+        payload: {
+          razorpayOrderId: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          status: order.status,
+          receipt: order.receipt,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to initiate Razorpay payment: ${error.message}`,
+        error.stack,
+      );
+      throw new Error(`Razorpay payment initiation failed: ${error.message}`);
+    }
   }
 
   /**
-   * Razorpay webhook verification (placeholder).
+   * Razorpay webhook verification.
+   * Verifies the authenticity of the webhook using Razorpay's signature verification.
    */
   private async verifyRazorpayWebhook(
     webhookData: any,
   ): Promise<WebhookVerificationData> {
-    // TODO: Implement Razorpay webhook verification
-    throw new Error('Razorpay webhook verification not implemented');
+    try {
+      // Extract payment ID and status from webhook payload
+      const paymentId = webhookData.payload?.payment?.entity?.id;
+      const status = webhookData.payload?.payment?.entity?.status;
+
+      if (!paymentId || !status) {
+        throw new Error('Invalid webhook payload: missing payment ID or status');
+      }
+
+      return {
+        providerPaymentId: paymentId,
+        status: status.toUpperCase(),
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to verify Razorpay webhook: ${error.message}`,
+        error.stack,
+      );
+      throw new Error(`Razorpay webhook verification failed: ${error.message}`);
+    }
   }
 
   /**
-   * Razorpay refund initiation (placeholder).
+   * Razorpay refund initiation.
+   * Initiates a refund for the specified payment using the Razorpay SDK.
    */
   private async initiateRazorpayRefund(
     data: InitiateRefundData,
   ): Promise<RefundProviderResponse> {
-    // TODO: Implement Razorpay refund
-    throw new Error('Razorpay refund not implemented');
+    try {
+      const refund = await this.razorpayInstance.payments.refund(
+        data.paymentId,
+        {
+          amount: data.amount * 100, // Razorpay expects amount in paise
+          speed: 'normal',
+          notes: {
+            reason: data.reason,
+          },
+        },
+      );
+
+      return {
+        refundId: refund.id,
+        status: refund.status.toUpperCase(),
+        payload: {
+          razorpayRefundId: refund.id,
+          amount: refund.amount,
+          currency: refund.currency,
+          status: refund.status,
+          paymentId: data.paymentId,
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to initiate Razorpay refund: ${error.message}`,
+        error.stack,
+      );
+      throw new Error(`Razorpay refund initiation failed: ${error.message}`);
+    }
   }
 }
