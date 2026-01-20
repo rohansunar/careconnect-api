@@ -35,7 +35,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
         return {
           lat: address.lat,
           lng: address.lng,
-          location:address.location,
+          location: address.location,
         };
       }
 

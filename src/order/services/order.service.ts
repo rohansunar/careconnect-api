@@ -6,6 +6,8 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
+import { PaymentMode } from '@prisma/client';
+import { CartStatus } from '../../common/constants/order-status.constants';
 
 @Injectable()
 export class OrderService {
@@ -72,6 +74,94 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
+
+    return order;
+  }
+
+  /**
+   * Creates a new order from a cart.
+   * @param customerId - The customer ID
+   * @param vendorId - The vendor ID
+   * @param addressId - The address ID
+   * @param cartId - The cart ID
+   * @param totalAmount - The total amount
+   * @param paymentMode - The payment mode
+   * @param paymentId - The payment ID
+   * @returns The created order
+   */
+  async createOrder(
+    customerId: string,
+    vendorId: string,
+    addressId: string,
+    cartId: string,
+    totalAmount: number,
+    paymentMode: PaymentMode,
+    paymentId: string,
+  ) {
+    // Validate entities
+    await this.validateCustomer(customerId);
+    await this.validateVendor(vendorId);
+    await this.validateAddress(addressId);
+    await this.cartService.validateCart(cartId);
+
+    // Fetch cart with items to create order items
+    const cart = await this.prisma.cart.findUnique({
+      where: { id: cartId },
+      include: { cartItems: true },
+    });
+
+    if (!cart || !cart.cartItems.length) {
+      throw new BadRequestException('Cart is empty or not found');
+    }
+
+    // Increment order counter
+    const counter = await this.prisma.counter.upsert({
+      where: { type: 'order' },
+      update: { lastNumber: { increment: 1 } },
+      create: { type: 'order', lastNumber: 1 },
+    });
+
+    const orderNo = 'O' + counter.lastNumber.toString().padStart(6, '0');
+
+    // Create order
+    const order = await this.prisma.order.create({
+      data: {
+        orderNo,
+        customerId,
+        vendorId,
+        addressId,
+        cartId,
+        total_amount: totalAmount,
+        payment_mode: paymentMode,
+        status: 'PENDING',
+        payment_status: 'PENDING',
+        paymentId,
+      },
+      include: {
+        customer: true,
+        vendor: true,
+        address: true,
+        cart: {
+          include: {
+            cartItems: true,
+          },
+        },
+      },
+    });
+
+    // Create order items from cart items
+    await this.prisma.orderItem.createMany({
+      data: cart.cartItems.map((cartItem) => ({
+        orderId: order.id,
+        productId: cartItem.productId,
+        quantity: cartItem.quantity,
+        price: cartItem.price,
+        deposit: cartItem.deposit,
+      })),
+    });
+
+    // Delete the cart after order creation
+    await this.cartService.deleteCart(cartId);
 
     return order;
   }

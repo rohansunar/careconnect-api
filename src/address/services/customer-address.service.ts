@@ -107,8 +107,8 @@ export class CustomerAddressService {
 
     // 2. Find or create location
     const locationId = await this.locationService.findOrCreateLocation({
-      lat: data.lat!,
-      lng: data.lng!,
+      lat: data.lat,
+      lng: data.lng,
       city: data.city,
       state: data.state,
     });

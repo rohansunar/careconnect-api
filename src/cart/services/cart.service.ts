@@ -247,6 +247,36 @@ export class CartService {
   }
 
   /**
+   * Deletes an entire cart and all its items.
+   * @param cartId - The unique identifier of the cart
+   * @returns Confirmation of deletion
+   */
+  async deleteCart(cartId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const cart = await tx.cart.findUnique({
+        where: { id: cartId },
+        include: { cartItems: true },
+      });
+
+      if (!cart) {
+        throw new NotFoundException('Cart not found');
+      }
+
+      // Delete all cart items
+      await tx.cartItem.deleteMany({
+        where: { cartId },
+      });
+
+      // Delete the cart
+      await tx.cart.delete({
+        where: { id: cartId },
+      });
+
+      return { message: 'Cart and all items deleted successfully' };
+    });
+  }
+
+  /**
    * Generates a checkout preview with itemized breakdown, vendor grouping, and address validation.
    * @param customerId - The unique identifier of the customer
    * @returns The checkout preview response with grouped items and calculations
@@ -256,7 +286,7 @@ export class CartService {
     await this.validateCustomer(customerId);
 
     // Get or create active cart for customer
-    let cart = await this.prisma.cart.findFirst({
+    const cart = await this.prisma.cart.findFirst({
       where: {
         customerId,
         status: CartStatus.ACTIVE,

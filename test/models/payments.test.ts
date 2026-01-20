@@ -152,7 +152,6 @@ describe('Payments CRUD', () => {
         prisma.payment.create({ data: paymentData }),
       ).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
-
   });
 
   describe('Read', () => {

@@ -26,22 +26,25 @@ export class ProximitySearchService {
   async searchProducts(
     query: SearchQueryDto,
     customerId: string,
-  ): Promise<{
-    data: IProximitySearchResult[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-  } | { message:string; status:number }> {
+  ): Promise<
+    | {
+        data: IProximitySearchResult[];
+        pagination: {
+          total: number;
+          page: number;
+          limit: number;
+          totalPages: number;
+        };
+      }
+    | { message: string; status: number }
+  > {
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
 
     if (!address?.location.isServiceable) {
       return {
-        status:503,
-        message:"SERVICE_NOT_AVAILABLE"
+        status: 503,
+        message: 'SERVICE_NOT_AVAILABLE',
       };
     }
 

@@ -1,20 +1,28 @@
-import { IsString, IsOptional, IsNotEmpty } from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsEnum } from 'class-validator';
 
+export enum PaymentMode {
+  ONLINE = 'ONLINE',
+  COD = 'COD',
+  MONTHLY = 'MONTHLY',
+}
 /**
  * Data Transfer Object for creating a new payment
  */
 export class CreatePaymentDto {
-  /**
-   * Unique identifier of the cart
-   */
+  @ApiPropertyOptional({
+    enum: PaymentMode,
+    description: 'Unique identifier of the cart',
+  })
   @IsNotEmpty()
   @IsString()
   cartId: string;
 
-  /**
-   * Payment mode (ONLINE, CASH, etc.)
-   */
-  @IsOptional()
-  @IsString()
-  paymentMode?: string;
+  @ApiPropertyOptional({
+    enum: PaymentMode,
+    description: 'Payment mode (ONLINE, CASH, MONTHLY.)',
+  })
+  @IsNotEmpty()
+  @IsEnum(PaymentMode)
+  paymentMode: PaymentMode;
 }

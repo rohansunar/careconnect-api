@@ -8,8 +8,6 @@ interface InitiatePaymentData {
   amount: number;
   currency: string;
   orderId: string;
-  customerId: string;
-  vendorId: string;
 }
 
 /**
@@ -49,7 +47,7 @@ interface RefundProviderResponse {
 
 /**
  * Service for handling payment provider integrations.
- * Currently supports mock implementation, configurable for Stripe/Razorpay.
+ * Currently supports mock implementation, configurable for Razorpay.
  */
 @Injectable()
 export class PaymentProviderService {
@@ -72,8 +70,6 @@ export class PaymentProviderService {
     );
 
     switch (this.provider) {
-      case 'STRIPE':
-        return this.initiateStripePayment(data);
       case 'RAZORPAY':
         return this.initiateRazorpayPayment(data);
       case 'MOCK':
@@ -91,8 +87,6 @@ export class PaymentProviderService {
     this.logger.log(`Verifying webhook with provider: ${this.provider}`);
 
     switch (this.provider) {
-      case 'STRIPE':
-        return this.verifyStripeWebhook(webhookData);
       case 'RAZORPAY':
         return this.verifyRazorpayWebhook(webhookData);
       case 'MOCK':
@@ -114,8 +108,6 @@ export class PaymentProviderService {
     );
 
     switch (this.provider) {
-      case 'STRIPE':
-        return this.initiateStripeRefund(data);
       case 'RAZORPAY':
         return this.initiateRazorpayRefund(data);
       case 'MOCK':
@@ -179,36 +171,6 @@ export class PaymentProviderService {
       providerPaymentId: webhookData.paymentId || 'mock_payment_id',
       status: 'COMPLETED',
     };
-  }
-
-  /**
-   * Stripe payment initiation (placeholder).
-   */
-  private async initiateStripePayment(
-    data: InitiatePaymentData,
-  ): Promise<ProviderResponse> {
-    // TODO: Implement Stripe integration
-    throw new Error('Stripe integration not implemented');
-  }
-
-  /**
-   * Stripe webhook verification (placeholder).
-   */
-  private async verifyStripeWebhook(
-    webhookData: any,
-  ): Promise<WebhookVerificationData> {
-    // TODO: Implement Stripe webhook verification
-    throw new Error('Stripe webhook verification not implemented');
-  }
-
-  /**
-   * Stripe refund initiation (placeholder).
-   */
-  private async initiateStripeRefund(
-    data: InitiateRefundData,
-  ): Promise<RefundProviderResponse> {
-    // TODO: Implement Stripe refund
-    throw new Error('Stripe refund not implemented');
   }
 
   /**
