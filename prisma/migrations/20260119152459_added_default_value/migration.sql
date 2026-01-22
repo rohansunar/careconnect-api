@@ -1,5 +1,0 @@
--- AlterTable
-ALTER TABLE "Location" ALTER COLUMN "country" SET DEFAULT 'India',
-ALTER COLUMN "lat" SET DEFAULT 0.0,
-ALTER COLUMN "lng" SET DEFAULT 0.0,
-ALTER COLUMN "serviceRadiusKm" SET DEFAULT 50;

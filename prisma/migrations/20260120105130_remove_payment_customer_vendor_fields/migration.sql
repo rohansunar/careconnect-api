@@ -1,8 +1,0 @@
--- AlterTable
-ALTER TABLE "Location" ALTER COLUMN "country" DROP DEFAULT,
-ALTER COLUMN "lat" DROP DEFAULT,
-ALTER COLUMN "lng" DROP DEFAULT,
-ALTER COLUMN "serviceRadiusKm" DROP DEFAULT;
-
--- AlterTable
-ALTER TABLE "VendorAddress" ADD COLUMN     "state" TEXT;

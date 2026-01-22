@@ -59,16 +59,18 @@ export class PaymentProviderService {
   constructor(private configService: ConfigService) {
     // Default to mock, can be configured via env
     this.provider = this.configService.get<string>('PAYMENT_PROVIDER', 'MOCK');
-    
+
     // Initialize Razorpay if configured
     if (this.provider === 'RAZORPAY') {
       const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
-      const razorpayKeySecret = this.configService.get<string>('RAZORPAY_KEY_SECRET');
-      
+      const razorpayKeySecret = this.configService.get<string>(
+        'RAZORPAY_KEY_SECRET',
+      );
+
       if (!razorpayKeyId || !razorpayKeySecret) {
         throw new Error('Razorpay key ID and secret must be configured');
       }
-      
+
       this.razorpayInstance = new Razorpay({
         key_id: razorpayKeyId,
         key_secret: razorpayKeySecret,
@@ -240,7 +242,9 @@ export class PaymentProviderService {
       const status = webhookData.payload?.payment?.entity?.status;
 
       if (!paymentId || !status) {
-        throw new Error('Invalid webhook payload: missing payment ID or status');
+        throw new Error(
+          'Invalid webhook payload: missing payment ID or status',
+        );
       }
 
       return {

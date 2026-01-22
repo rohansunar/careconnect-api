@@ -7,6 +7,7 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { LocationService } from '../../common/services/location.service';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class CustomerAddressService {
@@ -56,8 +57,6 @@ export class CustomerAddressService {
     const where: any = {
       customerId,
       address: data.address,
-      lng: data.lng,
-      lat: data.lat,
       isActive: true,
     };
     if (excludeId) {
@@ -101,7 +100,12 @@ export class CustomerAddressService {
     await this.checkDuplicateAddress(customerId, data);
 
     // Check if lat and lng are provided
-    if (data.lat === undefined || data.lng === undefined) {
+    if (
+      data.lat === undefined ||
+      data.lng === undefined ||
+      data.lat === null ||
+      data.lng === null
+    ) {
       throw new BadRequestException('Latitude and longitude are required');
     }
 
@@ -119,19 +123,18 @@ export class CustomerAddressService {
     });
     const isDefault = existingAddressesCount === 0;
 
-    const customerAddress = await this.prisma.customerAddress.create({
-      data: {
-        customerId,
-        label: data.label,
-        address: data.address,
-        locationId,
-        pincode: data.pincode,
-        lng: data.lng,
-        lat: data.lat,
-        isDefault,
-      },
-    });
-
+    const labelValue = data.label ? `${data.label}` : 'NULL';
+    const customerAddress = await this.prisma.$queryRaw<
+      {
+        id: string;
+      }[]
+    >`
+     INSERT INTO "CustomerAddress" (id, "customerId", label, address, "locationId", pincode, geopoint, "isDefault")
+     VALUES (${randomUUID()}, ${customerId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
+       ST_MakePoint(${data.lng}, ${data.lat})::geography,${isDefault}
+     )
+     RETURNING id;
+    `;
     return customerAddress;
   }
 
@@ -233,6 +236,8 @@ export class CustomerAddressService {
     await this.validateCustomerExists(customerId);
     await this.findCustomerAddress(customerId, addressId, false);
 
+    // If Address has 0 Orders than Delete it or can it isActive
+    // If Address isDefault = true than
     // Soft delete by setting is_active to false
     await this.prisma.customerAddress.update({
       where: { id: addressId },

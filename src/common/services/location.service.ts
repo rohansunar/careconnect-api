@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class LocationService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Finds an existing location or creates a new one based on the provided data.
-   * @param data - The location data containing lat, lng, city?, state?
+   * Finds an existing location within 50 km radius or creates a new one based on the provided data.
+   * @param data - The location data containing lat, lng, state
    * @returns The location ID.
    */
   async findOrCreateLocation(data: {
@@ -16,31 +17,50 @@ export class LocationService {
     city?: string;
     state?: string;
   }): Promise<string> {
-    const where: any = {
-      lat: data.lat,
-      lng: data.lng,
-    };
-    if (data.state) {
-      where.state = data.state;
-    }
-    if (data.city) {
-      where.name = data.city;
-    }
+    try {
+      const locations = await this.prisma.$queryRaw<
+        {
+          id: string;
+          name: string;
+          state: string;
+          country: string;
+        }[]
+      >`
+       SELECT
+         id,
+         name,
+         state,
+         country
+       FROM "Location"
+       WHERE ST_DWithin(
+         geopoint,
+         ST_MakePoint(${data.lng}, ${data.lat})::geography,
+         50000
+       )
+       LIMIT 1;
+     `;
 
-    const existingLocation = await this.prisma.location.findFirst({
-      where,
-    });
+      if (locations.length > 0) {
+        return locations[0].id;
+      }
+      // Create new location
+      const id = randomUUID();
 
-    if (existingLocation) {
-      return existingLocation.id;
-    } else {
-      const newLocation = await this.prisma.location.create({
-        data: {
-          name: data.city || '',
-          state: data.state || '',
-        },
-      });
-      return newLocation.id;
+      const newLocation = await this.prisma.$queryRaw<
+        {
+          id: string;
+        }[]
+      >`
+       INSERT INTO "Location" (id, name, state, geopoint)
+       VALUES (${id}, ${data.city},${data.state},
+         ST_MakePoint(${data.lng}, ${data.lat})::geography
+       )
+       RETURNING id;
+     `;
+
+      return newLocation[0].id;
+    } catch (error) {
+      throw new Error(`Failed to find or create location: ${error.message}`);
     }
   }
 }

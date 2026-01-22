@@ -7,24 +7,24 @@ enum AddressLabel {
 }
 
 model CustomerAddress {
-  id         String   @id @default(uuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  label      AddressLabel?
-  address    String?
-  locationId String?
-  location   Location?    @relation(fields: [locationId], references: [id])
-  pincode    String?
-  lng        Float?
-  lat        Float?
-  created_at DateTime @default(now())
-  updated_at DateTime @default(now()) @db.Timestamp
-  isDefault  Boolean   @default(false)
-  isActive  Boolean   @default(true)
+  id            String    @id @default(uuid())
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label         AddressLabel?
+  address       String?
+  locationId    String?
+  location      Location? @relation(fields: [locationId], references: [id])
+  pincode       String?
+  geopoint      Unsupported("geography(Point,4326)")
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now()) @db.Timestamp
+  isDefault     Boolean   @default(false)
+  isActive      Boolean   @default(true)
+  isServiceable Boolean   @default(false)
 
   subscriptions Subscription[]
   orders Order[] @relation("orders")
   @@index([customerId])
-  @@index([customerId, isDefault])
+  @@index([customerId, isDefault, isActive])
 
 }

@@ -1,15 +1,16 @@
 model Location {
-  id         String   @id @default(uuid())
-  name       String
-  state      String?
-  country    String?  @default("India")
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt()
-  isServiceable Boolean @default(false)
-  lat Float @default(0.0)
-  lng Float @default(0.0)
+  id              String   @id @default(uuid())
+  name            String
+  state           String?
+  country         String?  @default("India")
+  created_at      DateTime @default(now())
+  updated_at      DateTime @default(now()) @db.Timestamp
+  isServiceable   Boolean @default(false)
+  geopoint        Unsupported("geography(Point,4326)")
   serviceRadiusKm Float @default(50)
 
   customerAddresses CustomerAddress[]
-  vendorAddress   VendorAddress[]
+  vendorAddress     VendorAddress[]
+  @@unique([name, state])
+  @@index([isServiceable])
 }

@@ -14,7 +14,12 @@ import { AdminOrderService } from './services/admin-order.service';
 import { RiderOrderService } from './services/rider-order.service';
 
 @Module({
-  imports: [PrismaModule, CartModule, forwardRef(() => PaymentModule), NotificationModule],
+  imports: [
+    PrismaModule,
+    CartModule,
+    forwardRef(() => PaymentModule),
+    NotificationModule,
+  ],
   controllers: [
     CustomerOrderController,
     VendorOrderController,

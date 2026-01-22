@@ -1,15 +1,16 @@
 model VendorAddress {
-  id        String   @id @default(cuid())
-  vendorId  String   @unique
-  vendor    Vendor   @relation("VendorAddress", fields: [vendorId], references: [id])
-  locationId String?
-  location   Location?    @relation(fields: [locationId], references: [id])
-  lng       Float?
-  lat       Float?
-  pincode   String?
-  address   String    // For any additional address data
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  vendorId      String   @unique
+  vendor        Vendor   @relation("VendorAddress", fields: [vendorId], references: [id])
+  locationId    String?
+  location      Location?    @relation(fields: [locationId], references: [id])
+  geopoint      Unsupported("geography(Point,4326)")
+  isActive      Boolean   @default(true)
+  pincode       String?
+  address       String    // For any additional address data
+  isServiceable Boolean @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@index([lat, lng])
+  @@index([vendorId, isActive])
 }

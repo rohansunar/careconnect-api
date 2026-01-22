@@ -31,13 +31,13 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
           location: true, // whatever fields exist
         },
       });
-      if (address && address.lat !== null && address.lng !== null) {
-        return {
-          lat: address.lat,
-          lng: address.lng,
-          location: address.location,
-        };
-      }
+      // if (address && address.lat !== null && address.lng !== null) {
+      //   return {
+      //     lat: address.lat,
+      //     lng: address.lng,
+      //     location: address.location,
+      //   };
+      // }
 
       return null;
     } catch (error) {
