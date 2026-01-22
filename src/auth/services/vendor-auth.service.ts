@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
-import { OtpPurpose } from '@prisma/client';
+import { OtpPurpose, Vendor, Prisma } from '@prisma/client';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 import { OtpResponseDto } from '../dtos/request-otp.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -89,8 +89,8 @@ export class VendorAuthService {
         expiresIn: this.VENDOR_JWT_EXPIRES_IN,
       };
     } catch (error) {
-      // Log the error for debugging (assuming a logger is available, but using console for simplicity)
-      console.error('Error in verifyOtpAndCreateVendor:', error);
+      // Log the error for debugging
+      this.logger.error('Error in verifyOtpAndCreateVendor:', error);
 
       // Re-throw with a user-friendly message if it's a known error, or a generic one
       if (error instanceof BadRequestException) {
@@ -108,7 +108,7 @@ export class VendorAuthService {
    * @param phone - The phone number of the vendor.
    * @returns The created or updated vendor.
    */
-  private async handleVendorCreationOrUpdate(phone: string) {
+  private async handleVendorCreationOrUpdate(phone: string): Promise<Vendor> {
     return await this.prisma.$transaction(async (tx) => {
       // Check if vendor already exists
       const existingVendor = await tx.vendor.findUnique({
@@ -129,10 +129,8 @@ export class VendorAuthService {
         return await tx.vendor.create({
           data: {
             phone,
-            name: '', // Default empty name; can be updated later
             vendorNo: vendorNumber,
-            is_active: true,
-          },
+          } 
         });
       }
     });
@@ -144,7 +142,7 @@ export class VendorAuthService {
    * @param tx - The Prisma transaction client.
    * @returns The generated vendor number as a string.
    */
-  private async generateVendorNumber(tx: any): Promise<string> {
+  private async generateVendorNumber(tx: Prisma.TransactionClient): Promise<string> {
     const counter = await tx.counter.upsert({
       where: { type: 'vendor' },
       update: { lastNumber: { increment: 1 } },

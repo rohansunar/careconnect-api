@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Vendor" ALTER COLUMN "name" SET DEFAULT '',
+ALTER COLUMN "operatingDays" SET DEFAULT ARRAY['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']::"OperatingDays"[];

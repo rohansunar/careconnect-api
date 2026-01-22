@@ -11,7 +11,7 @@ enum OperatingDays {
 model Vendor {
   id                 String   @id @default(uuid())
   vendorNo           String   @unique
-  name               String
+  name               String?   
   business_name      String?
   phone              String   @unique
   email              String?
@@ -19,7 +19,7 @@ model Vendor {
   is_available_today Boolean  @default(true)
   openingTime        String   @default("09:00")
   closingTime        String   @default("20:00")
-  operatingDays      OperatingDays[] @default([])
+  operatingDays      OperatingDays[] @default([MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY])
   created_at         DateTime @default(now())
   updated_at         DateTime @default(now())
   address            VendorAddress? @relation("VendorAddress")
