@@ -21,24 +21,23 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
     customerId: string,
   ): Promise<ICustomerAddress | null> {
     try {
-      const address = await this.prisma.customerAddress.findFirst({
-        where: {
-          customerId,
-          isDefault: true,
-          isActive: true,
-        },
-        include: {
-          location: true, // whatever fields exist
-        },
-      });
-      // if (address && address.lat !== null && address.lng !== null) {
-      //   return {
-      //     lat: address.lat,
-      //     lng: address.lng,
-      //     location: address.location,
-      //   };
-      // }
+      const address = await this.prisma.$queryRaw<ICustomerAddress[]>`
+                      SELECT
+                        id,
+                        "isServiceable",
+                        ST_Y(geoPoint::geometry) AS lat,
+                        ST_X(geoPoint::geometry) AS lng
+                      FROM "CustomerAddress"
+                      WHERE "customerId" = ${customerId}
+                      AND "isActive" = true AND "isDefault" = true;`;
 
+      if (address && address[0].lat !== null && address[0].lng !== null) {
+        return {
+          lat: address[0].lat,
+          lng: address[0].lng,
+          isServiceable: address[0].isServiceable,
+        };
+      }
       return null;
     } catch (error) {
       console.error('Error fetching customer address:', error);

@@ -41,7 +41,7 @@ export class ProximitySearchService {
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
 
-    if (!address?.location.isServiceable) {
+    if (!address?.isServiceable) {
       return {
         status: 503,
         message: 'SERVICE_NOT_AVAILABLE',

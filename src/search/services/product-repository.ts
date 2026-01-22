@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { ProductApprovalStatus } from '@prisma/client';
 import {
   ICustomerAddress,
   IProductRepository,
@@ -29,61 +30,52 @@ export class ProductRepository implements IProductRepository {
     limit: number,
   ): Promise<{ results: IProximitySearchResult[]; total: number }> {
     const offset = (page - 1) * limit;
-
-    // Query for paginated results
-    const resultsQuery = `
-      SELECT sub.*, distance FROM (
-        SELECT p.*,
-          (6371 * acos(
-            cos(radians(${customerLocation.lat})) * cos(radians(va.lat)) *
-            cos(radians(va.lng) - radians(${customerLocation.lng})) +
-            sin(radians(${customerLocation.lat})) * sin(radians(va.lat))
-          )) AS distance
-        FROM "Product" p
-        JOIN "Vendor" v ON v.id = p."vendorId"
-        JOIN "VendorAddress" va ON va."vendorId" = v.id
-        WHERE p.is_active = true
-      ) AS sub
-      WHERE distance <= ${radiusKm}
-      ORDER BY distance ASC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
-
-    // Query for total count
-    const countQuery = `
-      SELECT COUNT(*) as total FROM (
-        SELECT
-          (6371 * acos(
-            cos(radians(${customerLocation.lat})) * cos(radians(va.lat)) *
-            cos(radians(va.lng) - radians(${customerLocation.lng})) +
-            sin(radians(${customerLocation.lat})) * sin(radians(va.lat))
-          )) AS distance
-        FROM "Product" p
-        JOIN "Vendor" v ON v.id = p."vendorId"
-        JOIN "VendorAddress" va ON va."vendorId" = v.id
-        WHERE p.is_active = true
-      ) AS sub
-      WHERE distance <= ${radiusKm}
-    `;
+    const customerGeoPoint = `SRID=4326;POINT(${customerLocation.lng} ${customerLocation.lat})`;
+    const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {
-      const [results, countResult] = await Promise.all([
-        this.prisma.$queryRawUnsafe(resultsQuery),
-        this.prisma.$queryRawUnsafe(countQuery),
-      ]);
+      console.log('Executing proximity search with params:', {
+        customerGeoPoint,
+        radiusKm,
+        page,
+        limit,
+      });
 
-      const total = parseInt((countResult as any)[0].total, 10);
+      const results = await this.prisma.$queryRaw`
+        SELECT
+          p.*,
+          ST_Distance(va."geopoint", ST_GeogFromText(${customerGeoPoint})) AS distance
+        FROM "Product" p
+        JOIN "Vendor" v ON v.id = p."vendorId"
+        JOIN "VendorAddress" va ON va."vendorId" = v.id
+        WHERE
+          p."is_active" = TRUE
+          AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
+          AND v."is_active" = TRUE
+          AND v."is_available_today" = TRUE
+          AND va."isActive" = TRUE
+          AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+        ORDER BY distance ASC
+        LIMIT ${limit} OFFSET ${offset}
+      `;
 
-      // Map results to IProximitySearchResult
-      const proximityResults: IProximitySearchResult[] = (results as any[]).map(
-        (row) => {
-          const { distance, is_active, ...product } = row;
-          return {
-            ...product,
-            distance: this.formatDistance(row.distance),
-          };
-        },
-      );
+      const countResult = await this.prisma.$queryRaw`
+        SELECT COUNT(*) as total
+        FROM "Product" p
+        JOIN "Vendor" v ON v.id = p."vendorId"
+        JOIN "VendorAddress" va ON va."vendorId" = v.id
+        WHERE
+          p."is_active" = TRUE
+          AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
+          AND v."is_active" = TRUE
+          AND v."is_available_today" = TRUE
+          AND va."isActive" = TRUE
+          AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+      `;
+
+      const total = Number((countResult as any)[0].total);
+
+      const proximityResults = this.processResults(results as any[]);
 
       return {
         results: proximityResults,
@@ -115,5 +107,20 @@ export class ProductRepository implements IProductRepository {
         unit: 'km',
       };
     }
+  }
+
+  /**
+   * Processes raw query results into IProximitySearchResult array.
+   * @param results Raw query results
+   * @returns Processed proximity search results
+   */
+  private processResults(results: any[]): IProximitySearchResult[] {
+    return results.map((row) => {
+      const { distance, ...product } = row;
+      return {
+        ...product,
+        distance: this.formatDistance(distance / 1000),
+      };
+    });
   }
 }

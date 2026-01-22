@@ -12,7 +12,7 @@ export interface IDistance {
 export interface ICustomerAddress {
   lat: number;
   lng: number;
-  location: any;
+  isServiceable:boolean;
 }
 
 /**
