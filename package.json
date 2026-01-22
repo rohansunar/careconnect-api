@@ -19,7 +19,6 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:data": "node -r tsconfig-paths/register -r ts-node/register scripts/seedData.ts",
-    "seed:AdminData": "node -r tsconfig-paths/register -r ts-node/register scripts/seedAdminData.ts",
     "prisma:build": "node scripts/build-schema.js",
     "prisma:studio": "npm run prisma:build  && prisma studio",
     "prisma:validate": "npm run prisma:build && prisma validate",
