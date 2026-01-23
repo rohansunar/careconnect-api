@@ -18,9 +18,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 @Controller('vendor')
 @UseGuards(VendorAuthGuard)
 export class VendorAddressController {
-  constructor(
-    private readonly vendorAddressService: VendorAddressService,
-  ) {}
+  constructor(private readonly vendorAddressService: VendorAddressService) {}
 
   /**
    * Creates a new vendor address, validating the vendor and managing location creation or reuse.
@@ -31,10 +29,18 @@ export class VendorAddressController {
   @ApiOperation({
     summary: 'Create vendor address',
     description:
-      'Creates a new vendor address for the authenticated vendor. Enforces that a vendor can have only one address; if an address already exists, returns a bad request error. Validates vendor existence, requires latitude and longitude, handles location creation or reuse, and uses database transactions for integrity. Logs the address creation event to \'logs/vendor_address_creation.log\' for auditing purposes.',
+      "Creates a new vendor address for the authenticated vendor. Enforces that a vendor can have only one address; if an address already exists, returns a bad request error. Validates vendor existence, requires latitude and longitude, handles location creation or reuse, and uses database transactions for integrity. Logs the address creation event to 'logs/vendor_address_creation.log' for auditing purposes.",
   })
-  @ApiResponse({ status: 201, description: 'Address created successfully.', type: Object })
-  @ApiResponse({ status: 400, description: 'Bad request - Latitude and longitude are required, or a vendor address already exists.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Address created successfully.',
+    type: Object,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request - Latitude and longitude are required, or a vendor address already exists.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Vendor not found.' })
   @Post('addresses')
@@ -54,9 +60,14 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Get vendor address',
-    description: 'Retrieves the single address associated with the authenticated vendor, including location details.',
+    description:
+      'Retrieves the single address associated with the authenticated vendor, including location details.',
   })
-  @ApiResponse({ status: 200, description: 'Address retrieved successfully.', type: Object })
+  @ApiResponse({
+    status: 200,
+    description: 'Address retrieved successfully.',
+    type: Object,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Vendor address not found.' })
   @Get('addresses')
@@ -73,10 +84,18 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Update vendor address',
-    description: "Updates the authenticated vendor's address. If latitude and longitude are provided, updates the associated location and geoPoint. Uses database transactions for integrity.",
+    description:
+      "Updates the authenticated vendor's address. If latitude and longitude are provided, updates the associated location and geoPoint. Uses database transactions for integrity.",
   })
-  @ApiResponse({ status: 200, description: 'Address updated successfully.', type: Object })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid update data.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Address updated successfully.',
+    type: Object,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid update data.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
   @Put('addresses')
@@ -94,9 +113,14 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Delete vendor address',
-    description: "Soft deletes the authenticated vendor's address by setting is_active to false. This allows for potential recovery and maintains data integrity.",
+    description:
+      "Soft deletes the authenticated vendor's address by setting is_active to false. This allows for potential recovery and maintains data integrity.",
   })
-  @ApiResponse({ status: 200, description: 'Address deleted successfully.', type: Object })
+  @ApiResponse({
+    status: 200,
+    description: 'Address deleted successfully.',
+    type: Object,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
   @Delete('addresses')

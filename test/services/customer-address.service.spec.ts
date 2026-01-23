@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomerAddressService } from '../../src/address/services/customer-address.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
-import { LocationService } from '../../src/common/services/location.service';
+import { LocationService } from '../../src/location/services/location.service';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('CustomerAddressService', () => {
@@ -307,12 +307,16 @@ describe('CustomerAddressService', () => {
       });
 
       const mockLocationService = {
-        findOrCreateLocation: jest.fn().mockResolvedValue({ id: mockLocationId, isServiceable: true }),
+        findOrCreateLocation: jest
+          .fn()
+          .mockResolvedValue({ id: mockLocationId, isServiceable: true }),
       };
 
       mockPrismaService.customerAddress.count.mockResolvedValue(0);
       mockPrismaService.$transaction = jest.fn((fn) => fn());
-      mockPrismaService.$queryRaw = jest.fn().mockResolvedValue([{ id: 'address-123' }]);
+      mockPrismaService.$queryRaw = jest
+        .fn()
+        .mockResolvedValue([{ id: 'address-123' }]);
 
       const result = await service.create(mockCustomerId, mockData);
 
@@ -336,7 +340,9 @@ describe('CustomerAddressService', () => {
       });
 
       const mockLocationService = {
-        findOrCreateLocation: jest.fn().mockRejectedValue(new BadRequestException('Location not found')),
+        findOrCreateLocation: jest
+          .fn()
+          .mockRejectedValue(new BadRequestException('Location not found')),
       };
 
       await expect(service.create(mockCustomerId, mockData)).rejects.toThrow(

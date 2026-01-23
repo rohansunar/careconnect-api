@@ -14,6 +14,7 @@ import { PaymentModule } from 'src/payment/payment.module';
 import { RiderModule } from 'src/rider/rider.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { AddressModule } from 'src/address/address.module';
+import { LocationModule } from 'src/location/location.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { AddressModule } from 'src/address/address.module';
     RiderModule,
     SubscriptionModule,
     AddressModule,
+    LocationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

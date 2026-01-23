@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { LocationService } from '../../common/services/location.service';
+import { LocationService } from '../../location/services/location.service';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 import { randomUUID } from 'crypto';

@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { VendorAddress } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
-import { LocationService } from '../../common/services/location.service';
+import { LocationService } from '../../location/services/location.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import * as fs from 'fs';
@@ -60,7 +60,9 @@ export class VendorAddressService {
       where: { vendorId, is_active: true },
     });
     if (existingAddress) {
-      throw new BadRequestException('A vendor can only have one address. An address already exists for this vendor.');
+      throw new BadRequestException(
+        'A vendor can only have one address. An address already exists for this vendor.',
+      );
     }
   }
 
@@ -127,8 +129,10 @@ export class VendorAddressService {
         address: data,
         timestamp: new Date().toISOString(),
       };
-      fs.appendFileSync('logs/vendor_address_creation.log', JSON.stringify(logEntry) + '\n');
-
+      fs.appendFileSync(
+        'logs/vendor_address_creation.log',
+        JSON.stringify(logEntry) + '\n',
+      );
 
       // Validate vendor existence
       await this.validateVendorExists(vendorId);
@@ -158,11 +162,7 @@ export class VendorAddressService {
         );
       });
 
-      this.logger.log(
-        `Address created successfully for vendor ${vendorId}`,
-      );
-
-     
+      this.logger.log(`Address created successfully for vendor ${vendorId}`);
 
       return result;
     } catch (error) {

@@ -4,7 +4,7 @@ import * as request from 'supertest';
 import { AddressModule } from '../../src/address/address.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { VendorAddressService } from '../../src/address/services/vendor-address.service';
-import { LocationService } from '../../src/common/services/location.service';
+import { LocationService } from '../../src/location/services/location.service';
 import { CreateAddressDto } from '../../src/address/dto/create-address.dto';
 import { UpdateAddressDto } from '../../src/address/dto/update-address.dto';
 import { VendorService } from '../../src/vendor/services/vendor.service';

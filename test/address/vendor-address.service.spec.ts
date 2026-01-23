@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { VendorAddressService } from '../../src/address/services/vendor-address.service';
 import { PrismaService } from '../../src/common/database/prisma.service';
-import { LocationService } from '../../src/common/services/location.service';
+import { LocationService } from '../../src/location/services/location.service';
 import { CreateAddressDto } from '../../src/address/dto/create-address.dto';
 import { UpdateAddressDto } from '../../src/address/dto/update-address.dto';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
