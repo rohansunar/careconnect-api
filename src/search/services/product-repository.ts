@@ -69,7 +69,7 @@ export class ProductRepository implements IProductRepository {
           AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
           AND v."is_active" = TRUE
           AND v."is_available_today" = TRUE
-          AND va."isActive" = TRUE
+          AND va."is_active" = TRUE
           AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
       `;
 

@@ -2,60 +2,176 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { VendorAddress } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
 import { LocationService } from '../../common/services/location.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
+import * as fs from 'fs';
 
 @Injectable()
 export class VendorAddressService {
+  private readonly logger = new Logger(VendorAddressService.name);
+
   constructor(
     private prisma: PrismaService,
     private locationService: LocationService,
   ) {}
 
   /**
-   * Creates a new VendorAddress for the given vendorId.
-   * Checks if an address already exists for the vendor and throws BadRequestException if it does.
-   * Sets isServiceable to true by default.
-   * @param vendorId - The unique identifier of the vendor.
-   * @param data - The address data to create.
-   * @returns The created VendorAddress.
+   * Validates that a vendor with the given ID exists and is active.
+   * Throws NotFoundException if not found.
+   * @param vendorId - The vendor ID to validate.
    */
-  async createAddress(vendorId: string, data: CreateAddressDto) {
-    // Check if address already exists
-    const existingAddress = await this.prisma.vendorAddress.findUnique({
-      where: { vendorId },
+  private async validateVendorExists(vendorId: string): Promise<void> {
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id: vendorId, is_active: true },
     });
-    if (existingAddress) {
-      throw new BadRequestException('Address already exists for this vendor');
+    if (!vendor) {
+      throw new NotFoundException('Vendor not found');
     }
+  }
 
-    if (data.lat === undefined || data.lng === undefined) {
+  /**
+   * Validates the address data, ensuring required fields are present.
+   * Throws BadRequestException if validation fails.
+   * @param data - The address data to validate.
+   */
+  private validateAddressData(data: CreateAddressDto): void {
+    if (
+      data.lat === undefined ||
+      data.lng === undefined ||
+      data.lat === null ||
+      data.lng === null
+    ) {
       throw new BadRequestException('Latitude and longitude are required');
     }
+  }
 
-    const locationId = await this.locationService.findOrCreateLocation({
-      lat: data.lat,
-      lng: data.lng,
+  /**
+   * Checks if a vendor address already exists.
+   * Throws BadRequestException if an address already exists for the vendor.
+   * @param vendorId - The vendor ID to check.
+   */
+  private async checkVendorAddressExists(vendorId: string): Promise<void> {
+    const existingAddress = await this.prisma.vendorAddress.findFirst({
+      where: { vendorId, is_active: true },
+    });
+    if (existingAddress) {
+      throw new BadRequestException('A vendor can only have one address. An address already exists for this vendor.');
+    }
+  }
+
+  /**
+   * Handles location finding or creation.
+   * @param data - The address data containing lat, lng, city, state.
+   * @returns The location ID and serviceability status.
+   */
+  private async handleLocation(
+    data: CreateAddressDto,
+  ): Promise<{ id: string; isServiceable: boolean }> {
+    return await this.locationService.findOrCreateLocation({
+      lat: data.lat as number,
+      lng: data.lng as number,
+      city: data.city,
       state: data.state,
     });
+  }
 
-    const vendorAddress = await this.prisma.$queryRaw<
+  /**
+   * Creates the vendor address using raw SQL.
+   * @param vendorId - The vendor ID.
+   * @param data - The address data.
+   * @param locationId - The location ID.
+   * @param isServiceable - Whether the location is serviceable.
+   * @returns The created address ID.
+   */
+  private async createAddress(
+    vendorId: string,
+    data: CreateAddressDto,
+    locationId: string,
+    isServiceable: boolean,
+  ): Promise<any> {
+    return await this.prisma.$queryRaw<
       {
         id: string;
       }[]
     >`
-      INSERT INTO "VendorAddress" (vendorId, address, locationId, pincode, geo_point,isServiceable)
-      VALUES ('${vendorId}','${data.address}','${locationId}, '${data.pincode}',
-        ST_MakePoint(${data.lng}, ${data.lat})::geography,true
-      )
-      RETURNING id;
+    INSERT INTO "VendorAddress" (vendorId, address, locationId, pincode, geopoint, isServiceable)
+    VALUES ('${vendorId}', '${data.address}', '${locationId}', '${data.pincode}',
+      ST_MakePoint(${Number((data.lng as number).toFixed(6))}, ${Number((data.lat as number).toFixed(6))})::geography,
+      ${isServiceable}
+    )
+    RETURNING id;
     `;
+  }
 
-    return vendorAddress;
+  /**
+   * Creates a new VendorAddress for the given vendorId.
+   * @param vendorId - The unique identifier of the vendor.
+   * @param data - The address data to create.
+   * @returns The created VendorAddress.
+   */
+  async create(vendorId: string, data: CreateAddressDto) {
+    try {
+      this.logger.log(`Starting address creation for vendor ${vendorId}`); // Ensure logs directory exists
+      if (!fs.existsSync('logs')) {
+        fs.mkdirSync('logs');
+      }
+
+      // Log the address creation
+      const logEntry = {
+        type: 'vendor',
+        address: data,
+        timestamp: new Date().toISOString(),
+      };
+      fs.appendFileSync('logs/vendor_address_creation.log', JSON.stringify(logEntry) + '\n');
+
+
+      // Validate vendor existence
+      await this.validateVendorExists(vendorId);
+      this.logger.log(`Vendor ${vendorId} validated`);
+
+      // Check if address already exists for vendor
+      await this.checkVendorAddressExists(vendorId);
+      this.logger.log(`Existing address check passed for vendor ${vendorId}`);
+
+      // Validate address data
+      this.validateAddressData(data);
+      this.logger.log(`Address data validated for vendor ${vendorId}`);
+
+      // Handle location
+      const { id: locationId, isServiceable } = await this.handleLocation(data);
+      this.logger.log(
+        `Location handled: ${locationId}, serviceable: ${isServiceable}`,
+      );
+
+      // Create address within transaction
+      const result = await this.prisma.$transaction(async () => {
+        return await this.createAddress(
+          vendorId,
+          data,
+          locationId,
+          isServiceable,
+        );
+      });
+
+      this.logger.log(
+        `Address created successfully for vendor ${vendorId}`,
+      );
+
+     
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create address for vendor ${vendorId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 
   /**
@@ -140,7 +256,7 @@ export class VendorAddressService {
   }
 
   /**
-   * Soft deletes a VendorAddress by vendor ID by setting isActive to false.
+   * Soft deletes a VendorAddress by vendor ID by setting is_active to false.
    * @param vendorId - The unique identifier of the vendor.
    * @returns The updated VendorAddress.
    */
@@ -153,9 +269,15 @@ export class VendorAddressService {
       throw new NotFoundException('Vendor address not found');
     }
 
-    return await this.prisma.vendorAddress.update({
+    await this.prisma.$executeRawUnsafe(
+      `UPDATE "VendorAddress" SET "is_active" = false WHERE "vendorId" = '${vendorId}'`,
+    );
+    const updatedAddress = await this.prisma.vendorAddress.findUnique({
       where: { vendorId },
-      data: { isActive: false },
     });
+    if (!updatedAddress) {
+      throw new NotFoundException('Vendor address not found');
+    }
+    return updatedAddress;
   }
 }

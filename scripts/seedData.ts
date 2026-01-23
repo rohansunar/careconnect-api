@@ -130,7 +130,7 @@ async function main() {
       const locationId = vendorLocations.length > 0 ? vendorLocations[0].id : null;
       const id = randomUUID();
       await prisma.$queryRaw`
-        INSERT INTO "VendorAddress" (id, "vendorId", "locationId", geopoint, "isActive", pincode, address, "isServiceable", "createdAt", "updatedAt")
+        INSERT INTO "VendorAddress" (id, "vendorId", "locationId", geopoint, "is_active", pincode, address, "isServiceable", "createdAt", "updatedAt")
         VALUES (${id}, ${vendor.id}, ${locationId}, ST_MakePoint(${vendorLng}, ${vendorLat})::geography, true, '400001', '123 Main Street, Mumbai', true, NOW(), NOW())
         ON CONFLICT ("vendorId") DO NOTHING
       `;
@@ -223,7 +223,7 @@ async function main() {
       const id = randomUUID();
       await prisma.$queryRaw`
         INSERT INTO "CustomerAddress" (id, "customerId", "locationId", geopoint, address, pincode, label, "isDefault", "isServiceable")
-        VALUES (${id}, ${customer.id}, ${locationId}, ST_MakePoint(${customerLng}, ${customerLat})::geography, '456 Nearby Lane, Mumbai', '400001', 'Home', true, true)
+        VALUES (${id}, ${customer.id}, ${locationId}, ST_MakePoint(${Number(customerLng.toFixed(6))}, ${Number(customerLat.toFixed(6))})::geography, '456 Nearby Lane, Mumbai', '400001', 'Home', true, true)
       `;
       console.log(`Created customer address for ${customer.name}`);
     } catch (error) {
@@ -235,7 +235,9 @@ async function main() {
     { name: 'Mumbai', state: 'Maharashtra', country: 'India', lat: 19.0760, lng: 72.8777, serviceRadiusKm: 50 },
     { name: 'Delhi', state: 'Delhi', country: 'India', lat: 28.7041, lng: 77.1025, serviceRadiusKm: 50 },
     { name: 'Bangalore', state: 'Karnataka', country: 'India', lat: 12.9716, lng: 77.5946, serviceRadiusKm: 50 },
-    { name: 'Chennai', state: 'Tamil Nadu', country: 'India', lat: 13.0827, lng: 80.2707, serviceRadiusKm: 50 }
+    { name: 'Chennai', state: 'Tamil Nadu', country: 'India', lat: 13.0827, lng: 80.2707, serviceRadiusKm: 50 },
+    { name: 'Jalpaiguri', state: 'West Bengal', country: 'India', lat: 26.52108, lng: 88.72744, serviceRadiusKm: 50 },
+    { name: 'Kharia', state: 'West Bengal', country: 'India', lat: 26.53333, lng: 88.73519, serviceRadiusKm: 50 }
   ];
 
   for (const location of locations) {
@@ -243,7 +245,7 @@ async function main() {
       const id = randomUUID();
       await prisma.$queryRaw`
         INSERT INTO "Location" (id, name, state, country, geopoint, "serviceRadiusKm", "isServiceable")
-        VALUES (${id}, ${location.name}, ${location.state}, ${location.country}, ST_MakePoint(${location.lng}, ${location.lat})::geography, ${location.serviceRadiusKm}, true)
+        VALUES (${id}, ${location.name}, ${location.state}, ${location.country}, ST_MakePoint(${Number(location.lng.toFixed(6))}, ${Number(location.lat.toFixed(6))})::geography, ${location.serviceRadiusKm}, true)
         ON CONFLICT (name, state) DO NOTHING
       `;
       console.log(`Created location: ${location.name}`);

@@ -35,7 +35,7 @@ export class CustomerSubscriptionService {
     let customerAddress;
     try {
       customerAddress = await this.prisma.customerAddress.findFirst({
-        where: { customerId: user.id, isActive: true, isDefault: true },
+        where: { customerId: user.id, is_active: true, isDefault: true },
       });
     } catch (error) {
       throw new InternalServerErrorException(

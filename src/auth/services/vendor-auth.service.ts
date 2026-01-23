@@ -130,7 +130,7 @@ export class VendorAuthService {
           data: {
             phone,
             vendorNo: vendorNumber,
-          } 
+          },
         });
       }
     });
@@ -142,7 +142,9 @@ export class VendorAuthService {
    * @param tx - The Prisma transaction client.
    * @returns The generated vendor number as a string.
    */
-  private async generateVendorNumber(tx: Prisma.TransactionClient): Promise<string> {
+  private async generateVendorNumber(
+    tx: Prisma.TransactionClient,
+  ): Promise<string> {
     const counter = await tx.counter.upsert({
       where: { type: 'vendor' },
       update: { lastNumber: { increment: 1 } },

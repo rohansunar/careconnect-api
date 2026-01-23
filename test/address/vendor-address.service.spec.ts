@@ -18,6 +18,8 @@ describe('VendorAddressService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    $queryRaw: jest.fn(),
+    $executeRawUnsafe: jest.fn(),
   };
 
   const mockLocationService = {

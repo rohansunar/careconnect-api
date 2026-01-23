@@ -29,7 +29,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
                         ST_X(geoPoint::geometry) AS lng
                       FROM "CustomerAddress"
                       WHERE "customerId" = ${customerId}
-                      AND "isActive" = true AND "isDefault" = true;`;
+                      AND "is_active" = true AND "isDefault" = true;`;
 
       if (address && address[0].lat !== null && address[0].lng !== null) {
         return {

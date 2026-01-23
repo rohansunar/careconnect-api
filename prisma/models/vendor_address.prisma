@@ -5,12 +5,12 @@ model VendorAddress {
   locationId    String?
   location      Location?    @relation(fields: [locationId], references: [id])
   geopoint      Unsupported("geography(Point,4326)")
-  isActive      Boolean   @default(true)
+  is_active      Boolean   @default(true)
   pincode       String?
   address       String    // For any additional address data
   isServiceable Boolean @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@index([vendorId, isActive])
+  @@index([vendorId, is_active])
 }

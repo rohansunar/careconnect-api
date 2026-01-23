@@ -125,7 +125,7 @@ CREATE TABLE "Customer" (
     "email" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
 
     CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
@@ -141,7 +141,7 @@ CREATE TABLE "CustomerAddress" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isDefault" BOOLEAN NOT NULL DEFAULT false,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "isServiceable" BOOLEAN NOT NULL DEFAULT false,
 
     CONSTRAINT "CustomerAddress_pkey" PRIMARY KEY ("id")
@@ -154,7 +154,7 @@ CREATE TABLE "Location" (
     "state" TEXT,
     "country" TEXT DEFAULT 'India',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updated_at" TIMESTAMP(3) NOT NULL,
+    "updated_at" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "isServiceable" BOOLEAN NOT NULL DEFAULT false,
     "serviceRadiusKm" DOUBLE PRECISION NOT NULL DEFAULT 50,
 
@@ -339,15 +339,15 @@ CREATE TABLE "Subscription" (
 CREATE TABLE "Vendor" (
     "id" TEXT NOT NULL,
     "vendorNo" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "name" TEXT,
     "business_name" TEXT,
     "phone" TEXT NOT NULL,
     "email" TEXT,
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "is_available_today" BOOLEAN NOT NULL DEFAULT true,
-    "openingTime" TEXT NOT NULL,
-    "closingTime" TEXT NOT NULL,
-    "operatingDays" "OperatingDays"[],
+    "openingTime" TEXT NOT NULL DEFAULT '09:00',
+    "closingTime" TEXT NOT NULL DEFAULT '20:00',
+    "operatingDays" "OperatingDays"[] DEFAULT ARRAY['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']::"OperatingDays"[],
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -359,7 +359,7 @@ CREATE TABLE "VendorAddress" (
     "id" TEXT NOT NULL,
     "vendorId" TEXT NOT NULL,
     "locationId" TEXT,
-    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
     "pincode" TEXT,
     "address" TEXT NOT NULL,
     "isServiceable" BOOLEAN NOT NULL DEFAULT false,
@@ -385,6 +385,9 @@ CREATE UNIQUE INDEX "CartItem_cartId_productId_key" ON "CartItem"("cartId", "pro
 CREATE UNIQUE INDEX "Admin_email_key" ON "Admin"("email");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Admin_phone_key" ON "Admin"("phone");
+
+-- CreateIndex
 CREATE INDEX "BankAccount_vendorId_idx" ON "BankAccount"("vendorId");
 
 -- CreateIndex
@@ -403,7 +406,7 @@ CREATE UNIQUE INDEX "Customer_phone_key" ON "Customer"("phone");
 CREATE INDEX "CustomerAddress_customerId_idx" ON "CustomerAddress"("customerId");
 
 -- CreateIndex
-CREATE INDEX "CustomerAddress_customerId_isDefault_isActive_idx" ON "CustomerAddress"("customerId", "isDefault", "isActive");
+CREATE INDEX "CustomerAddress_customerId_isDefault_is_active_idx" ON "CustomerAddress"("customerId", "isDefault", "is_active");
 
 -- CreateIndex
 CREATE INDEX "Location_isServiceable_idx" ON "Location"("isServiceable");
@@ -469,7 +472,7 @@ CREATE INDEX "Vendor_vendorNo_idx" ON "Vendor"("vendorNo");
 CREATE UNIQUE INDEX "VendorAddress_vendorId_key" ON "VendorAddress"("vendorId");
 
 -- CreateIndex
-CREATE INDEX "VendorAddress_vendorId_isActive_idx" ON "VendorAddress"("vendorId", "isActive");
+CREATE INDEX "VendorAddress_vendorId_is_active_idx" ON "VendorAddress"("vendorId", "is_active");
 
 -- AddForeignKey
 ALTER TABLE "Cart" ADD CONSTRAINT "Cart_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE CASCADE ON UPDATE CASCADE;

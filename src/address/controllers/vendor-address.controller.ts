@@ -13,7 +13,6 @@ import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { VendorService } from '../../vendor/services/vendor.service';
 
 @ApiTags('Vendor Addresses')
 @Controller('vendor')
@@ -21,7 +20,6 @@ import { VendorService } from '../../vendor/services/vendor.service';
 export class VendorAddressController {
   constructor(
     private readonly vendorAddressService: VendorAddressService,
-    private readonly vendorService: VendorService,
   ) {}
 
   /**
@@ -33,19 +31,19 @@ export class VendorAddressController {
   @ApiOperation({
     summary: 'Create vendor address',
     description:
-      'Creates a new vendor address, reusing existing locations if a duplicate is found based on address data, or creating a new location otherwise.',
+      'Creates a new vendor address for the authenticated vendor. Enforces that a vendor can have only one address; if an address already exists, returns a bad request error. Validates vendor existence, requires latitude and longitude, handles location creation or reuse, and uses database transactions for integrity. Logs the address creation event to \'logs/vendor_address_creation.log\' for auditing purposes.',
   })
-  @ApiResponse({ status: 201, description: 'Address created successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 201, description: 'Address created successfully.', type: Object })
+  @ApiResponse({ status: 400, description: 'Bad request - Latitude and longitude are required, or a vendor address already exists.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Vendor not found.' })
   @Post('addresses')
   async createAddress(
     @Body() dto: CreateAddressDto,
     @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
-    await this.vendorService.validateVendorExists(id);
-    return await this.vendorAddressService.createAddress(id, dto);
+    return await this.vendorAddressService.create(id, dto);
   }
 
   /**
@@ -56,10 +54,11 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Get vendor address',
-    description: 'Retrieves the address for the specified vendor.',
+    description: 'Retrieves the single address associated with the authenticated vendor, including location details.',
   })
-  @ApiResponse({ status: 200, description: 'Address retrieved successfully.' })
+  @ApiResponse({ status: 200, description: 'Address retrieved successfully.', type: Object })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'Vendor address not found.' })
   @Get('addresses')
   async getAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
@@ -74,10 +73,10 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Update vendor address',
-    description: "Updates the current vendor's address.",
+    description: "Updates the authenticated vendor's address. If latitude and longitude are provided, updates the associated location and geoPoint. Uses database transactions for integrity.",
   })
-  @ApiResponse({ status: 200, description: 'Address updated successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 200, description: 'Address updated successfully.', type: Object })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid update data.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
   @Put('addresses')
@@ -86,7 +85,6 @@ export class VendorAddressController {
     @CurrentUser() vendor: any,
   ) {
     const { id } = vendor;
-    await this.vendorService.validateVendorExists(id);
     return await this.vendorAddressService.updateAddress(id, dto);
   }
 
@@ -96,15 +94,14 @@ export class VendorAddressController {
    */
   @ApiOperation({
     summary: 'Delete vendor address',
-    description: "Deletes the current vendor's address.",
+    description: "Soft deletes the authenticated vendor's address by setting is_active to false. This allows for potential recovery and maintains data integrity.",
   })
-  @ApiResponse({ status: 204, description: 'Address deleted successfully.' })
+  @ApiResponse({ status: 200, description: 'Address deleted successfully.', type: Object })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Address not found.' })
   @Delete('addresses')
   async deleteAddress(@CurrentUser() vendor: any) {
     const { id } = vendor;
-    await this.vendorService.validateVendorExists(id);
     return await this.vendorAddressService.deleteAddress(id);
   }
 }

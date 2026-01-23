@@ -1,14 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AddressModule } from '../address.module';
-import { PrismaService } from '../../common/database/prisma.service';
-import { CustomerAddressService } from '../services/customer-address.service';
-import { LocationService } from '../../common/services/location.service';
-import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
-import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
-import { AddressLabel } from '../dto/create-customer-address.dto';
-import { VendorService } from '../../vendor/services/vendor.service';
+import { AddressModule } from '../../src/address/address.module';
+import { PrismaService } from '../../src/common/database/prisma.service';
+import { CustomerAddressService } from '../../src/address/services/customer-address.service';
+import { LocationService } from '../../src/common/services/location.service';
+import { CreateCustomerAddressDto } from '../../src/address/dto/create-customer-address.dto';
+import { UpdateCustomerAddressDto } from '../../src/address/dto/update-customer-address.dto';
+import { AddressLabel } from '../../src/address/dto/create-customer-address.dto';
+import { VendorService } from '../../src/vendor/services/vendor.service';
 
 describe('CustomerAddressController (Integration)', () => {
   let app: INestApplication;
@@ -46,7 +46,7 @@ describe('CustomerAddressController (Integration)', () => {
           name: 'Test Customer',
           email: 'test@example.com',
           phone: '1234567890',
-          isActive: true,
+          is_active: true,
         },
       });
       customerId = customer.id;

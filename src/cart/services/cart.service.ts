@@ -313,7 +313,7 @@ export class CartService {
           id: deliveryAddress.id,
           label: deliveryAddress.label || undefined,
           address: deliveryAddress.address || undefined,
-          city: deliveryAddress.location?.name,
+          city: (deliveryAddress as any).location?.name,
           pincode: deliveryAddress.pincode || undefined,
         },
         isAddressValid: true,
@@ -344,7 +344,7 @@ export class CartService {
         id: deliveryAddress.id,
         label: deliveryAddress.label || undefined,
         address: deliveryAddress.address || undefined,
-        city: deliveryAddress.location?.name,
+        city: (deliveryAddress as any).location?.name,
         pincode: deliveryAddress.pincode || undefined,
       },
       isAddressValid,
@@ -438,7 +438,7 @@ export class CartService {
    */
   async validateDeliveryAddress(customerId: string) {
     const address = await this.prisma.customerAddress.findFirst({
-      where: { customerId, isDefault: true, isActive: true },
+      where: { customerId, isDefault: true, is_active: true } as any,
       include: {
         location: true,
       },

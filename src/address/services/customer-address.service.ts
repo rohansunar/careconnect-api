@@ -2,15 +2,20 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { LocationService } from '../../common/services/location.service';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CustomerAddressService {
+  private readonly logger = new Logger(CustomerAddressService.name);
+
   constructor(
     private prisma: PrismaService,
     private locationService: LocationService,
@@ -32,7 +37,7 @@ export class CustomerAddressService {
   ): Promise<any> {
     const where: any = { id: addressId, customerId };
     if (requireActive) {
-      where.isActive = true;
+      where.is_active = true;
     }
     const address = await this.prisma.customerAddress.findFirst({ where });
     if (!address) {
@@ -57,7 +62,7 @@ export class CustomerAddressService {
     const where: any = {
       customerId,
       address: data.address,
-      isActive: true,
+      is_active: true,
     };
     if (excludeId) {
       where.id = { not: excludeId };
@@ -65,11 +70,10 @@ export class CustomerAddressService {
     if (data.pincode) {
       where.pincode = data.pincode;
     }
-
     const duplicate = await this.prisma.customerAddress.findFirst({ where });
     if (duplicate) {
       throw new BadRequestException(
-        'An address with the same pincode, location, lng, lat, and address already exists. Please provide a different address.',
+        'An address with the same pincode, lng, lat, and address already exists. Please provide a different address.',
       );
     }
   }
@@ -81,11 +85,75 @@ export class CustomerAddressService {
    */
   private async validateCustomerExists(customerId: string): Promise<void> {
     const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, isActive: true } as any,
+      where: { id: customerId, is_active: true } as any,
     });
     if (!customer) {
       throw new NotFoundException('Customer not found');
     }
+  }
+
+  /**
+   * Validates the address data, ensuring required fields are present.
+   * Throws BadRequestException if validation fails.
+   * @param data - The address data to validate.
+   */
+  private validateAddressData(data: CreateCustomerAddressDto): void {
+    if (
+      data.lat === undefined ||
+      data.lng === undefined ||
+      data.lat === null ||
+      data.lng === null
+    ) {
+      throw new BadRequestException('Latitude and longitude are required');
+    }
+  }
+
+  /**
+   * Handles location finding or creation.
+   * @param data - The address data containing lat, lng, city, state.
+   * @returns The location ID and serviceability status.
+   */
+  private async handleLocation(
+    data: CreateCustomerAddressDto,
+  ): Promise<{ id: string; isServiceable: boolean }> {
+    return await this.locationService.findOrCreateLocation({
+      lat: data.lat as number,
+      lng: data.lng as number,
+      city: data.city,
+      state: data.state,
+    });
+  }
+
+  /**
+   * Creates the customer address using raw SQL within a transaction.
+   * @param customerId - The customer ID.
+   * @param data - The address data.
+   * @param locationId - The location ID.
+   * @param isServiceable - Whether the location is serviceable.
+   * @param isDefault - Whether this is the default address.
+   * @returns The created address ID.
+   */
+  private async createAddress(
+    customerId: string,
+    data: CreateCustomerAddressDto,
+    locationId: string,
+    isServiceable: boolean,
+    isDefault: boolean,
+  ): Promise<any> {
+    const labelValue = data.label ? `${data.label}` : 'Home';
+    return await this.prisma.$queryRaw<
+      {
+        id: string;
+      }[]
+    >`
+    INSERT INTO "CustomerAddress"
+    (id, "customerId", label, address, "locationId", pincode, geopoint, "isServiceable", "isDefault")
+    VALUES (${randomUUID()}, ${customerId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
+      ST_MakePoint(${Number((data.lng as number).toFixed(6))}, ${Number((data.lat as number).toFixed(6))})::geography,
+      ${isServiceable}, ${isDefault}
+    )
+    RETURNING id;
+    `;
   }
 
   /**
@@ -95,47 +163,71 @@ export class CustomerAddressService {
    * @returns The created customer address with location relation.
    */
   async create(customerId: string, data: CreateCustomerAddressDto) {
-    // 1. Validate the customer ID
-    await this.validateCustomerExists(customerId);
-    await this.checkDuplicateAddress(customerId, data);
+    try {
+      this.logger.log(`Starting address creation for customer ${customerId}`);
+      // Log the address creation
+      try {
+        const logsDir = path.join(process.cwd(), 'logs');
+        await fs.mkdir(logsDir, { recursive: true });
+        const logFile = path.join(logsDir, 'customer_address_creation.log');
+        const logEntry = JSON.stringify({
+          type: 'customer',
+          address: data,
+          timestamp: new Date().toISOString(),
+        });
+        await fs.appendFile(logFile, logEntry + '\n');
+      } catch (logError) {
+        this.logger.error('Failed to log address creation', logError);
+      }
 
-    // Check if lat and lng are provided
-    if (
-      data.lat === undefined ||
-      data.lng === undefined ||
-      data.lat === null ||
-      data.lng === null
-    ) {
-      throw new BadRequestException('Latitude and longitude are required');
+      // Validate customer existence
+      await this.validateCustomerExists(customerId);
+      this.logger.log(`Customer ${customerId} validated`);
+
+      // Check for duplicate addresses
+      await this.checkDuplicateAddress(customerId, data);
+      this.logger.log(`Duplicate check passed for customer ${customerId}`);
+
+      // Validate address data
+      this.validateAddressData(data);
+      this.logger.log(`Address data validated for customer ${customerId}`);
+
+      // Handle location
+      const { id: locationId, isServiceable } = await this.handleLocation(data);
+      this.logger.log(
+        `Location handled: ${locationId}, serviceable: ${isServiceable}`,
+      );
+
+      // Determine if default
+      const existingAddressesCount = await this.prisma.customerAddress.count({
+        where: { customerId, is_active: true },
+      });
+      const isDefault = existingAddressesCount === 0;
+      this.logger.log(`Is default address: ${isDefault}`);
+
+      // Create address within transaction
+      const result = await this.prisma.$transaction(async (tx) => {
+        return await this.createAddress(
+          customerId,
+          data,
+          locationId,
+          isServiceable,
+          isDefault,
+        );
+      });
+
+      this.logger.log(
+        `Address created successfully for customer ${customerId}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Failed to create address for customer ${customerId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
-
-    // 2. Find or create location
-    const locationId = await this.locationService.findOrCreateLocation({
-      lat: data.lat,
-      lng: data.lng,
-      city: data.city,
-      state: data.state,
-    });
-
-    // 4. Save the customer_address record
-    const existingAddressesCount = await this.prisma.customerAddress.count({
-      where: { customerId, isActive: true },
-    });
-    const isDefault = existingAddressesCount === 0;
-
-    const labelValue = data.label ? `${data.label}` : 'NULL';
-    const customerAddress = await this.prisma.$queryRaw<
-      {
-        id: string;
-      }[]
-    >`
-     INSERT INTO "CustomerAddress" (id, "customerId", label, address, "locationId", pincode, geopoint, "isDefault")
-     VALUES (${randomUUID()}, ${customerId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
-       ST_MakePoint(${data.lng}, ${data.lat})::geography,${isDefault}
-     )
-     RETURNING id;
-    `;
-    return customerAddress;
   }
 
   /**
@@ -148,7 +240,7 @@ export class CustomerAddressService {
     const addresses = await this.prisma.customerAddress.findMany({
       where: {
         customerId,
-        isActive: true,
+        is_active: true,
       } as any,
       include: {
         location: true,
@@ -171,7 +263,7 @@ export class CustomerAddressService {
       where: {
         id: addressId,
         customerId,
-        isActive: true,
+        is_active: true,
       } as any,
       include: {
         location: true,
@@ -236,12 +328,12 @@ export class CustomerAddressService {
     await this.validateCustomerExists(customerId);
     await this.findCustomerAddress(customerId, addressId, false);
 
-    // If Address has 0 Orders than Delete it or can it isActive
+    // If Address has 0 Orders than Delete it or can it is_active
     // If Address isDefault = true than
     // Soft delete by setting is_active to false
     await this.prisma.customerAddress.update({
       where: { id: addressId },
-      data: { isActive: false } as any,
+      data: { is_active: false } as any,
     });
 
     return { message: 'Customer address deleted successfully' };
@@ -262,7 +354,7 @@ export class CustomerAddressService {
       where: {
         customerId,
         id: { not: addressId },
-        isActive: true,
+        is_active: true,
       } as any,
       data: {
         isDefault: false,
