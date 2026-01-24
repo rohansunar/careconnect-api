@@ -1,7 +1,7 @@
 enum SubscriptionStatus {
   ACTIVE
   INACTIVE
-  PENDING
+  PROCESSING
 }
 
 enum SubscriptionFrequency {
@@ -32,8 +32,10 @@ model Subscription {
   frequency          SubscriptionFrequency
   custom_days        DayOfWeek[]
   next_delivery_date DateTime?
-  status             SubscriptionStatus @default(ACTIVE)
+  status             SubscriptionStatus @default(PROCESSING)
   start_date         DateTime
+  total_price        Float @default(0)
+  payment_mode       String @default("UPFRONT")
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now())
 

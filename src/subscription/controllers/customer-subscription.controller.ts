@@ -36,18 +36,49 @@ export class CustomerSubscriptionController {
    * Creates a new subscription for the authenticated customer.
    * @param user - The authenticated customer user
    * @param dto - The subscription data
-   * @returns The created subscription
+   * @returns The created subscription with calculated total price and payment mode
    */
   @ApiOperation({
     summary: 'Create a new subscription',
-    description: 'Creates a new subscription for the authenticated customer.',
+    description:
+      'Creates a new subscription for the authenticated customer with calculated total price and payment mode.',
   })
   @ApiBody({
     type: CreateSubscriptionDto,
+    description:
+      'Subscription data including product ID, quantity, frequency, start date, and optional custom days',
   })
   @ApiResponse({
     status: 201,
     description: 'Subscription created successfully.',
+    schema: {
+      example: {
+        id: 'string',
+        total_price: 0,
+        payment_mode: 'UPFRONT',
+        customer: {
+          name: 'string',
+          email: 'string',
+          phone: 'string',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Customer address or product not found.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Duplicate subscription for the same product and address.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal server error.',
   })
   @Post()
   async createSubscription(

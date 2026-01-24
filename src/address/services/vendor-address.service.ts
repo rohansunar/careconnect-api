@@ -217,9 +217,9 @@ export class VendorAddressService {
         lng: data.lng,
         state: data.state,
       });
-      updateData.locationId = locationId;
+      updateData.locationId = locationId.id;
     }
-
+    console.log("updateData",updateData)
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { vendorId },
       data: updateData,
@@ -228,7 +228,7 @@ export class VendorAddressService {
     // If lat/lng provided, update geoPoint using raw SQL
     if (data.lat !== undefined && data.lng !== undefined) {
       await this.prisma.$executeRawUnsafe(
-        `UPDATE "VendorAddress" SET "geoPoint" = ST_MakePoint(${data.lng}, ${data.lat})::geography WHERE "vendorId" = '${vendorId}'`,
+        `UPDATE "VendorAddress" SET "geopoint" = ST_MakePoint(${data.lng}, ${data.lat})::geography WHERE "vendorId" = '${vendorId}'`,
       );
     }
 

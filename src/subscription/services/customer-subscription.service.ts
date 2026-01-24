@@ -10,6 +10,9 @@ import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import type { User } from '../../common/interfaces/user.interface';
 import { DeliveryFrequencyService } from './delivery-frequency.service';
+import { PriceCalculationService } from './price-calculation.service';
+import { PaymentModeService } from './payment-mode.service';
+import { SubscriptionValidationService } from './subscription-validation.service';
 import {
   DayOfWeek,
   SubscriptionFrequency,
@@ -20,65 +23,23 @@ export class CustomerSubscriptionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly deliveryFrequencyService: DeliveryFrequencyService,
+    private readonly priceCalculationService: PriceCalculationService,
+    private readonly paymentModeService: PaymentModeService,
+    private readonly subscriptionValidationService: SubscriptionValidationService,
   ) {}
-
-  /**
-   * Validates the inputs for creating a subscription.
-   * @param dto - The subscription data
-   * @param user - The authenticated customer user
-   * @returns The customer address and product
-   */
-  private async validateSubscriptionInputs(
-    dto: CreateSubscriptionDto,
-    user: User,
-  ) {
-    let customerAddress;
-    try {
-      customerAddress = await this.prisma.customerAddress.findFirst({
-        where: { customerId: user.id, is_active: true, isDefault: true },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to retrieve customer address',
-      );
-    }
-
-    if (!customerAddress) {
-      throw new NotFoundException('Customer Address not found');
-    }
-
-    let product;
-    try {
-      product = await this.prisma.product.findUnique({
-        where: { id: dto.productId },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to retrieve product');
-    }
-
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    this.deliveryFrequencyService.validateFrequency(
-      dto.frequency,
-      dto.custom_days,
-    );
-
-    return { customerAddress, product };
-  }
 
   /**
    * Creates a new subscription for the authenticated customer.
    * @param user - The authenticated customer user
    * @param dto - The subscription data
-   * @returns The created subscription
+   * @returns The created subscription with calculated total price and payment mode
    */
   async createSubscription(user: User, dto: CreateSubscriptionDto) {
-    const { customerAddress, product } = await this.validateSubscriptionInputs(
-      dto,
-      user,
-    );
+    const { customerAddress, product } =
+      await this.subscriptionValidationService.validateSubscriptionInputs(
+        dto,
+        user,
+      );
 
     const customDays =
       dto.frequency === SubscriptionFrequency.CUSTOM_DAYS
@@ -89,6 +50,15 @@ export class CustomerSubscriptionService {
       dto.frequency,
       customDays,
     );
+
+    const totalPrice = this.priceCalculationService.calculateTotalPrice(
+      dto.quantity,
+      product.price,
+      dto.frequency,
+      new Date(dto.start_date),
+    );
+
+    const paymentMode = this.paymentModeService.getPaymentMode();
 
     let hasDuplicate;
     try {
@@ -111,18 +81,44 @@ export class CustomerSubscriptionService {
     }
 
     try {
-      return this.prisma.subscription.create({
+      const customer = await this.prisma.customer.findUnique({
+        where: { id: user.id },
+        select: {
+          name: true,
+          email: true,
+          phone: true,
+        },
+      });
+
+      if (!customer) {
+        throw new NotFoundException('Customer not found');
+      }
+
+      const createdSubscription = await this.prisma.subscription.create({
         data: {
           customerAddressId: customerAddress.id,
           vendorId: product.vendorId,
           productId: dto.productId,
           quantity: dto.quantity,
           frequency: dto.frequency,
-          custom_days: customDays,
+          custom_days: customDays as any,
           next_delivery_date: nextDeliveryDate,
           start_date: new Date(dto.start_date),
+          total_price: totalPrice,
+          payment_mode: paymentMode,
         },
       });
+
+      return {
+        id: "createdSubscription.id",
+        total_price: "createdSubscription.total_price",
+        payment_mode: paymentMode,
+        customer: {
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+        },
+      };
     } catch (error) {
       throw new InternalServerErrorException('Failed to create subscription');
     }

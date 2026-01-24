@@ -5,6 +5,9 @@ import { AdminSubscriptionController } from './controllers/admin-subscription.co
 import { CustomerSubscriptionService } from './services/customer-subscription.service';
 import { AdminSubscriptionService } from './services/admin-subscription.service';
 import { DeliveryFrequencyService } from './services/delivery-frequency.service';
+import { PriceCalculationService } from './services/price-calculation.service';
+import { PaymentModeService } from './services/payment-mode.service';
+import { SubscriptionValidationService } from './services/subscription-validation.service';
 
 @Module({
   imports: [PrismaModule],
@@ -13,6 +16,9 @@ import { DeliveryFrequencyService } from './services/delivery-frequency.service'
     CustomerSubscriptionService,
     AdminSubscriptionService,
     DeliveryFrequencyService,
+    PriceCalculationService,
+    PaymentModeService,
+    SubscriptionValidationService,
   ],
   exports: [CustomerSubscriptionService],
 })

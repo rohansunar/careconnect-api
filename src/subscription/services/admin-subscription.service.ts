@@ -17,7 +17,7 @@ export class AdminSubscriptionService {
   }
 
   /**
-   * 
+   *
    * Toggles the default payment mode (UPFRONT|POST_DELIVERY) for all subscription creations.
    * @returns An object with a success message and the updated payment mode
    * @throws NotFoundException if the config file is not found or invalid
@@ -39,7 +39,6 @@ export class AdminSubscriptionService {
         payment_mode: newMode,
       };
     } catch (error) {
-      console.log("error.code",error.code)
       this.logger.error(`Failed to toggle payment mode: ${error.message}`);
       if (error.code === 'ENOENT') {
         throw new NotFoundException(
@@ -58,10 +57,10 @@ export class AdminSubscriptionService {
   }
 
   /**
-  * Retrieves the current default payment mode.
-  * @returns An object with the current payment mode
-  * @throws NotFoundException if the config file is not found or invalid
-  */
+   * Retrieves the current default payment mode.
+   * @returns An object with the current payment mode
+   * @throws NotFoundException if the config file is not found or invalid
+   */
   async getPaymentMode(): Promise<{ payment_mode: string }> {
     try {
       const configData = fs.readFileSync(this.configPath, 'utf-8');
@@ -86,7 +85,9 @@ export class AdminSubscriptionService {
           );
           return defaultConfig;
         } catch (fileError) {
-          this.logger.error(`Failed to create payment mode configuration: ${fileError.message}`);
+          this.logger.error(
+            `Failed to create payment mode configuration: ${fileError.message}`,
+          );
           throw new NotFoundException(
             'Failed to create payment mode configuration',
           );

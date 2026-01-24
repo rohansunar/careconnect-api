@@ -34,13 +34,6 @@ export class ProductRepository implements IProductRepository {
     const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {
-      console.log('Executing proximity search with params:', {
-        customerGeoPoint,
-        radiusKm,
-        page,
-        limit,
-      });
-
       const results = await this.prisma.$queryRaw`
         SELECT
           p.*,
@@ -53,7 +46,7 @@ export class ProductRepository implements IProductRepository {
           AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
           AND v."is_active" = TRUE
           AND v."is_available_today" = TRUE
-          AND va."isActive" = TRUE
+          AND va."is_active" = TRUE
           AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
         ORDER BY distance ASC
         LIMIT ${limit} OFFSET ${offset}
