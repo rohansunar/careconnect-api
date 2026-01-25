@@ -31,13 +31,13 @@ describe('SearchController', () => {
   });
 
   describe('searchProducts', () => {
-    it('should call searchService.searchProducts with query DTO', async () => {
+    it('should call searchService.searchProducts with query DTO and customer', async () => {
       const queryDto: SearchQueryDto = {
-        query: 'water',
-        categoryId: 'cat1',
         page: 1,
         limit: 10,
       };
+
+      const mockCustomer = { id: 'customer-123' };
 
       const mockResult = {
         data: [],
@@ -51,10 +51,10 @@ describe('SearchController', () => {
 
       mockSearchService.searchProducts.mockResolvedValue(mockResult);
 
-      const result = await controller.searchProducts(queryDto);
+      const result = await controller.searchProducts(queryDto, mockCustomer);
 
       expect(result).toEqual(mockResult);
-      expect(mockSearchService.searchProducts).toHaveBeenCalledWith(queryDto);
+      expect(mockSearchService.searchProducts).toHaveBeenCalledWith(queryDto, mockCustomer);
     });
   });
 });

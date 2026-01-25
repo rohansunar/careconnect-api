@@ -13,24 +13,28 @@ export class SearchController {
 
   /**
    * Proximity-based product search endpoint
-   * Business logic rationale: Provide customers with ability to search products by proximity
-   * Security consideration: Customer authentication required
-   * Design decision: Supports pagination for proximity search
-   */
-  @ApiOperation({
-    summary: 'Search products by proximity',
-    description:
-      "Search products based on proximity to customer's location, with pagination. Returns service availability information.",
-  })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Proximity search results with products (including distances) and pagination information, or service availability message.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: "Service unavailable at the customer's location.",
-  })
+    * Business logic rationale: Provide customers with ability to search products by proximity
+    * Security consideration: Customer authentication required
+    * Design decision: Supports pagination for proximity search
+    */
+   @ApiOperation({
+     summary: 'Search products by proximity',
+     description:
+       "Search products based on proximity to customer's location, with pagination.",
+   })
+   @ApiResponse({
+     status: 200,
+     description:
+       'Proximity search results with products (including distances) and pagination information.',
+   })
+   @ApiResponse({
+     status: 404,
+     description: 'Customer address not found.',
+   })
+   @ApiResponse({
+     status: 503,
+     description: 'Service unavailable at customer\'s location.',
+   })
   @ApiQuery({
     name: 'page',
     required: false,

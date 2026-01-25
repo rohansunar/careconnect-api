@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { SearchQueryDto } from '../dto/search-query.dto';
 import { CustomerAddressRetriever } from './customer-address-retriever';
 import { ProductRepository } from './product-repository';
@@ -22,43 +22,29 @@ export class ProximitySearchService {
    * @param query Search query parameters
    * @param customerId Customer's ID
    * @returns Paginated search results with products and distances
+   * @throws HttpException with 404 if address not found, 503 if service unavailable
    */
   async searchProducts(
     query: SearchQueryDto,
     customerId: string,
-  ): Promise<
-    | {
-        data: IProximitySearchResult[];
-        pagination: {
-          total: number;
-          page: number;
-          limit: number;
-          totalPages: number;
-        };
-      }
-    | { message: string; status: number }
-  > {
+  ): Promise<{
+    data: IProximitySearchResult[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  }> {
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
 
-    if (!address?.isServiceable) {
-      return {
-        status: 503,
-        message: 'SERVICE_NOT_AVAILABLE',
-      };
+    if (!address) {
+      throw new HttpException('Customer address not found', HttpStatus.NOT_FOUND);
     }
 
-    if (!address) {
-      // No address found, return empty results
-      return {
-        data: [],
-        pagination: {
-          total: 0,
-          page: query.page || 1,
-          limit: query.limit || 10,
-          totalPages: 0,
-        },
-      };
+    if (!address.isServiceable) {
+      throw new HttpException('Service unavailable at customer\'s location', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     const page = query.page || 1;

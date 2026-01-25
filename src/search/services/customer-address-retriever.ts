@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import {
   ICustomerAddress,
@@ -10,6 +10,8 @@ import {
  */
 @Injectable()
 export class CustomerAddressRetriever implements ICustomerAddressRetriever {
+  private readonly logger = new Logger(CustomerAddressRetriever.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -40,7 +42,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
       }
       return null;
     } catch (error) {
-      console.error('Error fetching customer address:', error);
+      this.logger.error('Error fetching customer address:', error);
       return null;
     }
   }

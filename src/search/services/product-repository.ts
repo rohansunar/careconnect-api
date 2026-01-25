@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { ProductApprovalStatus } from '@prisma/client';
 import {
@@ -13,6 +13,8 @@ import {
  */
 @Injectable()
 export class ProductRepository implements IProductRepository {
+  private readonly logger = new Logger(ProductRepository.name);
+
   constructor(private prisma: PrismaService) {}
 
   /**
@@ -34,37 +36,30 @@ export class ProductRepository implements IProductRepository {
     const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {
-      const results = await this.prisma.$queryRaw`
+      const whereClause = this.buildWhereClause(customerGeoPoint, maxDeliveryRadiusMeters);
+
+      const resultsQuery = `
         SELECT
           p.*,
           ST_Distance(va."geopoint", ST_GeogFromText(${customerGeoPoint})) AS distance
         FROM "Product" p
         JOIN "Vendor" v ON v.id = p."vendorId"
         JOIN "VendorAddress" va ON va."vendorId" = v.id
-        WHERE
-          p."is_active" = TRUE
-          AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
-          AND v."is_active" = TRUE
-          AND v."is_available_today" = TRUE
-          AND va."is_active" = TRUE
-          AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+        WHERE ${whereClause}
         ORDER BY distance ASC
         LIMIT ${limit} OFFSET ${offset}
       `;
 
-      const countResult = await this.prisma.$queryRaw`
+      const countQuery = `
         SELECT COUNT(*) as total
         FROM "Product" p
         JOIN "Vendor" v ON v.id = p."vendorId"
         JOIN "VendorAddress" va ON va."vendorId" = v.id
-        WHERE
-          p."is_active" = TRUE
-          AND p."approval_status" = ${ProductApprovalStatus.APPROVED}::"ProductApprovalStatus"
-          AND v."is_active" = TRUE
-          AND v."is_available_today" = TRUE
-          AND va."is_active" = TRUE
-          AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+        WHERE ${whereClause}
       `;
+
+      const results = await this.prisma.$queryRawUnsafe(resultsQuery);
+      const countResult = await this.prisma.$queryRawUnsafe(countQuery);
 
       const total = Number((countResult as any)[0].total);
 
@@ -75,12 +70,29 @@ export class ProductRepository implements IProductRepository {
         total,
       };
     } catch (error) {
-      console.error('Error in proximity search:', error);
+      this.logger.error('Error in proximity search:', error);
       return {
         results: [],
         total: 0,
       };
     }
+  }
+
+  /**
+   * Builds the common WHERE clause for product proximity queries.
+   * @param customerGeoPoint Customer's geopoint
+   * @param maxDeliveryRadiusMeters Maximum delivery radius in meters
+   * @returns SQL WHERE clause string
+   */
+  private buildWhereClause(customerGeoPoint: string, maxDeliveryRadiusMeters: number): string {
+    return `
+      p."is_active" = TRUE
+      AND p."approval_status" = '${ProductApprovalStatus.APPROVED}'::"ProductApprovalStatus"
+      AND v."is_active" = TRUE
+      AND v."is_available_today" = TRUE
+      AND va."is_active" = TRUE
+      AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+    `;
   }
 
   /**
