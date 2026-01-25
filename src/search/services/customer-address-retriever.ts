@@ -33,7 +33,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
                       WHERE "customerId" = ${customerId}
                       AND "is_active" = true AND "isDefault" = true;`;
 
-      if (address && address[0].lat !== null && address[0].lng !== null) {
+      if (address.length > 0 && address[0].lat !== null && address[0].lng !== null) {
         return {
           lat: address[0].lat,
           lng: address[0].lng,
