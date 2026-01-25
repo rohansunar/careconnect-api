@@ -32,7 +32,7 @@ export class DeliveryFrequencyService implements IDeliveryFrequencyService {
       frequency,
       customDays,
     );
-    console.log("strategy",strategy,  strategy.validate())
+    console.log('strategy', strategy, strategy.validate());
     strategy.validate();
   }
 

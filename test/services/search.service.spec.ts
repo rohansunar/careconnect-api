@@ -23,7 +23,9 @@ describe('SearchService', () => {
     }).compile();
 
     service = module.get<SearchService>(SearchService);
-    proximitySearchService = module.get<ProximitySearchService>(ProximitySearchService);
+    proximitySearchService = module.get<ProximitySearchService>(
+      ProximitySearchService,
+    );
   });
 
   afterEach(() => {

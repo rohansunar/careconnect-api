@@ -72,12 +72,14 @@ describe('LocationService', () => {
         serviceRadiusKm: 50,
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        ...mockLocationData,
-        id: 'new-location-id',
-        name: createDto.name,
-        state: createDto.state,
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          ...mockLocationData,
+          id: 'new-location-id',
+          name: createDto.name,
+          state: createDto.state,
+        },
+      ]);
 
       const result = await service.create(createDto);
 
@@ -105,10 +107,12 @@ describe('LocationService', () => {
         serviceRadiusKm: 50,
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        ...mockLocationData,
-        id: 'new-location-id',
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          ...mockLocationData,
+          id: 'new-location-id',
+        },
+      ]);
 
       await service.create(createDto);
 
@@ -127,15 +131,19 @@ describe('LocationService', () => {
         serviceRadiusKm: 50,
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        ...mockLocationData,
-        id: 'new-location-id',
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          ...mockLocationData,
+          id: 'new-location-id',
+        },
+      ]);
 
       await service.create(createDto);
 
       expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
-        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+        expect.stringContaining(
+          'ST_MakePoint(72.877654, 19.076543)::geography',
+        ),
       );
     });
 
@@ -312,9 +320,9 @@ describe('LocationService', () => {
     it('should throw NotFoundException if location does not exist', async () => {
       mockPrismaService.location.findUnique.mockResolvedValue(null);
 
-      await expect(service.toggleServiceable('non-existent-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.toggleServiceable('non-existent-id'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -327,10 +335,12 @@ describe('LocationService', () => {
         state: 'Maharashtra',
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        id: 'found-location-id',
-        isServiceable: true,
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          id: 'found-location-id',
+          isServiceable: true,
+        },
+      ]);
 
       const result = await service.findOrCreateLocation(locationData);
 
@@ -354,10 +364,12 @@ describe('LocationService', () => {
         state: 'Maharashtra',
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        id: 'found-location-id',
-        isServiceable: true,
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          id: 'found-location-id',
+          isServiceable: true,
+        },
+      ]);
 
       await service.findOrCreateLocation(locationData);
 
@@ -377,10 +389,12 @@ describe('LocationService', () => {
         state: 'Maharashtra',
       };
 
-      mockPrismaService.$queryRaw.mockResolvedValue([{
-        id: 'found-location-id',
-        isServiceable: true,
-      }]);
+      mockPrismaService.$queryRaw.mockResolvedValue([
+        {
+          id: 'found-location-id',
+          isServiceable: true,
+        },
+      ]);
 
       await service.findOrCreateLocation(locationData);
 
@@ -395,9 +409,9 @@ describe('LocationService', () => {
         lng: 'invalid',
       };
 
-      await expect(service.findOrCreateLocation(invalidData as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.findOrCreateLocation(invalidData as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

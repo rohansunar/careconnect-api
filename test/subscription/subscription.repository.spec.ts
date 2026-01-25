@@ -1,7 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SubscriptionRepositoryService } from '../repositories/subscription.repository';
 import { PrismaService } from '../../common/database/prisma.service';
-import { SubscriptionFrequency, DayOfWeek } from '../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../interfaces/delivery-frequency.interface';
 import { SubscriptionStatus } from '@prisma/client';
 
 describe('SubscriptionRepositoryService', () => {
@@ -27,7 +30,9 @@ describe('SubscriptionRepositoryService', () => {
       ],
     }).compile();
 
-    service = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+    service = module.get<SubscriptionRepositoryService>(
+      SubscriptionRepositoryService,
+    );
     prisma = module.get<PrismaService>(PrismaService);
   });
 
@@ -51,7 +56,9 @@ describe('SubscriptionRepositoryService', () => {
         updated_at: new Date(),
       };
 
-      jest.spyOn(prisma.subscription, 'findUnique').mockResolvedValue(mockSubscription);
+      jest
+        .spyOn(prisma.subscription, 'findUnique')
+        .mockResolvedValue(mockSubscription);
 
       const result = await service.findById('sub-123');
 
@@ -120,9 +127,14 @@ describe('SubscriptionRepositoryService', () => {
         },
       ];
 
-      jest.spyOn(prisma.subscription, 'findMany').mockResolvedValue(mockSubscriptions);
+      jest
+        .spyOn(prisma.subscription, 'findMany')
+        .mockResolvedValue(mockSubscriptions);
 
-      const result = await service.findByCustomerAndProduct('addr-123', 'prod-123');
+      const result = await service.findByCustomerAndProduct(
+        'addr-123',
+        'prod-123',
+      );
 
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe('sub-123');
@@ -132,7 +144,10 @@ describe('SubscriptionRepositoryService', () => {
     it('should return an empty array when no subscriptions are found', async () => {
       jest.spyOn(prisma.subscription, 'findMany').mockResolvedValue([]);
 
-      const result = await service.findByCustomerAndProduct('addr-123', 'prod-123');
+      const result = await service.findByCustomerAndProduct(
+        'addr-123',
+        'prod-123',
+      );
 
       expect(result).toEqual([]);
     });
@@ -170,7 +185,9 @@ describe('SubscriptionRepositoryService', () => {
         updated_at: new Date(),
       };
 
-      jest.spyOn(prisma.subscription, 'create').mockResolvedValue(mockCreatedSubscription);
+      jest
+        .spyOn(prisma.subscription, 'create')
+        .mockResolvedValue(mockCreatedSubscription);
 
       const result = await service.create(mockInput);
 
@@ -217,7 +234,9 @@ describe('SubscriptionRepositoryService', () => {
         updated_at: new Date(),
       };
 
-      jest.spyOn(prisma.subscription, 'update').mockResolvedValue(mockUpdatedSubscription);
+      jest
+        .spyOn(prisma.subscription, 'update')
+        .mockResolvedValue(mockUpdatedSubscription);
 
       const result = await service.update('sub-123', mockUpdateData);
 
@@ -259,7 +278,9 @@ describe('SubscriptionRepositoryService', () => {
         updated_at: new Date(),
       };
 
-      jest.spyOn(prisma.subscription, 'delete').mockResolvedValue(mockDeletedSubscription);
+      jest
+        .spyOn(prisma.subscription, 'delete')
+        .mockResolvedValue(mockDeletedSubscription);
 
       const result = await service.delete('sub-123');
 

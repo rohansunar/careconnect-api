@@ -12,7 +12,10 @@ import { JsonPaymentModeRepository } from '../../services/payment-mode/payment-m
 import { SubscriptionValidationService } from '../../services/subscription-validation.service';
 import { CreateSubscriptionDto } from '../../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../../dto/update-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../../common/interfaces/user.interface';
 
 describe('Subscription Integration Tests', () => {
@@ -52,12 +55,18 @@ describe('Subscription Integration Tests', () => {
     app = module.createNestApplication();
     await app.init();
 
-    customerSubscriptionService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
+    customerSubscriptionService = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
     prisma = module.get<PrismaService>(PrismaService);
 
     // Mock validation to bypass DB checks
-    const validationService = module.get<SubscriptionValidationService>(SubscriptionValidationService);
-    jest.spyOn(validationService, 'validateInputs').mockResolvedValue({ isValid: true });
+    const validationService = module.get<SubscriptionValidationService>(
+      SubscriptionValidationService,
+    );
+    jest
+      .spyOn(validationService, 'validateInputs')
+      .mockResolvedValue({ isValid: true });
 
     // Mock prisma for address and product checks
     jest.spyOn(prisma.customerAddress, 'findFirst').mockResolvedValue({
@@ -87,7 +96,10 @@ describe('Subscription Integration Tests', () => {
         custom_days: [],
       };
 
-      const result = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const result = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
@@ -107,7 +119,8 @@ describe('Subscription Integration Tests', () => {
     });
 
     it('should retrieve subscriptions from database', async () => {
-      const result = await customerSubscriptionService.getMySubscriptions(mockUser);
+      const result =
+        await customerSubscriptionService.getMySubscriptions(mockUser);
 
       expect(result).toBeDefined();
       expect(result.subscriptions).toBeInstanceOf(Array);
@@ -125,7 +138,10 @@ describe('Subscription Integration Tests', () => {
         custom_days: [],
       };
 
-      const created = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const created = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       const updateDto: UpdateSubscriptionDto = {
         quantity: 3,
@@ -134,7 +150,11 @@ describe('Subscription Integration Tests', () => {
         start_date: new Date('2026-02-15'),
       };
 
-      const updated = await customerSubscriptionService.updateMySubscription(created.id, updateDto, mockUser);
+      const updated = await customerSubscriptionService.updateMySubscription(
+        created.id,
+        updateDto,
+        mockUser,
+      );
 
       expect(updated).toBeDefined();
       expect(updated.quantity).toBe(updateDto.quantity);
@@ -158,9 +178,15 @@ describe('Subscription Integration Tests', () => {
         custom_days: [],
       };
 
-      const created = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const created = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
-      const deleted = await customerSubscriptionService.deleteMySubscription(created.id, mockUser);
+      const deleted = await customerSubscriptionService.deleteMySubscription(
+        created.id,
+        mockUser,
+      );
 
       expect(deleted).toBeDefined();
 
@@ -182,7 +208,10 @@ describe('Subscription Integration Tests', () => {
         custom_days: [DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY],
       };
 
-      const result = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const result = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
@@ -206,7 +235,10 @@ describe('Subscription Integration Tests', () => {
         custom_days: [],
       };
 
-      const result = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const result = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.total_price).toBeGreaterThan(0);
@@ -221,7 +253,10 @@ describe('Subscription Integration Tests', () => {
         custom_days: [],
       };
 
-      const result = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const result = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       expect(result).toBeDefined();
       expect(result.payment_mode).toBeDefined();

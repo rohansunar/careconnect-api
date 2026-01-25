@@ -278,9 +278,9 @@ describe('LocationService (Integration)', () => {
     });
 
     it('should throw NotFoundException if location does not exist', async () => {
-      await expect(service.toggleServiceable('non-existent-id')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.toggleServiceable('non-existent-id'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -333,9 +333,9 @@ describe('LocationService (Integration)', () => {
         lng: 'invalid',
       };
 
-      await expect(service.findOrCreateLocation(invalidData as any)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.findOrCreateLocation(invalidData as any),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

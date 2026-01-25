@@ -7,7 +7,10 @@ import { AdminSubscriptionController } from '../../controllers/admin-subscriptio
 import { AdminSubscriptionService } from '../../services/admin-subscription.service';
 import { CreateSubscriptionDto } from '../../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../../dto/update-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../../common/interfaces/user.interface';
 
 describe('Controller Integration Tests', () => {
@@ -31,7 +34,10 @@ describe('Controller Integration Tests', () => {
 
   beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [CustomerSubscriptionController, AdminSubscriptionController],
+      controllers: [
+        CustomerSubscriptionController,
+        AdminSubscriptionController,
+      ],
       providers: [
         {
           provide: CustomerSubscriptionService,
@@ -57,10 +63,18 @@ describe('Controller Integration Tests', () => {
     app = module.createNestApplication();
     await app.init();
 
-    customerController = module.get<CustomerSubscriptionController>(CustomerSubscriptionController);
-    adminController = module.get<AdminSubscriptionController>(AdminSubscriptionController);
-    customerService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
-    adminService = module.get<AdminSubscriptionService>(AdminSubscriptionService);
+    customerController = module.get<CustomerSubscriptionController>(
+      CustomerSubscriptionController,
+    );
+    adminController = module.get<AdminSubscriptionController>(
+      AdminSubscriptionController,
+    );
+    customerService = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
+    adminService = module.get<AdminSubscriptionService>(
+      AdminSubscriptionService,
+    );
   });
 
   afterAll(async () => {
@@ -88,12 +102,20 @@ describe('Controller Integration Tests', () => {
         },
       };
 
-      jest.spyOn(customerService, 'createSubscription').mockResolvedValue(mockResult);
+      jest
+        .spyOn(customerService, 'createSubscription')
+        .mockResolvedValue(mockResult);
 
-      const result = await customerController.createSubscription(mockUser, mockDto);
+      const result = await customerController.createSubscription(
+        mockUser,
+        mockDto,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.createSubscription).toHaveBeenCalledWith(mockUser, mockDto);
+      expect(customerService.createSubscription).toHaveBeenCalledWith(
+        mockUser,
+        mockDto,
+      );
     });
 
     it('should get subscriptions and return paginated result', async () => {
@@ -129,10 +151,20 @@ describe('Controller Integration Tests', () => {
         })),
       });
 
-      const result = await customerController.getMySubscriptions(mockUser, ['ACTIVE'], '1', '10');
+      const result = await customerController.getMySubscriptions(
+        mockUser,
+        ['ACTIVE'],
+        '1',
+        '10',
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.getMySubscriptions).toHaveBeenCalledWith(mockUser, ['ACTIVE'], 1, 10);
+      expect(customerService.getMySubscriptions).toHaveBeenCalledWith(
+        mockUser,
+        ['ACTIVE'],
+        1,
+        10,
+      );
     });
 
     it('should get subscription by ID', async () => {
@@ -157,10 +189,16 @@ describe('Controller Integration Tests', () => {
         endDate: undefined,
       });
 
-      const result = await customerController.getMySubscription('sub1', mockUser);
+      const result = await customerController.getMySubscription(
+        'sub1',
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.getMySubscription).toHaveBeenCalledWith('sub1', mockUser);
+      expect(customerService.getMySubscription).toHaveBeenCalledWith(
+        'sub1',
+        mockUser,
+      );
     });
 
     it('should update subscription', async () => {
@@ -192,10 +230,18 @@ describe('Controller Integration Tests', () => {
         endDate: undefined,
       });
 
-      const result = await customerController.updateMySubscription('sub1', mockDto, mockUser);
+      const result = await customerController.updateMySubscription(
+        'sub1',
+        mockDto,
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.updateMySubscription).toHaveBeenCalledWith('sub1', mockDto, mockUser);
+      expect(customerService.updateMySubscription).toHaveBeenCalledWith(
+        'sub1',
+        mockDto,
+        mockUser,
+      );
     });
 
     it('should toggle subscription status', async () => {
@@ -215,15 +261,23 @@ describe('Controller Integration Tests', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(customerService, 'toggleSubscriptionStatus').mockResolvedValue({
-        ...mockResult,
-        endDate: undefined,
-      });
+      jest
+        .spyOn(customerService, 'toggleSubscriptionStatus')
+        .mockResolvedValue({
+          ...mockResult,
+          endDate: undefined,
+        });
 
-      const result = await customerController.toggleSubscriptionStatus('sub1', mockUser);
+      const result = await customerController.toggleSubscriptionStatus(
+        'sub1',
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.toggleSubscriptionStatus).toHaveBeenCalledWith('sub1', mockUser);
+      expect(customerService.toggleSubscriptionStatus).toHaveBeenCalledWith(
+        'sub1',
+        mockUser,
+      );
     });
 
     it('should delete subscription', async () => {
@@ -248,10 +302,16 @@ describe('Controller Integration Tests', () => {
         endDate: undefined,
       });
 
-      const result = await customerController.deleteMySubscription('sub1', mockUser);
+      const result = await customerController.deleteMySubscription(
+        'sub1',
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(customerService.deleteMySubscription).toHaveBeenCalledWith('sub1', mockUser);
+      expect(customerService.deleteMySubscription).toHaveBeenCalledWith(
+        'sub1',
+        mockUser,
+      );
     });
   });
 
@@ -262,7 +322,9 @@ describe('Controller Integration Tests', () => {
         payment_mode: 'POST_DELIVERY',
       };
 
-      jest.spyOn(adminService, 'togglePaymentMode').mockResolvedValue(mockResult);
+      jest
+        .spyOn(adminService, 'togglePaymentMode')
+        .mockResolvedValue(mockResult);
 
       const result = await adminController.togglePaymentMode();
 

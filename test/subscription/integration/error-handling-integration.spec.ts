@@ -12,9 +12,17 @@ import { SubscriptionValidationService } from '../../services/subscription-valid
 import { PrismaService } from '../../../common/database/prisma.service';
 import { CreateSubscriptionDto } from '../../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../../dto/update-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../../common/interfaces/user.interface';
-import { NotFoundException, ForbiddenException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 
 describe('Error Handling Integration Tests', () => {
   let app: INestApplication;
@@ -56,7 +64,9 @@ describe('Error Handling Integration Tests', () => {
     app = module.createNestApplication();
     await app.init();
 
-    customerSubscriptionService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
+    customerSubscriptionService = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
   });
 
   afterAll(async () => {
@@ -103,7 +113,9 @@ describe('Error Handling Integration Tests', () => {
         await customerSubscriptionService.createSubscription(mockUser, mockDto);
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
-        expect(error.message).toContain('Product not found or cannot be subscribed');
+        expect(error.message).toContain(
+          'Product not found or cannot be subscribed',
+        );
       }
     });
 
@@ -159,36 +171,45 @@ describe('Error Handling Integration Tests', () => {
         is_schedulable: true,
       } as any);
 
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
-      jest.spyOn(subscriptionRepository, 'findByCustomerAndProduct').mockResolvedValue([
-        {
-          id: 'existing-sub',
-          customerId: 'address-123', // note: it's customerAddress.id
-          productId: mockDto.productId,
-          quantity: 1,
-          price: 100,
-          frequency: SubscriptionFrequency.DAILY,
-          customDays: [],
-          startDate: new Date(),
-          nextDeliveryDate: new Date(),
-          endDate: undefined,
-          status: 'ACTIVE',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ]);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
+      jest
+        .spyOn(subscriptionRepository, 'findByCustomerAndProduct')
+        .mockResolvedValue([
+          {
+            id: 'existing-sub',
+            customerId: 'address-123', // note: it's customerAddress.id
+            productId: mockDto.productId,
+            quantity: 1,
+            price: 100,
+            frequency: SubscriptionFrequency.DAILY,
+            customDays: [],
+            startDate: new Date(),
+            nextDeliveryDate: new Date(),
+            endDate: undefined,
+            status: 'ACTIVE',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ]);
 
       try {
         await customerSubscriptionService.createSubscription(mockUser, mockDto);
       } catch (error) {
         expect(error).toBeInstanceOf(ConflictException);
-        expect(error.message).toContain('A subscription for this product already exists');
+        expect(error.message).toContain(
+          'A subscription for this product already exists',
+        );
       }
     });
 
     it('should throw NotFoundException when subscription not found', async () => {
       try {
-        await customerSubscriptionService.getMySubscription('non-existent-sub', mockUser);
+        await customerSubscriptionService.getMySubscription(
+          'non-existent-sub',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
         expect(error.message).toContain('Subscription not found');
@@ -196,7 +217,9 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw ForbiddenException when user does not own subscription', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue({
         id: 'sub-123',
         customerId: 'other-user',
@@ -214,7 +237,10 @@ describe('Error Handling Integration Tests', () => {
       });
 
       try {
-        await customerSubscriptionService.getMySubscription('sub-123', mockUser);
+        await customerSubscriptionService.getMySubscription(
+          'sub-123',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toContain('Access denied');
@@ -229,11 +255,17 @@ describe('Error Handling Integration Tests', () => {
         start_date: new Date('2026-01-15'),
       };
 
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue(null);
 
       try {
-        await customerSubscriptionService.updateMySubscription('non-existent-sub', updateDto, mockUser);
+        await customerSubscriptionService.updateMySubscription(
+          'non-existent-sub',
+          updateDto,
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
         expect(error.message).toContain('Subscription not found');
@@ -241,7 +273,9 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw ForbiddenException when user does not own subscription being updated', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue({
         id: 'sub-123',
         customerId: 'other-user',
@@ -266,7 +300,11 @@ describe('Error Handling Integration Tests', () => {
       };
 
       try {
-        await customerSubscriptionService.updateMySubscription('sub-123', updateDto, mockUser);
+        await customerSubscriptionService.updateMySubscription(
+          'sub-123',
+          updateDto,
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toContain('Access denied');
@@ -274,11 +312,16 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw NotFoundException when toggling non-existent subscription', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue(null);
 
       try {
-        await customerSubscriptionService.toggleSubscriptionStatus('non-existent-sub', mockUser);
+        await customerSubscriptionService.toggleSubscriptionStatus(
+          'non-existent-sub',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
         expect(error.message).toContain('Subscription not found');
@@ -286,7 +329,9 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw ForbiddenException when user does not own subscription being toggled', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue({
         id: 'sub-123',
         customerId: 'other-user',
@@ -304,7 +349,10 @@ describe('Error Handling Integration Tests', () => {
       });
 
       try {
-        await customerSubscriptionService.toggleSubscriptionStatus('sub-123', mockUser);
+        await customerSubscriptionService.toggleSubscriptionStatus(
+          'sub-123',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toContain('Access denied');
@@ -312,11 +360,16 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw NotFoundException when deleting non-existent subscription', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue(null);
 
       try {
-        await customerSubscriptionService.deleteMySubscription('non-existent-sub', mockUser);
+        await customerSubscriptionService.deleteMySubscription(
+          'non-existent-sub',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(NotFoundException);
         expect(error.message).toContain('Subscription not found');
@@ -324,7 +377,9 @@ describe('Error Handling Integration Tests', () => {
     });
 
     it('should throw ForbiddenException when user does not own subscription being deleted', async () => {
-      const subscriptionRepository = module.get<SubscriptionRepositoryService>(SubscriptionRepositoryService);
+      const subscriptionRepository = module.get<SubscriptionRepositoryService>(
+        SubscriptionRepositoryService,
+      );
       jest.spyOn(subscriptionRepository, 'findById').mockResolvedValue({
         id: 'sub-123',
         customerId: 'other-user',
@@ -342,7 +397,10 @@ describe('Error Handling Integration Tests', () => {
       });
 
       try {
-        await customerSubscriptionService.deleteMySubscription('sub-123', mockUser);
+        await customerSubscriptionService.deleteMySubscription(
+          'sub-123',
+          mockUser,
+        );
       } catch (error) {
         expect(error).toBeInstanceOf(ForbiddenException);
         expect(error.message).toContain('Access denied');

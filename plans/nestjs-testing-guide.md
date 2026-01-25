@@ -259,3 +259,226 @@ jobs:
 ---
 
 End of Guide.
+
+
+---
+
+# 📊 Test Coverage Reporting
+
+### Update jest configs
+
+Add coverage settings in **jest.unit.json** and **jest.integration.json**:
+
+```json
+"collectCoverage": true,
+"coverageReporters": ["text", "lcov", "html"],
+"coverageDirectory": "./coverage"
+```
+
+### Run coverage
+
+```bash
+npm run test:unit -- --coverage
+```
+
+### View report
+
+Open:
+```
+coverage/lcov-report/index.html
+```
+
+🎯 **Target:** Minimum 80% coverage (focus on logic, not boilerplate)
+
+---
+
+# 🐳 Docker Setup for NestJS App
+
+### Dockerfile
+
+```Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+CMD ["node", "dist/main.js"]
+```
+
+---
+
+# 🗄️ Docker Compose (App + Database)
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app_db
+    ports:
+      - "5432:5432"
+```
+
+Run app:
+```bash
+docker-compose up --build
+```
+
+---
+
+# 🧪 Docker Test Database Setup
+
+Use a **separate DB** for integration/E2E tests.
+
+### docker-compose.test.yml
+
+```yaml
+version: '3.8'
+
+services:
+  test-db:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"
+```
+
+Run test DB:
+```bash
+docker-compose -f docker-compose.test.yml up -d
+```
+
+### .env.test
+
+```
+DATABASE_URL=postgresql://test:test@localhost:5433/test_db
+```
+
+---
+
+# 🌱 Seed Script for Integration Tests
+
+### prisma/seed.ts (Prisma Example)
+
+```ts
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  await prisma.user.create({
+    data: {
+      email: 'seed@test.com',
+      name: 'Seed User',
+    },
+  });
+}
+
+main()
+  .catch(e => console.error(e))
+  .finally(async () => await prisma.$disconnect());
+```
+
+Run seed before tests:
+
+```bash
+npx prisma db push
+npx ts-node prisma/seed.ts
+```
+
+---
+
+# 🔁 Auto-Seed in Integration Tests
+
+```ts
+beforeAll(async () => {
+  await seedTestDatabase(); // custom function calling seed logic
+});
+```
+
+---
+
+# 🧼 Test DB Cleanup After Tests
+
+```ts
+afterAll(async () => {
+  await prisma.$executeRawUnsafe(`TRUNCATE TABLE "User" RESTART IDENTITY CASCADE;`);
+  await prisma.$disconnect();
+});
+```
+
+---
+
+# 🧠 TypeORM Seed Example
+
+```ts
+import { DataSource } from 'typeorm';
+import { User } from '../users/user.entity';
+
+export async function seed(dataSource: DataSource) {
+  const repo = dataSource.getRepository(User);
+  await repo.save({ name: 'Seed User', email: 'seed@test.com' });
+}
+```
+
+---
+
+# 🧪 CI Update to Include Test DB
+
+Update GitHub Actions:
+
+```yaml
+services:
+  postgres:
+    image: postgres:14
+    env:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_db
+    ports:
+      - 5432:5432
+```
+
+And add:
+
+```yaml
+- run: npx prisma db push
+- run: npx ts-node prisma/seed.ts
+```
+
+---
+
+# 🏁 You Now Have
+
+✅ Coverage reporting  
+✅ Dockerized app  
+✅ Dockerized test database  
+✅ Seed scripts for reliable integration tests  
+✅ CI running tests with real DB  
+
+Your NestJS backend is now **production-grade testing ready** 🚀

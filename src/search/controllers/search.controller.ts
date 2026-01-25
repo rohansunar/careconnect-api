@@ -13,36 +13,36 @@ export class SearchController {
 
   /**
    * Proximity-based product search endpoint
-    * Business logic rationale: Provide customers with ability to search products by proximity
-    * Security consideration: Customer authentication required
-    * Design decision: Supports pagination for proximity search
-    */
-   @ApiOperation({
-     summary: 'Search products by proximity',
-     description:
-       "Search products based on proximity to customer's location, with pagination.",
-   })
-   @ApiResponse({
-     status: 200,
-     description:
-       'Proximity search results with products (including distances) and pagination information.',
-   })
-   @ApiResponse({
-     status: 400,
-     description: 'Invalid input parameters',
-   })
-   @ApiResponse({
+   * Business logic rationale: Provide customers with ability to search products by proximity
+   * Security consideration: Customer authentication required
+   * Design decision: Supports pagination for proximity search
+   */
+  @ApiOperation({
+    summary: 'Search products by proximity',
+    description:
+      "Search products based on proximity to customer's location, with pagination.",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Proximity search results with products (including distances) and pagination information.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input parameters',
+  })
+  @ApiResponse({
     status: 404,
     description: 'CUSTOMER_NOT_FOUND',
-   })
-   @ApiResponse({
-     status: 404,
-     description: 'CUSTOMER_ADDRESS_NOT_FOUND',
-   })
-   @ApiResponse({
-     status: 503,
-     description: 'SERVICE_UNAVAILABLE',
-   })
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'CUSTOMER_ADDRESS_NOT_FOUND',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'SERVICE_UNAVAILABLE',
+  })
   @ApiQuery({
     name: 'page',
     required: false,

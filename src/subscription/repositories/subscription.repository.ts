@@ -153,7 +153,9 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
   private mapToSubscription(prismaSubscription: any): Subscription {
     return {
       id: prismaSubscription.id,
-      customerId: prismaSubscription.customerAddress?.customerId || prismaSubscription.customerAddressId,
+      customerId:
+        prismaSubscription.customerAddress?.customerId ||
+        prismaSubscription.customerAddressId,
       productId: prismaSubscription.productId,
       quantity: prismaSubscription.quantity,
       price: prismaSubscription.total_price,

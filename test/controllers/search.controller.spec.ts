@@ -54,7 +54,10 @@ describe('SearchController', () => {
       const result = await controller.searchProducts(queryDto, mockCustomer);
 
       expect(result).toEqual(mockResult);
-      expect(mockSearchService.searchProducts).toHaveBeenCalledWith(queryDto, mockCustomer);
+      expect(mockSearchService.searchProducts).toHaveBeenCalledWith(
+        queryDto,
+        mockCustomer,
+      );
     });
   });
 });

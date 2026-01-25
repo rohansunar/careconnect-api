@@ -3,7 +3,10 @@ import { CustomerSubscriptionController } from '../controllers/customer-subscrip
 import { CustomerSubscriptionService } from '../services/customer-subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../common/interfaces/user.interface';
 
 describe('CustomerSubscriptionController', () => {
@@ -40,8 +43,12 @@ describe('CustomerSubscriptionController', () => {
       ],
     }).compile();
 
-    controller = module.get<CustomerSubscriptionController>(CustomerSubscriptionController);
-    service = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
+    controller = module.get<CustomerSubscriptionController>(
+      CustomerSubscriptionController,
+    );
+    service = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
   });
 
   describe('createSubscription', () => {
@@ -70,7 +77,10 @@ describe('CustomerSubscriptionController', () => {
       const result = await controller.createSubscription(mockUser, mockDto);
 
       expect(result).toEqual(mockResult);
-      expect(service.createSubscription).toHaveBeenCalledWith(mockUser, mockDto);
+      expect(service.createSubscription).toHaveBeenCalledWith(
+        mockUser,
+        mockDto,
+      );
     });
   });
 
@@ -117,10 +127,20 @@ describe('CustomerSubscriptionController', () => {
 
       jest.spyOn(service, 'getMySubscriptions').mockResolvedValue(mockResult);
 
-      const result = await controller.getMySubscriptions(mockUser, ['ACTIVE'], '1', '10');
+      const result = await controller.getMySubscriptions(
+        mockUser,
+        ['ACTIVE'],
+        '1',
+        '10',
+      );
 
       expect(result).toEqual(mockResult);
-      expect(service.getMySubscriptions).toHaveBeenCalledWith(mockUser, ['ACTIVE'], 1, 10);
+      expect(service.getMySubscriptions).toHaveBeenCalledWith(
+        mockUser,
+        ['ACTIVE'],
+        1,
+        10,
+      );
     });
   });
 
@@ -178,10 +198,18 @@ describe('CustomerSubscriptionController', () => {
 
       jest.spyOn(service, 'updateMySubscription').mockResolvedValue(mockResult);
 
-      const result = await controller.updateMySubscription('sub1', mockDto, mockUser);
+      const result = await controller.updateMySubscription(
+        'sub1',
+        mockDto,
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(service.updateMySubscription).toHaveBeenCalledWith('sub1', mockDto, mockUser);
+      expect(service.updateMySubscription).toHaveBeenCalledWith(
+        'sub1',
+        mockDto,
+        mockUser,
+      );
     });
   });
 
@@ -203,12 +231,20 @@ describe('CustomerSubscriptionController', () => {
         updatedAt: new Date(),
       };
 
-      jest.spyOn(service, 'toggleSubscriptionStatus').mockResolvedValue(mockResult);
+      jest
+        .spyOn(service, 'toggleSubscriptionStatus')
+        .mockResolvedValue(mockResult);
 
-      const result = await controller.toggleSubscriptionStatus('sub1', mockUser);
+      const result = await controller.toggleSubscriptionStatus(
+        'sub1',
+        mockUser,
+      );
 
       expect(result).toEqual(mockResult);
-      expect(service.toggleSubscriptionStatus).toHaveBeenCalledWith('sub1', mockUser);
+      expect(service.toggleSubscriptionStatus).toHaveBeenCalledWith(
+        'sub1',
+        mockUser,
+      );
     });
   });
 
@@ -235,7 +271,10 @@ describe('CustomerSubscriptionController', () => {
       const result = await controller.deleteMySubscription('sub1', mockUser);
 
       expect(result).toEqual(mockResult);
-      expect(service.deleteMySubscription).toHaveBeenCalledWith('sub1', mockUser);
+      expect(service.deleteMySubscription).toHaveBeenCalledWith(
+        'sub1',
+        mockUser,
+      );
     });
   });
 });

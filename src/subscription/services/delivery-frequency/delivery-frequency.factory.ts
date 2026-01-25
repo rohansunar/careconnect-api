@@ -16,9 +16,7 @@ import { CustomFrequencyService } from './custom-frequency.service';
  * Implements the factory pattern to create appropriate strategy instances.
  */
 @Injectable()
-export class DeliveryFrequencyFactoryService
-  implements DeliveryFrequencyFactory
-{
+export class DeliveryFrequencyFactoryService implements DeliveryFrequencyFactory {
   constructor() {}
 
   /**

@@ -43,7 +43,10 @@ describe('Authentication and Authorization Integration Tests', () => {
 
   beforeAll(async () => {
     module = await Test.createTestingModule({
-      controllers: [CustomerSubscriptionController, AdminSubscriptionController],
+      controllers: [
+        CustomerSubscriptionController,
+        AdminSubscriptionController,
+      ],
       providers: [
         {
           provide: CustomerSubscriptionService,
@@ -67,7 +70,9 @@ describe('Authentication and Authorization Integration Tests', () => {
           provide: JwtService,
           useValue: {
             sign: jest.fn().mockReturnValue('mock-jwt-token'),
-            verify: jest.fn().mockReturnValue({ userId: 'user-123', role: UserRole.CUSTOMER }),
+            verify: jest
+              .fn()
+              .mockReturnValue({ userId: 'user-123', role: UserRole.CUSTOMER }),
           },
         },
         {
@@ -84,8 +89,12 @@ describe('Authentication and Authorization Integration Tests', () => {
     app = module.createNestApplication();
     await app.init();
 
-    customerController = (module as any).get<CustomerSubscriptionController>(CustomerSubscriptionController);
-    adminController = (module as any).get<AdminSubscriptionController>(AdminSubscriptionController);
+    customerController = (module as any).get<CustomerSubscriptionController>(
+      CustomerSubscriptionController,
+    );
+    adminController = (module as any).get<AdminSubscriptionController>(
+      AdminSubscriptionController,
+    );
     jwtService = (module as any).get<JwtService>(JwtService);
   });
 
@@ -114,8 +123,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         },
       };
 
-      const customerService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
-      jest.spyOn(customerService, 'createSubscription').mockResolvedValue(mockResult);
+      const customerService = module.get<CustomerSubscriptionService>(
+        CustomerSubscriptionService,
+      );
+      jest
+        .spyOn(customerService, 'createSubscription')
+        .mockResolvedValue(mockResult);
 
       const result = await customerController.createSubscription(mockUser, {
         ...mockDto,
@@ -134,8 +147,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         custom_days: [],
       };
 
-      const customerService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
-      jest.spyOn(customerService, 'createSubscription').mockResolvedValue({} as any);
+      const customerService = module.get<CustomerSubscriptionService>(
+        CustomerSubscriptionService,
+      );
+      jest
+        .spyOn(customerService, 'createSubscription')
+        .mockResolvedValue({} as any);
 
       try {
         await customerController.createSubscription(mockUser, {
@@ -155,8 +172,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         payment_mode: 'POST_DELIVERY',
       };
 
-      const adminService = module.get<AdminSubscriptionService>(AdminSubscriptionService);
-      jest.spyOn(adminService, 'togglePaymentMode').mockResolvedValue(mockResult);
+      const adminService = module.get<AdminSubscriptionService>(
+        AdminSubscriptionService,
+      );
+      jest
+        .spyOn(adminService, 'togglePaymentMode')
+        .mockResolvedValue(mockResult);
 
       const result = await adminController.togglePaymentMode();
 
@@ -164,8 +185,12 @@ describe('Authentication and Authorization Integration Tests', () => {
     });
 
     it('should deny access to admin endpoints without proper authorization', async () => {
-      const adminService = module.get<AdminSubscriptionService>(AdminSubscriptionService);
-      jest.spyOn(adminService, 'togglePaymentMode').mockResolvedValue({} as any);
+      const adminService = module.get<AdminSubscriptionService>(
+        AdminSubscriptionService,
+      );
+      jest
+        .spyOn(adminService, 'togglePaymentMode')
+        .mockResolvedValue({} as any);
 
       try {
         await adminController.togglePaymentMode();
@@ -177,8 +202,12 @@ describe('Authentication and Authorization Integration Tests', () => {
 
   describe('Authorization Tests', () => {
     it('should deny customer access to admin endpoints', async () => {
-      const adminService = module.get<AdminSubscriptionService>(AdminSubscriptionService);
-      jest.spyOn(adminService, 'togglePaymentMode').mockResolvedValue({} as any);
+      const adminService = module.get<AdminSubscriptionService>(
+        AdminSubscriptionService,
+      );
+      jest
+        .spyOn(adminService, 'togglePaymentMode')
+        .mockResolvedValue({} as any);
 
       try {
         await adminController.togglePaymentMode();
@@ -196,8 +225,12 @@ describe('Authentication and Authorization Integration Tests', () => {
         custom_days: [],
       };
 
-      const customerService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
-      jest.spyOn(customerService, 'createSubscription').mockResolvedValue({} as any);
+      const customerService = module.get<CustomerSubscriptionService>(
+        CustomerSubscriptionService,
+      );
+      jest
+        .spyOn(customerService, 'createSubscription')
+        .mockResolvedValue({} as any);
 
       try {
         await customerController.createSubscription(mockAdminUser, {
@@ -212,7 +245,10 @@ describe('Authentication and Authorization Integration Tests', () => {
 
   describe('JWT Token Tests', () => {
     it('should generate valid JWT token for authenticated user', () => {
-      const token = jwtService.sign({ userId: mockUser.id, role: mockUser.role });
+      const token = jwtService.sign({
+        userId: mockUser.id,
+        role: mockUser.role,
+      });
       expect(token).toBe('mock-jwt-token');
     });
 

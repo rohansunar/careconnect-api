@@ -107,7 +107,9 @@ describe('VendorAddressService', () => {
 
       const result = await service.create(vendorId, createDto);
 
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(expect.stringContaining('ST_MakePoint'));
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint'),
+      );
       expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
         expect.stringContaining('ST_MakePoint(72.8777, 19.076)::geography'),
       );
@@ -135,7 +137,9 @@ describe('VendorAddressService', () => {
       const result = await service.create(vendorId, createDto);
 
       expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
-        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+        expect.stringContaining(
+          'ST_MakePoint(72.877654, 19.076543)::geography',
+        ),
       );
       expect(result).toEqual([{ id: 'new-address-id' }]);
     });
@@ -180,9 +184,9 @@ describe('VendorAddressService', () => {
         address: '123 Main Street',
       };
 
-      await expect(
-        service.create(vendorId, invalidDto as any),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.create(vendorId, invalidDto as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -330,7 +334,9 @@ describe('VendorAddressService', () => {
       const result = await service.updateAddress(vendorId, updateDto);
 
       expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
-        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+        expect.stringContaining(
+          'ST_MakePoint(72.877654, 19.076543)::geography',
+        ),
       );
       expect(result).toEqual(mockUpdatedAddress);
     });
@@ -426,7 +432,9 @@ describe('VendorAddressService', () => {
 
       mockPrismaService.vendorAddress.findUnique.mockResolvedValue(null);
 
-      await expect(service.getAddressByVendorIdWithLocation(vendorId)).rejects.toThrow(NotFoundException);
+      await expect(
+        service.getAddressByVendorIdWithLocation(vendorId),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -461,5 +469,4 @@ describe('VendorAddressService', () => {
       );
     });
   });
-
 });

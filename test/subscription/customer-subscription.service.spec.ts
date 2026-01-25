@@ -171,7 +171,8 @@ describe('CustomerSubscriptionService', () => {
     deliveryFrequencyService = module.get<DeliveryFrequencyService>(
       DeliveryFrequencyService,
     );
-    mockValidateInputs = module.get(SubscriptionValidationService).validateInputs as jest.Mock;
+    mockValidateInputs = module.get(SubscriptionValidationService)
+      .validateInputs as jest.Mock;
   });
 
   describe('createSubscription', () => {

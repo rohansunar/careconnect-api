@@ -24,7 +24,10 @@ describe('CustomerAddressService', () => {
     },
     customer: {
       findFirst: jest.fn().mockImplementation((args) => {
-        console.log('customer.findFirst called with:', JSON.stringify(args, null, 2));
+        console.log(
+          'customer.findFirst called with:',
+          JSON.stringify(args, null, 2),
+        );
         return Promise.resolve({ id: args.where.id });
       }),
       findUnique: jest.fn(),
@@ -274,7 +277,9 @@ describe('CustomerAddressService', () => {
 
       const result = await service.create(customerId, createDto);
 
-      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(expect.stringContaining('ST_MakePoint'));
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint'),
+      );
       expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
         expect.stringContaining('ST_MakePoint(72.8777, 19.076)::geography'),
       );
@@ -307,7 +312,9 @@ describe('CustomerAddressService', () => {
       const result = await service.create(customerId, createDto);
 
       expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
-        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+        expect.stringContaining(
+          'ST_MakePoint(72.877654, 19.076543)::geography',
+        ),
       );
       expect(result).toEqual([{ id: 'new-address-id' }]);
     });
@@ -347,7 +354,6 @@ describe('CustomerAddressService', () => {
       );
       expect(result).toEqual([{ id: 'new-address-id' }]);
     });
-
 
     it('should throw BadRequestException if latitude and longitude are missing', async () => {
       const customerId = 'customer-id';
@@ -616,5 +622,4 @@ describe('CustomerAddressService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
-
 });

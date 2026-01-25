@@ -21,7 +21,9 @@ describe('AdminSubscriptionController', () => {
       ],
     }).compile();
 
-    controller = module.get<AdminSubscriptionController>(AdminSubscriptionController);
+    controller = module.get<AdminSubscriptionController>(
+      AdminSubscriptionController,
+    );
     service = module.get<AdminSubscriptionService>(AdminSubscriptionService);
   });
 

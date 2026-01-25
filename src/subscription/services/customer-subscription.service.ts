@@ -62,7 +62,7 @@ export class CustomerSubscriptionService {
 
     const customerAddress = await this.prisma.customerAddress.findFirst({
       where: { customerId: user.id, is_active: true, isDefault: true },
-      include:{customer:true}
+      include: { customer: true },
     });
 
     if (!customerAddress) {
@@ -103,24 +103,24 @@ export class CustomerSubscriptionService {
 
     const paymentMode = this.paymentModeService.getCurrentMode();
 
-    // let existingSubscription;
-    // try {
-    //   existingSubscription =
-    //     await this.subscriptionRepository.findByCustomerAndProduct(
-    //       user.id,
-    //       dto.productId,
-    //     );
-    // } catch (error) {
-    //   throw new InternalServerErrorException(
-    //     'Failed to check for duplicate subscription',
-    //   );
-    // }
+    let existingSubscription;
+    try {
+      existingSubscription =
+        await this.subscriptionRepository.findByCustomerAndProduct(
+          user.id,
+          dto.productId,
+        );
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to check for duplicate subscription',
+      );
+    }
 
-    // if (existingSubscription && existingSubscription.length > 0) {
-    //   throw new ConflictException(
-    //     'A subscription for this product already exists for this customer address.',
-    //   );
-    // }
+    if (existingSubscription && existingSubscription.length > 0) {
+      throw new ConflictException(
+        'A subscription for this product already exists for this customer address.',
+      );
+    }
 
     const createdSubscription = await this.subscriptionRepository.create({
       customerId: customerAddress.id,

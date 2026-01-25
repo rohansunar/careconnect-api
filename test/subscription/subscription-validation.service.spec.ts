@@ -3,7 +3,10 @@ import { SubscriptionValidationService } from '../services/subscription-validati
 import { PrismaService } from '../../common/database/prisma.service';
 import { DeliveryFrequencyService } from '../services/delivery-frequency.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../common/interfaces/user.interface';
 
 describe('SubscriptionValidationService', () => {
@@ -55,9 +58,13 @@ describe('SubscriptionValidationService', () => {
       ],
     }).compile();
 
-    service = module.get<SubscriptionValidationService>(SubscriptionValidationService);
+    service = module.get<SubscriptionValidationService>(
+      SubscriptionValidationService,
+    );
     prisma = module.get<PrismaService>(PrismaService);
-    deliveryFrequencyService = module.get<DeliveryFrequencyService>(DeliveryFrequencyService);
+    deliveryFrequencyService = module.get<DeliveryFrequencyService>(
+      DeliveryFrequencyService,
+    );
   });
 
   describe('validateInputs', () => {
@@ -82,9 +89,15 @@ describe('SubscriptionValidationService', () => {
         is_schedulable: true,
       };
 
-      jest.spyOn(prisma.customerAddress, 'findFirst').mockResolvedValue(mockCustomerAddress as any);
-      jest.spyOn(prisma.product, 'findUnique').mockResolvedValue(mockProduct as any);
-      jest.spyOn(deliveryFrequencyService, 'validateFrequency').mockReturnValue(undefined);
+      jest
+        .spyOn(prisma.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress as any);
+      jest
+        .spyOn(prisma.product, 'findUnique')
+        .mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(deliveryFrequencyService, 'validateFrequency')
+        .mockReturnValue(undefined);
 
       const result = await service.validateInputs(mockDto, mockUser);
 
@@ -96,7 +109,10 @@ describe('SubscriptionValidationService', () => {
 
       const result = await service.validateInputs(mockDto, mockUser);
 
-      expect(result).toEqual({ isValid: false, errors: ['Customer Address not found'] });
+      expect(result).toEqual({
+        isValid: false,
+        errors: ['Customer Address not found'],
+      });
     });
 
     it('should return invalid result when product is not found', async () => {
@@ -114,12 +130,17 @@ describe('SubscriptionValidationService', () => {
         isServiceable: true,
       };
 
-      jest.spyOn(prisma.customerAddress, 'findFirst').mockResolvedValue(mockCustomerAddress as any);
+      jest
+        .spyOn(prisma.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress as any);
       jest.spyOn(prisma.product, 'findUnique').mockResolvedValue(null);
 
       const result = await service.validateInputs(mockDto, mockUser);
 
-      expect(result).toEqual({ isValid: false, errors: ['Product not found or cannot be subscribed'] });
+      expect(result).toEqual({
+        isValid: false,
+        errors: ['Product not found or cannot be subscribed'],
+      });
     });
 
     it('should return invalid result when product is not subscribable', async () => {
@@ -143,12 +164,19 @@ describe('SubscriptionValidationService', () => {
         is_schedulable: false,
       };
 
-      jest.spyOn(prisma.customerAddress, 'findFirst').mockResolvedValue(mockCustomerAddress as any);
-      jest.spyOn(prisma.product, 'findUnique').mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(prisma.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress as any);
+      jest
+        .spyOn(prisma.product, 'findUnique')
+        .mockResolvedValue(mockProduct as any);
 
       const result = await service.validateInputs(mockDto, mockUser);
 
-      expect(result).toEqual({ isValid: false, errors: ['Product not found or cannot be subscribed'] });
+      expect(result).toEqual({
+        isValid: false,
+        errors: ['Product not found or cannot be subscribed'],
+      });
     });
 
     it('should return invalid result when frequency validation fails', async () => {
@@ -172,11 +200,17 @@ describe('SubscriptionValidationService', () => {
         is_schedulable: true,
       };
 
-      jest.spyOn(prisma.customerAddress, 'findFirst').mockResolvedValue(mockCustomerAddress as any);
-      jest.spyOn(prisma.product, 'findUnique').mockResolvedValue(mockProduct as any);
-      jest.spyOn(deliveryFrequencyService, 'validateFrequency').mockImplementation(() => {
-        throw new Error('Invalid frequency');
-      });
+      jest
+        .spyOn(prisma.customerAddress, 'findFirst')
+        .mockResolvedValue(mockCustomerAddress as any);
+      jest
+        .spyOn(prisma.product, 'findUnique')
+        .mockResolvedValue(mockProduct as any);
+      jest
+        .spyOn(deliveryFrequencyService, 'validateFrequency')
+        .mockImplementation(() => {
+          throw new Error('Invalid frequency');
+        });
 
       const result = await service.validateInputs(mockDto, mockUser);
 

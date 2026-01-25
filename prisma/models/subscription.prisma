@@ -24,8 +24,6 @@ model Subscription {
   id                 String             @id @default(uuid())
   customerAddressId  String?
   customerAddress    CustomerAddress?   @relation(fields: [customerAddressId], references: [id])
-  vendorId           String?
-  vendor             Vendor?            @relation(fields: [vendorId], references: [id])
   productId          String?
   product            Product?           @relation(fields: [productId], references: [id])
   quantity           Int
@@ -40,6 +38,5 @@ model Subscription {
   updated_at         DateTime           @default(now())
 
   @@index([customerAddressId])
-  @@index([vendorId])
   @@index([productId])
 }

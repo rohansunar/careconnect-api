@@ -68,9 +68,7 @@ describe('VendorAddressController', () => {
         ...createDto,
       };
 
-      mockVendorAddressService.create.mockResolvedValue(
-        mockCreatedAddress,
-      );
+      mockVendorAddressService.create.mockResolvedValue(mockCreatedAddress);
 
       const result = await controller.createAddress(createDto, {
         id: vendorId,

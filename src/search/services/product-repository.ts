@@ -36,7 +36,10 @@ export class ProductRepository implements IProductRepository {
     const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {
-      const whereClause = this.buildWhereClause(customerGeoPoint, maxDeliveryRadiusMeters);
+      const whereClause = this.buildWhereClause(
+        customerGeoPoint,
+        maxDeliveryRadiusMeters,
+      );
 
       const resultsQuery = `
         SELECT
@@ -84,7 +87,10 @@ export class ProductRepository implements IProductRepository {
    * @param maxDeliveryRadiusMeters Maximum delivery radius in meters
    * @returns SQL WHERE clause string
    */
-  private buildWhereClause(customerGeoPoint: string, maxDeliveryRadiusMeters: number): string {
+  private buildWhereClause(
+    customerGeoPoint: string,
+    maxDeliveryRadiusMeters: number,
+  ): string {
     return `
       p."is_active" = TRUE
       AND p."approval_status" = '${ProductApprovalStatus.APPROVED}'::"ProductApprovalStatus"

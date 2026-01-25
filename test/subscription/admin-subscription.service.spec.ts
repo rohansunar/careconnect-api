@@ -39,20 +39,22 @@ describe('AdminSubscriptionService', () => {
     });
 
     it('should throw NotFoundException if payment mode toggle fails', async () => {
-      jest
-        .spyOn(paymentModeService, 'toggleMode')
-        .mockImplementation(() => {
-          throw new Error('Failed to toggle');
-        });
+      jest.spyOn(paymentModeService, 'toggleMode').mockImplementation(() => {
+        throw new Error('Failed to toggle');
+      });
 
-      await expect(service.togglePaymentMode()).rejects.toThrow(NotFoundException);
+      await expect(service.togglePaymentMode()).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('getPaymentMode', () => {
     it('should return the current payment mode', async () => {
       const mockMode = 'UPFRONT';
-      jest.spyOn(paymentModeService, 'getCurrentMode').mockReturnValue(mockMode);
+      jest
+        .spyOn(paymentModeService, 'getCurrentMode')
+        .mockReturnValue(mockMode);
 
       const result = await service.getPaymentMode();
 

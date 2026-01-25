@@ -15,13 +15,11 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
   constructor(private prisma: PrismaService) {}
 
   /**
-    * Retrieves the customer's default active address.
-    * @param customerId The customer's ID
-    * @returns Customer's address or null if not found
-    */
-  async getCustomer(
-    customerId: string,
-  ): Promise<{name:string} | null> {
+   * Retrieves the customer's default active address.
+   * @param customerId The customer's ID
+   * @returns Customer's address or null if not found
+   */
+  async getCustomer(customerId: string): Promise<{ name: string } | null> {
     try {
       return await this.prisma.customer.findUnique({
         where: { id: customerId },
@@ -33,10 +31,10 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
   }
 
   /**
-    * Retrieves the customer's default active address.
-    * @param customerId The customer's ID
-    * @returns Customer's address or null if not found
-    */
+   * Retrieves the customer's default active address.
+   * @param customerId The customer's ID
+   * @returns Customer's address or null if not found
+   */
   async getCustomerAddress(
     customerId: string,
   ): Promise<ICustomerAddress | null> {
@@ -51,7 +49,11 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
         WHERE "customerId" = ${customerId}
                       AND "is_active" = true AND "isDefault" = true;`;
 
-      if (address.length > 0 && address[0].lat !== null && address[0].lng !== null) {
+      if (
+        address.length > 0 &&
+        address[0].lat !== null &&
+        address[0].lng !== null
+      ) {
         return {
           lat: address[0].lat,
           lng: address[0].lng,

@@ -12,7 +12,10 @@ import { SubscriptionValidationService } from '../../services/subscription-valid
 import { JsonPaymentModeRepository } from '../../services/payment-mode/payment-mode.repository';
 import { CreateSubscriptionDto } from '../../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../../dto/update-subscription.dto';
-import { SubscriptionFrequency, DayOfWeek } from '../../interfaces/delivery-frequency.interface';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../../interfaces/delivery-frequency.interface';
 import { User, UserRole } from '../../../common/interfaces/user.interface';
 import { PrismaService } from '../../../common/database/prisma.service';
 
@@ -134,7 +137,9 @@ describe('Comprehensive Integration Tests', () => {
     let currentMode = 'UPFRONT';
     const mockJsonPaymentModeRepository = {
       getPaymentMode: jest.fn().mockImplementation(() => currentMode),
-      setPaymentMode: jest.fn((mode) => { currentMode = mode; }),
+      setPaymentMode: jest.fn((mode) => {
+        currentMode = mode;
+      }),
     };
 
     module = await Test.createTestingModule({
@@ -154,13 +159,20 @@ describe('Comprehensive Integration Tests', () => {
         },
         JsonPaymentModeRepository,
       ],
-    }).overrideProvider(JsonPaymentModeRepository).useValue(mockJsonPaymentModeRepository).compile();
+    })
+      .overrideProvider(JsonPaymentModeRepository)
+      .useValue(mockJsonPaymentModeRepository)
+      .compile();
 
     app = module.createNestApplication();
     await app.init();
 
-    customerSubscriptionService = module.get<CustomerSubscriptionService>(CustomerSubscriptionService);
-    adminSubscriptionService = module.get<AdminSubscriptionService>(AdminSubscriptionService);
+    customerSubscriptionService = module.get<CustomerSubscriptionService>(
+      CustomerSubscriptionService,
+    );
+    adminSubscriptionService = module.get<AdminSubscriptionService>(
+      AdminSubscriptionService,
+    );
   });
 
   afterAll(async () => {
@@ -177,7 +189,10 @@ describe('Comprehensive Integration Tests', () => {
         custom_days: [],
       };
 
-      const created = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const created = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
       expect(created).toBeDefined();
       expect(created.id).toBeDefined();
 
@@ -188,15 +203,26 @@ describe('Comprehensive Integration Tests', () => {
         start_date: new Date('2026-01-15'),
       };
 
-      const updated = await customerSubscriptionService.updateMySubscription(created.id, updateDto, mockUser);
+      const updated = await customerSubscriptionService.updateMySubscription(
+        created.id,
+        updateDto,
+        mockUser,
+      );
       expect(updated).toBeDefined();
       expect(updated.quantity).toBe(updateDto.quantity);
 
-      const toggled = await customerSubscriptionService.toggleSubscriptionStatus(created.id, mockUser);
+      const toggled =
+        await customerSubscriptionService.toggleSubscriptionStatus(
+          created.id,
+          mockUser,
+        );
       expect(toggled).toBeDefined();
       expect(toggled.status).toBe('INACTIVE');
 
-      const deleted = await customerSubscriptionService.deleteMySubscription(created.id, mockUser);
+      const deleted = await customerSubscriptionService.deleteMySubscription(
+        created.id,
+        mockUser,
+      );
       expect(deleted).toBeDefined();
     });
 
@@ -251,17 +277,24 @@ describe('Comprehensive Integration Tests', () => {
         custom_days: [DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY],
       };
 
-      const result = await customerSubscriptionService.createSubscription(mockUser, mockDto);
+      const result = await customerSubscriptionService.createSubscription(
+        mockUser,
+        mockDto,
+      );
       expect(result).toBeDefined();
       expect(result.id).toBeDefined();
       expect(result.total_price).toBeGreaterThan(0);
       expect(result.payment_mode).toBeDefined();
 
-      const subscriptions = await customerSubscriptionService.getMySubscriptions(mockUser);
+      const subscriptions =
+        await customerSubscriptionService.getMySubscriptions(mockUser);
       expect(subscriptions).toBeDefined();
       expect(subscriptions.subscriptions).toBeInstanceOf(Array);
 
-      const subscription = await customerSubscriptionService.getMySubscription(result.id, mockUser);
+      const subscription = await customerSubscriptionService.getMySubscription(
+        result.id,
+        mockUser,
+      );
       expect(subscription).toBeDefined();
       expect(subscription.id).toBe(result.id);
 
