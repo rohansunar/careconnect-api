@@ -28,12 +28,16 @@ export class SearchController {
        'Proximity search results with products (including distances) and pagination information.',
    })
    @ApiResponse({
+     status: 400,
+     description: 'Invalid input parameters',
+   })
+   @ApiResponse({
      status: 404,
-     description: 'Customer address not found.',
+     description: 'CUSTOMER_ADDRESS_NOT_FOUND',
    })
    @ApiResponse({
      status: 503,
-     description: 'Service unavailable at customer\'s location.',
+     description: 'SERVICE_UNAVAILABLE',
    })
   @ApiQuery({
     name: 'page',

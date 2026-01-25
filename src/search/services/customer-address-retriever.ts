@@ -15,22 +15,22 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Retrieves the customer's default active address.
-   * @param customerId The customer's ID
-   * @returns Customer's address or null if not found
-   */
+    * Retrieves the customer's default active address.
+    * @param customerId The customer's ID
+    * @returns Customer's address or null if not found
+    */
   async getCustomerAddress(
     customerId: string,
   ): Promise<ICustomerAddress | null> {
     try {
       const address = await this.prisma.$queryRaw<ICustomerAddress[]>`
-                      SELECT
-                        id,
-                        "isServiceable",
+        SELECT
+          id,
+          "isServiceable",
                         ST_Y(geoPoint::geometry) AS lat,
                         ST_X(geoPoint::geometry) AS lng
-                      FROM "CustomerAddress"
-                      WHERE "customerId" = ${customerId}
+        FROM "CustomerAddress"
+        WHERE "customerId" = ${customerId}
                       AND "is_active" = true AND "isDefault" = true;`;
 
       if (address.length > 0 && address[0].lat !== null && address[0].lng !== null) {

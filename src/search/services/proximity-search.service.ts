@@ -10,6 +10,8 @@ import type { IProximitySearchResult } from '../interfaces/search.interfaces';
  */
 @Injectable()
 export class ProximitySearchService {
+  private readonly DEFAULT_PAGE = 1;
+  private readonly DEFAULT_LIMIT = 10;
   private readonly DEFAULT_RADIUS_KM = 5;
 
   constructor(
@@ -18,12 +20,12 @@ export class ProximitySearchService {
   ) {}
 
   /**
-   * Searches for products based on proximity to customer's location.
-   * @param query Search query parameters
-   * @param customerId Customer's ID
-   * @returns Paginated search results with products and distances
+    * Searches for products based on proximity to customer's location.
+    * @param query Search query parameters
+    * @param customerId Customer's ID
+    * @returns Paginated search results with products and distances
    * @throws HttpException with 404 if address not found, 503 if service unavailable
-   */
+    */
   async searchProducts(
     query: SearchQueryDto,
     customerId: string,
@@ -36,20 +38,31 @@ export class ProximitySearchService {
       totalPages: number;
     };
   }> {
+    // Input validation
+    if (!customerId || typeof customerId !== 'string' || customerId.trim() === '') {
+      throw new HttpException('Invalid customerId', HttpStatus.BAD_REQUEST);
+    }
+    if (query.page !== undefined && (query.page < 1 || !Number.isInteger(query.page))) {
+      throw new HttpException('Invalid page: must be a positive integer', HttpStatus.BAD_REQUEST);
+    }
+    if (query.limit !== undefined && (query.limit < 1 || !Number.isInteger(query.limit))) {
+      throw new HttpException('Invalid limit: must be a positive integer', HttpStatus.BAD_REQUEST);
+    }
+
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
 
     if (!address) {
-      throw new HttpException('Customer address not found', HttpStatus.NOT_FOUND);
+      throw new HttpException('CUSTOMER_ADDRESS_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
     if (!address.isServiceable) {
-      throw new HttpException('Service unavailable at customer\'s location', HttpStatus.SERVICE_UNAVAILABLE);
+      throw new HttpException('SERVICE_UNAVAILABLE', HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    const page = query.page || 1;
-    const limit = query.limit || 10;
-    const radiusKm = this.DEFAULT_RADIUS_KM; // Could be made configurable
+    const page = query.page ?? this.DEFAULT_PAGE;
+    const limit = query.limit ?? this.DEFAULT_LIMIT;
+    const radiusKm = this.DEFAULT_RADIUS_KM; // Configurable via dependency injection for extension
 
     const { results, total } =
       await this.productRepository.findProductsWithinRadius(

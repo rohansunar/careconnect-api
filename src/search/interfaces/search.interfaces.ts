@@ -40,13 +40,6 @@ export interface ICustomerAddressRetriever {
 }
 
 /**
- * Abstraction for calculating distance between two points.
- */
-export interface IDistanceCalculator {
-  calculateDistance(from: ICustomerAddress, to: ICustomerAddress): IDistance;
-}
-
-/**
  * Abstraction for product data access in proximity searches.
  */
 export interface IProductRepository {
