@@ -10,7 +10,7 @@ export class VerifyOtpDto {
   @IsString()
   @ApiProperty({
     description: 'Vendor/Customer phone number',
-    example: '+91-9832012345',
+    example: '9832012345',
   })
   @IsPhoneNumber('IN', { message: 'Invalid phone number' })
   @IsNotEmpty()
