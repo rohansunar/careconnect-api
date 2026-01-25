@@ -1,7 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CustomerSubscriptionService } from '../../../src/subscription/services/customer-subscription.service';
+import { SubscriptionRepositoryService } from '../../../src/subscription/repositories/subscription.repository';
 import { PrismaService } from '../../../src/common/database/prisma.service';
 import { DeliveryFrequencyService } from '../../../src/subscription/services/delivery-frequency.service';
+import { PriceCalculationService } from '../../../src/subscription/services/price-calculation.service';
+import { PaymentModeService } from '../../../src/subscription/services/payment-mode.service';
+import { SubscriptionValidationService } from '../../../src/subscription/services/subscription-validation.service';
 import { CreateSubscriptionDto } from '../../../src/subscription/dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../../../src/subscription/dto/update-subscription.dto';
 import {
@@ -20,6 +24,7 @@ describe('CustomerSubscriptionService', () => {
   let service: CustomerSubscriptionService;
   let prismaService: PrismaService;
   let deliveryFrequencyService: DeliveryFrequencyService;
+  let mockValidateInputs: jest.Mock;
 
   const mockUser = {
     id: 'user-123',
@@ -44,19 +49,23 @@ describe('CustomerSubscriptionService', () => {
     deposit: null,
     is_active: true,
     updated_at: new Date(),
+    approval_status: 'APPROVED' as any,
+    approved_by: null,
+    approved_at: null,
+    is_schedulable: true,
   };
   const mockCustomerAddress = {
     id: 'address-123',
     customerId: 'user-123',
     label: 'Home' as any,
     address: '123 Test St',
-    cityId: 'city-123',
+    locationId: 'location-123',
     pincode: '123456',
-    location: null,
     created_at: new Date(),
     updated_at: new Date(),
     isDefault: true,
-    isActive: true,
+    is_active: true,
+    isServiceable: true,
   };
   const mockSubscription = {
     id: 'subscription-123',
@@ -66,18 +75,72 @@ describe('CustomerSubscriptionService', () => {
     quantity: 2,
     frequency: SubscriptionFrequency.DAILY,
     custom_days: [],
-    next_delivery_date: new Date('2023-01-02'),
+    next_delivery_date: new Date('2027-01-02'),
     status: SubscriptionStatus.ACTIVE,
-    start_date: new Date('2023-01-01'),
+    start_date: new Date('2027-01-01'),
+    payment_mode: 'UPFRONT',
+    total_price: 200,
     created_at: new Date(),
     updated_at: new Date(),
     customerAddress: mockCustomerAddress,
+  };
+
+  const mockSubscriptionRepo = {
+    id: 'subscription-123',
+    customerId: 'user-123',
+    productId: 'product-123',
+    quantity: 2,
+    price: 200,
+    frequency: SubscriptionFrequency.DAILY,
+    customDays: [],
+    startDate: new Date('2027-01-01'),
+    nextDeliveryDate: new Date('2027-01-02'),
+    endDate: undefined,
+    status: SubscriptionStatus.ACTIVE,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CustomerSubscriptionService,
+        {
+          provide: SubscriptionRepositoryService,
+          useValue: {
+            findByCustomerAndProduct: jest.fn(),
+            findById: jest.fn(),
+            create: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: DeliveryFrequencyService,
+          useValue: {
+            validateFrequency: jest.fn(),
+            getNextDeliveryDate: jest.fn(),
+            getDeliveryDays: jest.fn(),
+          },
+        },
+        {
+          provide: PriceCalculationService,
+          useValue: {
+            calculateTotalPrice: jest.fn(),
+          },
+        },
+        {
+          provide: PaymentModeService,
+          useValue: {
+            getCurrentMode: jest.fn(),
+          },
+        },
+        {
+          provide: SubscriptionValidationService,
+          useValue: {
+            validateInputs: jest.fn(),
+          },
+        },
         {
           provide: PrismaService,
           useValue: {
@@ -98,7 +161,6 @@ describe('CustomerSubscriptionService', () => {
             },
           },
         },
-        DeliveryFrequencyService,
       ],
     }).compile();
 
@@ -109,10 +171,12 @@ describe('CustomerSubscriptionService', () => {
     deliveryFrequencyService = module.get<DeliveryFrequencyService>(
       DeliveryFrequencyService,
     );
+    mockValidateInputs = module.get(SubscriptionValidationService).validateInputs as jest.Mock;
   });
 
   describe('createSubscription', () => {
     it('should create a subscription successfully', async () => {
+      mockValidateInputs.mockResolvedValue({ isValid: true });
       jest
         .spyOn(prismaService.customerAddress, 'findFirst')
         .mockResolvedValue(mockCustomerAddress);
@@ -122,32 +186,39 @@ describe('CustomerSubscriptionService', () => {
       jest
         .spyOn(prismaService.subscription, 'create')
         .mockResolvedValue(mockSubscription);
+      jest
+        .spyOn(service['subscriptionRepository'], 'findByCustomerAndProduct')
+        .mockResolvedValue([]);
+      jest
+        .spyOn(service['subscriptionRepository'], 'create')
+        .mockResolvedValue(mockSubscriptionRepo);
+      jest
+        .spyOn(service['paymentModeService'], 'getCurrentMode')
+        .mockReturnValue('UPFRONT');
 
       const dto: CreateSubscriptionDto = {
         productId: 'product-123',
         quantity: 2,
         frequency: SubscriptionFrequency.DAILY,
-        start_date: '2023-01-01',
+        start_date: '2027-01-01',
       };
 
       const result = await service.createSubscription(mockUser, dto);
 
-      expect(result).toEqual(mockSubscription);
-      expect(prismaService.subscription.create).toHaveBeenCalledWith({
-        data: {
-          customerAddressId: mockCustomerAddress.id,
-          vendorId: mockProduct.vendorId,
-          productId: dto.productId,
-          quantity: dto.quantity,
-          frequency: dto.frequency,
-          custom_days: [],
-          next_delivery_date: expect.any(Date),
-          start_date: new Date(dto.start_date),
+      expect(result).toEqual({
+        id: 'subscription-123',
+        total_price: 200,
+        payment_mode: 'UPFRONT',
+        customer: {
+          name: 'Test User',
+          email: 'test@example.com',
+          phone: '1234567890',
         },
       });
     });
 
     it('should throw NotFoundException if no active customer address found', async () => {
+      mockValidateInputs.mockResolvedValue({ isValid: true });
       jest
         .spyOn(prismaService.customerAddress, 'findFirst')
         .mockResolvedValue(null);
@@ -156,7 +227,7 @@ describe('CustomerSubscriptionService', () => {
         productId: 'product-123',
         quantity: 2,
         frequency: SubscriptionFrequency.DAILY,
-        start_date: '2023-01-01',
+        start_date: '2027-01-01',
       };
 
       await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
@@ -165,6 +236,7 @@ describe('CustomerSubscriptionService', () => {
     });
 
     it('should throw NotFoundException if product not found', async () => {
+      mockValidateInputs.mockResolvedValue({ isValid: true });
       jest
         .spyOn(prismaService.customerAddress, 'findFirst')
         .mockResolvedValue(mockCustomerAddress);
@@ -174,7 +246,7 @@ describe('CustomerSubscriptionService', () => {
         productId: 'product-123',
         quantity: 2,
         frequency: SubscriptionFrequency.DAILY,
-        start_date: '2023-01-01',
+        start_date: '2027-01-01',
       };
 
       await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
@@ -183,6 +255,7 @@ describe('CustomerSubscriptionService', () => {
     });
 
     it('should throw ConflictException when a duplicate subscription exists', async () => {
+      mockValidateInputs.mockResolvedValue({ isValid: true });
       jest
         .spyOn(prismaService.customerAddress, 'findFirst')
         .mockResolvedValue(mockCustomerAddress);
@@ -190,14 +263,14 @@ describe('CustomerSubscriptionService', () => {
         .spyOn(prismaService.product, 'findUnique')
         .mockResolvedValue(mockProduct);
       jest
-        .spyOn(prismaService.subscription, 'findFirst')
-        .mockResolvedValue(mockSubscription); // Duplicate exists
+        .spyOn(service['subscriptionRepository'], 'findByCustomerAndProduct')
+        .mockResolvedValue([mockSubscriptionRepo]); // Duplicate exists
 
       const dto: CreateSubscriptionDto = {
         productId: 'product-123',
         quantity: 2,
         frequency: SubscriptionFrequency.DAILY,
-        start_date: '2023-01-01',
+        start_date: '2027-01-01',
       };
 
       await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
@@ -209,6 +282,7 @@ describe('CustomerSubscriptionService', () => {
     });
 
     it('should throw InternalServerErrorException when database operations fail', async () => {
+      mockValidateInputs.mockResolvedValue({ isValid: true });
       jest
         .spyOn(prismaService.customerAddress, 'findFirst')
         .mockResolvedValue(mockCustomerAddress);
@@ -216,14 +290,14 @@ describe('CustomerSubscriptionService', () => {
         .spyOn(prismaService.product, 'findUnique')
         .mockResolvedValue(mockProduct);
       jest
-        .spyOn(prismaService.subscription, 'findFirst')
+        .spyOn(service['subscriptionRepository'], 'findByCustomerAndProduct')
         .mockRejectedValue(new Error('Database error')); // Simulate database failure
 
       const dto: CreateSubscriptionDto = {
         productId: 'product-123',
         quantity: 2,
         frequency: SubscriptionFrequency.DAILY,
-        start_date: '2023-01-01',
+        start_date: '2027-01-01',
       };
 
       await expect(service.createSubscription(mockUser, dto)).rejects.toThrow(
@@ -238,14 +312,13 @@ describe('CustomerSubscriptionService', () => {
   describe('getMySubscriptions', () => {
     it('should return subscriptions for the user', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findMany')
-        .mockResolvedValue([mockSubscription]);
-      jest.spyOn(prismaService.subscription, 'count').mockResolvedValue(1);
+        .spyOn(service['subscriptionRepository'], 'findByCustomerAndProduct')
+        .mockResolvedValue([mockSubscriptionRepo]);
 
       const result = await service.getMySubscriptions(mockUser);
 
       expect(result).toEqual({
-        subscriptions: [mockSubscription],
+        subscriptions: [mockSubscriptionRepo],
         total: 1,
         page: 1,
         limit: 10,
@@ -257,20 +330,20 @@ describe('CustomerSubscriptionService', () => {
   describe('getMySubscription', () => {
     it('should return a subscription if it belongs to the user', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(mockSubscription);
+        .spyOn(service['subscriptionRepository'], 'findById')
+        .mockResolvedValue(mockSubscriptionRepo);
 
       const result = await service.getMySubscription(
         'subscription-123',
         mockUser,
       );
 
-      expect(result).toEqual(mockSubscription);
+      expect(result).toEqual(mockSubscriptionRepo);
     });
 
     it('should throw NotFoundException if subscription not found', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(null);
 
       await expect(
@@ -280,11 +353,11 @@ describe('CustomerSubscriptionService', () => {
 
     it('should throw ForbiddenException if subscription does not belong to user', async () => {
       const otherUserSubscription = {
-        ...mockSubscription,
-        customerAddress: { ...mockCustomerAddress, customerId: 'other-user' },
+        ...mockSubscriptionRepo,
+        customerId: 'other-user',
       };
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(otherUserSubscription);
 
       await expect(
@@ -296,11 +369,11 @@ describe('CustomerSubscriptionService', () => {
   describe('updateMySubscription', () => {
     it('should update a subscription if it belongs to the user', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(mockSubscription);
+        .spyOn(service['subscriptionRepository'], 'findById')
+        .mockResolvedValue(mockSubscriptionRepo);
       jest
-        .spyOn(prismaService.subscription, 'update')
-        .mockResolvedValue({ ...mockSubscription, quantity: 5 });
+        .spyOn(service['subscriptionRepository'], 'update')
+        .mockResolvedValue({ ...mockSubscriptionRepo, quantity: 5 });
 
       const dto: UpdateSubscriptionDto = {
         quantity: 5,
@@ -312,12 +385,12 @@ describe('CustomerSubscriptionService', () => {
         mockUser,
       );
 
-      expect(result).toEqual({ ...mockSubscription, quantity: 5 });
+      expect(result).toEqual({ ...mockSubscriptionRepo, quantity: 5 });
     });
 
     it('should throw NotFoundException if subscription not found', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(null);
 
       const dto: UpdateSubscriptionDto = {
@@ -331,11 +404,11 @@ describe('CustomerSubscriptionService', () => {
 
     it('should throw ForbiddenException if subscription does not belong to user', async () => {
       const otherUserSubscription = {
-        ...mockSubscription,
-        customerAddress: { ...mockCustomerAddress, customerId: 'other-user' },
+        ...mockSubscriptionRepo,
+        customerId: 'other-user',
       };
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(otherUserSubscription);
 
       const dto: UpdateSubscriptionDto = {
@@ -351,23 +424,23 @@ describe('CustomerSubscriptionService', () => {
   describe('deleteMySubscription', () => {
     it('should delete a subscription if it belongs to the user', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
-        .mockResolvedValue(mockSubscription);
+        .spyOn(service['subscriptionRepository'], 'findById')
+        .mockResolvedValue(mockSubscriptionRepo);
       jest
-        .spyOn(prismaService.subscription, 'delete')
-        .mockResolvedValue(mockSubscription);
+        .spyOn(service['subscriptionRepository'], 'delete')
+        .mockResolvedValue(mockSubscriptionRepo);
 
       const result = await service.deleteMySubscription(
         'subscription-123',
         mockUser,
       );
 
-      expect(result).toEqual(mockSubscription);
+      expect(result).toEqual(mockSubscriptionRepo);
     });
 
     it('should throw NotFoundException if subscription not found', async () => {
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(null);
 
       await expect(
@@ -377,11 +450,11 @@ describe('CustomerSubscriptionService', () => {
 
     it('should throw ForbiddenException if subscription does not belong to user', async () => {
       const otherUserSubscription = {
-        ...mockSubscription,
-        customerAddress: { ...mockCustomerAddress, customerId: 'other-user' },
+        ...mockSubscriptionRepo,
+        customerId: 'other-user',
       };
       jest
-        .spyOn(prismaService.subscription, 'findUnique')
+        .spyOn(service['subscriptionRepository'], 'findById')
         .mockResolvedValue(otherUserSubscription);
 
       await expect(

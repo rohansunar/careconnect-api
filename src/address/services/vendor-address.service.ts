@@ -219,7 +219,6 @@ export class VendorAddressService {
       });
       updateData.locationId = locationId.id;
     }
-    console.log("updateData",updateData)
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { vendorId },
       data: updateData,

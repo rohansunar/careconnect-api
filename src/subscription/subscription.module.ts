@@ -8,6 +8,10 @@ import { DeliveryFrequencyService } from './services/delivery-frequency.service'
 import { PriceCalculationService } from './services/price-calculation.service';
 import { PaymentModeService } from './services/payment-mode.service';
 import { SubscriptionValidationService } from './services/subscription-validation.service';
+import { SubscriptionRepositoryService } from './repositories/subscription.repository';
+import { DeliveryFrequencyFactoryService } from './services/delivery-frequency/delivery-frequency.factory';
+import { PriceCalculatorFactoryService } from './services/price-calculation/price-calculator.factory';
+import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.repository';
 
 @Module({
   imports: [PrismaModule],
@@ -19,6 +23,10 @@ import { SubscriptionValidationService } from './services/subscription-validatio
     PriceCalculationService,
     PaymentModeService,
     SubscriptionValidationService,
+    SubscriptionRepositoryService,
+    DeliveryFrequencyFactoryService,
+    PriceCalculatorFactoryService,
+    JsonPaymentModeRepository,
   ],
   exports: [CustomerSubscriptionService],
 })

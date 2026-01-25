@@ -43,6 +43,6 @@ export class CreateSubscriptionDto {
   })
   @IsOptional()
   @IsArray()
-  @IsEnum(DayOfWeek, { each: true })
+  // @IsEnum(DayOfWeek, { each: true })
   custom_days?: DayOfWeek[];
 }

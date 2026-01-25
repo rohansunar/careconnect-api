@@ -1,67 +1,52 @@
-import { Injectable } from '@nestjs/common';
-import { SubscriptionFrequency } from '../interfaces/delivery-frequency.interface';
+import { Injectable, Logger } from '@nestjs/common';
+import { PriceCalculatorFactoryService } from './price-calculation/price-calculator.factory';
+import {
+  SubscriptionFrequency,
+  DayOfWeek,
+} from '../interfaces/delivery-frequency.interface';
 
 /**
  * Service responsible for calculating the total price of a subscription.
- * This includes base price calculation, frequency adjustments, and proration for mid-month starts.
+ * This service uses the strategy pattern to delegate price calculations to
+ * appropriate calculator implementations based on frequency type.
  */
 @Injectable()
 export class PriceCalculationService {
+  private readonly logger = new Logger(PriceCalculationService.name);
+
+  constructor(
+    private readonly priceCalculatorFactory: PriceCalculatorFactoryService,
+  ) {}
+
   /**
-   * Calculates the total price for a subscription.
-   * @param quantity - Number of units of the product
-   * @param pricePerUnit - Price of one unit of the product
-   * @param frequency - Frequency of delivery
-   * @param startDate - Start date of the subscription
-   * @returns Calculated total price
+   * Calculates the total price for a subscription based on quantity, price, frequency, and start date.
+   * This method acts as the main entry point and uses the factory to create appropriate calculators.
+   * @param quantity - Number of items per delivery
+   * @param price - Price per item
+   * @param frequency - Delivery frequency type
+   * @param startDate - Date when the subscription starts
+   * @param customDays - Optional array of days for custom frequency
+   * @returns Total calculated price for the subscription
+   * @throws Error if an invalid frequency type is provided
    */
   calculateTotalPrice(
     quantity: number,
-    pricePerUnit: number,
+    price: number,
     frequency: SubscriptionFrequency,
     startDate: Date,
+    customDays?: DayOfWeek[],
   ): number {
-    const basePrice = quantity * pricePerUnit;
-    const frequencyMultiplier = this.getFrequencyMultiplier(frequency);
-    const prorationFactor = this.calculateProrationFactor(startDate);
+    this.logger.log(
+      `Starting total price calculation. Quantity: ${quantity}, Price: ${price}, Frequency: ${frequency}, Start Date: ${startDate}`,
+    );
 
-    console.log("prorationFactor",frequencyMultiplier,basePrice, prorationFactor, basePrice * frequencyMultiplier * prorationFactor)
+    const calculator = this.priceCalculatorFactory.createCalculator(
+      frequency,
+      customDays,
+    );
+    const totalPrice = calculator.calculatePrice(quantity, price, startDate);
 
-    return basePrice * frequencyMultiplier * prorationFactor;
-  }
-
-  /**
-   * Gets the multiplier for the subscription frequency.
-   * @param frequency - Frequency of delivery
-   * @returns Multiplier value
-   */
-  private getFrequencyMultiplier(frequency: SubscriptionFrequency): number {
-    switch (frequency) {
-      case SubscriptionFrequency.DAILY:
-        return 30; // Assuming 30 days in a month
-      case SubscriptionFrequency.ALTERNATIVE_DAYS:
-        return 15; // Assuming 15 deliveries in a month
-      case SubscriptionFrequency.CUSTOM_DAYS:
-        return 10; // Example value for custom days
-      default:
-        throw new Error('Invalid frequency type');
-    }
-  }
-
-  /**
-   * Calculates the proration factor for mid-month start dates.
-   * @param startDate - Start date of the subscription
-   * @returns Proration factor (ratio of remaining days in the month to total days)
-   */
-  private calculateProrationFactor(startDate: Date): number {
-    const startDayOfMonth = startDate.getDate();
-    const daysInMonth = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      0,
-    ).getDate();
-
-    const remainingDays = daysInMonth - startDayOfMonth;
-    return remainingDays / daysInMonth;
+    this.logger.log(`Total calculated price: ${totalPrice}`);
+    return totalPrice;
   }
 }

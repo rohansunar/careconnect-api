@@ -7,12 +7,17 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import type { User } from '../../common/interfaces/user.interface';
 import { DeliveryFrequencyService } from './delivery-frequency.service';
+import {
+  SubscriptionValidator,
+  ValidationResult,
+} from '../interfaces/subscription-validation.interface';
 
 /**
  * Service responsible for validating input data for creating a subscription.
+ * This service ensures that all required entities exist and are valid before subscription creation.
  */
 @Injectable()
-export class SubscriptionValidationService {
+export class SubscriptionValidationService implements SubscriptionValidator {
   constructor(
     private readonly prisma: PrismaService,
     private readonly deliveryFrequencyService: DeliveryFrequencyService,
@@ -20,37 +25,55 @@ export class SubscriptionValidationService {
 
   /**
    * Validates subscription inputs and retrieves related entities.
-   * @param dto - Subscription data
-   * @param user - Authenticated user
-   * @returns Customer address and product
+   * Performs the following validations:
+   * 1. Ensures a default active customer address exists
+   * 2. Verifies the product exists and is subscribable
+   * 3. Validates the delivery frequency and custom days
+   * @param dto - Subscription data transfer object
+   * @param user - Authenticated user making the request
+   * @returns Object containing validated customer address and product
    * @throws NotFoundException if customer address or product is not found
    * @throws InternalServerErrorException if database operations fail
    */
-  async validateSubscriptionInputs(
+  async validateInputs(
     dto: CreateSubscriptionDto,
     user: User,
-  ): Promise<{ customerAddress: any; product: any }> {
+  ): Promise<ValidationResult> {
     const customerAddress = await this.prisma.customerAddress.findFirst({
       where: { customerId: user.id, is_active: true, isDefault: true },
     });
 
     if (!customerAddress) {
-      throw new NotFoundException('Customer Address not found');
+      return { isValid: false, errors: ['Customer Address not found'] };
     }
 
     const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId, is_schedulable:true },
+      where: { id: dto.productId },
     });
 
     if (!product) {
-      throw new NotFoundException('Product not found or cannot be subscribed');
+      return {
+        isValid: false,
+        errors: ['Product not found'],
+      };
     }
 
-    this.deliveryFrequencyService.validateFrequency(
-      dto.frequency,
-      dto.custom_days,
-    );
+    if (!product.is_schedulable) {
+      return {
+        isValid: false,
+        errors: ['Product cannot be subscribed'],
+      };
+    }
 
-    return { customerAddress, product };
+    try {
+      this.deliveryFrequencyService.validateFrequency(
+        dto.frequency,
+        dto.custom_days,
+      );
+    } catch (error) {
+      return { isValid: false, errors: [error.message] };
+    }
+
+    return { isValid: true };
   }
 }

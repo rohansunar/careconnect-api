@@ -120,8 +120,8 @@ async function main() {
   // Create vendor address and products if vendor created
   if (vendor) {
     try {
-      const vendorLat = 19.0760;
-      const vendorLng = 72.8777;
+      const vendorLat = 26.5210;
+      const vendorLng = 88.8778;
       const vendorLocations = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Location"
         WHERE ST_DWithin(geopoint, ST_MakePoint(${vendorLng}, ${vendorLat})::geography, 50000)
@@ -212,8 +212,8 @@ async function main() {
   // Create customer address
   if (customer) {
     try {
-      const customerLat = 19.0761;
-      const customerLng = 72.8778;
+      const customerLat = 26.5210;
+      const customerLng = 88.8778;
       const customerLocations = await prisma.$queryRaw<{ id: string }[]>`
         SELECT id FROM "Location"
         WHERE ST_DWithin(geopoint, ST_MakePoint(${customerLng}, ${customerLat})::geography, 50000)

@@ -31,7 +31,9 @@ describe('CartService', () => {
 
   beforeEach(async () => {
     mockPrismaService = {
-      $transaction: jest.fn().mockImplementation(async (callback) => callback(mockPrismaService)),
+      $transaction: jest
+        .fn()
+        .mockImplementation(async (callback) => callback(mockPrismaService)),
       cartItem: {
         findFirst: jest.fn(),
         create: jest.fn(),
@@ -93,7 +95,11 @@ describe('CartService', () => {
     };
 
     it('should add new cart item successfully', async () => {
-      const mockCart = { id: 'cart-123', customerId: 'customer-123', status: 'ACTIVE' };
+      const mockCart = {
+        id: 'cart-123',
+        customerId: 'customer-123',
+        status: 'ACTIVE',
+      };
       const expectedCartItem = {
         id: 'cart-item-123',
         cartId: 'cart-123',
@@ -144,7 +150,11 @@ describe('CartService', () => {
     });
 
     it('should update existing cart item quantity when duplicate found', async () => {
-      const mockCart = { id: 'cart-123', customerId: 'customer-123', status: 'ACTIVE' };
+      const mockCart = {
+        id: 'cart-123',
+        customerId: 'customer-123',
+        status: 'ACTIVE',
+      };
       const existingItem = {
         id: 'cart-item-123',
         cartId: 'cart-123',
@@ -162,11 +172,18 @@ describe('CartService', () => {
         updatedAt: new Date(),
       };
 
-      const mockAddress = { id: 'address-789', customerId: 'customer-123', isDefault: true, isActive: true };
+      const mockAddress = {
+        id: 'address-789',
+        customerId: 'customer-123',
+        isDefault: true,
+        isActive: true,
+      };
 
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockAddress,
+      );
       mockPrismaService.cart.findFirst.mockResolvedValue(mockCart);
       mockPrismaService.cartItem.findFirst.mockResolvedValue(existingItem);
       mockPrismaService.cartItem.update.mockResolvedValue(updatedItem);
@@ -185,7 +202,11 @@ describe('CartService', () => {
     });
 
     it('should add cart item without addressId', async () => {
-      const mockCart = { id: 'cart-123', customerId: 'customer-123', status: 'ACTIVE' };
+      const mockCart = {
+        id: 'cart-123',
+        customerId: 'customer-123',
+        status: 'ACTIVE',
+      };
       const dtoWithoutAddress = {
         productId: 'product-456',
         quantity: 1,
@@ -202,33 +223,33 @@ describe('CartService', () => {
         updatedAt: new Date(),
       };
 
-      const mockAddress = { id: 'address-789', customerId: 'customer-123', isDefault: true, isActive: true };
+      const mockAddress = {
+        id: 'address-789',
+        customerId: 'customer-123',
+        isDefault: true,
+        isActive: true,
+      };
 
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.product.findUnique.mockResolvedValue(mockProduct);
-      mockPrismaService.customerAddress.findFirst.mockResolvedValue(mockAddress);
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(
+        mockAddress,
+      );
       mockPrismaService.cart.findFirst.mockResolvedValue(null);
       mockPrismaService.cart.create.mockResolvedValue(mockCart);
       mockPrismaService.cartItem.findFirst.mockResolvedValue(null);
       mockPrismaService.cartItem.create.mockResolvedValue(expectedCartItem);
 
       const result = await service.addToCart(dtoWithoutAddress, customerId);
-        dtoWithoutAddress as CreateCartItemDto,
-      );
 
       expect(result).toEqual(expectedCartItem);
       expect(mockPrismaService.cartItem.create).toHaveBeenCalledWith({
         data: {
-          customerId: dtoWithoutAddress.customerId,
+          cartId: mockCart.id,
           productId: dtoWithoutAddress.productId,
           quantity: dtoWithoutAddress.quantity,
-          addressId: undefined,
           price: mockProduct.price,
           deposit: mockProduct.deposit,
-        },
-        include: {
-          product: true,
-          address: true,
         },
       });
     });
@@ -236,9 +257,11 @@ describe('CartService', () => {
     it('should throw BadRequestException for invalid customer', async () => {
       mockPrismaService.customer.findUnique.mockResolvedValue(null);
 
-      await expect(service.addToCart(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.addToCart(dto, customerId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockPrismaService.customer.findUnique).toHaveBeenCalledWith({
-        where: { id: dto.customerId },
+        where: { id: customerId },
       });
       expect(mockPrismaService.product.findUnique).not.toHaveBeenCalled();
     });
@@ -247,7 +270,9 @@ describe('CartService', () => {
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.product.findUnique.mockResolvedValue(null);
 
-      await expect(service.addToCart(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.addToCart(dto, customerId)).rejects.toThrow(
+        BadRequestException,
+      );
       expect(mockPrismaService.product.findUnique).toHaveBeenCalledWith({
         where: { id: dto.productId },
       });
@@ -258,12 +283,15 @@ describe('CartService', () => {
       mockPrismaService.customer.findUnique.mockResolvedValue(mockCustomer);
       mockPrismaService.product.findUnique.mockResolvedValue(inactiveProduct);
 
-      await expect(service.addToCart(dto)).rejects.toThrow(BadRequestException);
+      await expect(service.addToCart(dto, customerId)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('updateQuantity', () => {
     const cartItemId = 1;
+    const customerId = 'customer-123';
     const dto: UpdateCartItemDto = {
       quantity: 5,
     };
@@ -287,7 +315,11 @@ describe('CartService', () => {
       mockPrismaService.cartItem.findUnique.mockResolvedValue(mockCartItem);
       mockPrismaService.cartItem.update.mockResolvedValue(updatedCartItem);
 
-      const result = await service.updateQuantity(cartItemId, dto);
+      const result = await service.updateQuantity(
+        customerId,
+        'product-456',
+        dto,
+      );
 
       expect(result).toEqual(updatedCartItem);
       expect(mockPrismaService.cartItem.findUnique).toHaveBeenCalledWith({
@@ -309,15 +341,15 @@ describe('CartService', () => {
     it('should throw NotFoundException for non-existent cart item', async () => {
       mockPrismaService.cartItem.findUnique.mockResolvedValue(null);
 
-      await expect(service.updateQuantity(cartItemId, dto)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.updateQuantity(customerId, 'product-456', dto),
+      ).rejects.toThrow(NotFoundException);
       expect(mockPrismaService.cartItem.update).not.toHaveBeenCalled();
     });
   });
 
   describe('removeFromCart', () => {
-    const cartItemId = 1;
+    const cartItemId = 'cart-item-1';
     const mockCartItem = {
       id: cartItemId,
       customerId: 'customer-123',
@@ -419,7 +451,7 @@ describe('CartService', () => {
     const customerId = 'customer-123';
     const mockCartItems = [
       {
-        id: 1,
+        id: 'cart-item-1',
         customerId,
         productId: 'product-456',
         quantity: 2,
@@ -431,7 +463,7 @@ describe('CartService', () => {
         updatedAt: new Date(),
       },
       {
-        id: 2,
+        id: 'cart-item-2',
         customerId,
         productId: 'product-789',
         quantity: 1,

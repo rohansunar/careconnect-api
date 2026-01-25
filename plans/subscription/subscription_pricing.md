@@ -98,10 +98,10 @@ If count == 0 → move to next month
 ```ts
 // File: src/subscription/dto/create-subscription.dto.ts
 export class CreateSubscriptionDto {
-  productPrice: number;
+  productId: number;
   frequency: 'DAILY' | 'ALTERNATE' | 'CUSTOM';
-  startDate: string; // ISO date
-  customWeekDays?: number[]; // 0=Sun, 1=Mon ... 6=Sat
+  start_date: string; // ISO date
+  custom_days?: DayOfWeek[];// 0=Sun, 1=Mon ... 6=Sat
 }
 ```
 
@@ -131,8 +131,8 @@ import {
 @Injectable()
 export class SubscriptionPricingService {
   calculateAmount(dto: CreateSubscriptionDto) {
-    const startDate = new Date(dto.startDate);
-    const endOfMonthDate = lastDayOfMonth(startDate);
+    const startDate = new Date(dto.start_date);
+    const endOfMonthDate = lastDayOfMonth(start_date);
 
     switch (dto.frequency) {
       case 'DAILY':

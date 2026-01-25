@@ -4,8 +4,9 @@ import {
   ForbiddenException,
   ConflictException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../../common/database/prisma.service';
+import { SubscriptionRepositoryService } from '../repositories/subscription.repository';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import type { User } from '../../common/interfaces/user.interface';
@@ -13,124 +14,146 @@ import { DeliveryFrequencyService } from './delivery-frequency.service';
 import { PriceCalculationService } from './price-calculation.service';
 import { PaymentModeService } from './payment-mode.service';
 import { SubscriptionValidationService } from './subscription-validation.service';
+import { PrismaService } from '../../common/database/prisma.service';
 import {
   DayOfWeek,
   SubscriptionFrequency,
 } from '../interfaces/delivery-frequency.interface';
 
+/**
+ * Service for managing customer subscription operations.
+ * This service provides functionality for customers to create, view, update, and manage their subscriptions.
+ */
 @Injectable()
 export class CustomerSubscriptionService {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly subscriptionRepository: SubscriptionRepositoryService,
     private readonly deliveryFrequencyService: DeliveryFrequencyService,
     private readonly priceCalculationService: PriceCalculationService,
     private readonly paymentModeService: PaymentModeService,
     private readonly subscriptionValidationService: SubscriptionValidationService,
+    private readonly prisma: PrismaService,
   ) {}
 
   /**
    * Creates a new subscription for the authenticated customer.
+   * This method performs the following operations:
+   * 1. Validates subscription inputs
+   * 2. Calculates the next delivery date based on frequency
+   * 3. Computes the total price for the subscription
+   * 4. Checks for duplicate subscriptions
+   * 5. Creates the subscription record
    * @param user - The authenticated customer user
-   * @param dto - The subscription data
-   * @returns The created subscription with calculated total price and payment mode
+   * @param dto - The subscription data transfer object
+   * @returns Object containing subscription ID, total price, payment mode, and customer details
+   * @throws ConflictException if a duplicate subscription exists
+   * @throws NotFoundException if customer is not found
+   * @throws InternalServerErrorException if database operations fail
    */
   async createSubscription(user: User, dto: CreateSubscriptionDto) {
-    const { customerAddress, product } =
-      await this.subscriptionValidationService.validateSubscriptionInputs(
-        dto,
-        user,
+    const validationResult =
+      await this.subscriptionValidationService.validateInputs(dto, user);
+
+    if (!validationResult.isValid) {
+      throw new NotFoundException(
+        validationResult.errors?.join(', ') || 'Validation failed',
       );
+    }
+
+    const customerAddress = await this.prisma.customerAddress.findFirst({
+      where: { customerId: user.id, is_active: true, isDefault: true },
+      include:{customer:true}
+    });
+
+    if (!customerAddress) {
+      throw new NotFoundException('Customer Address not found');
+    }
+
+    const product = await this.prisma.product.findUnique({
+      where: { id: dto.productId, is_schedulable: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Product not found or cannot be subscribed');
+    }
+
+    const startDate = new Date(dto.start_date);
+    const currentDate = new Date();
+    if (startDate.setHours(0, 0, 0, 0) < currentDate.setHours(0, 0, 0, 0)) {
+      throw new BadRequestException('Start date cannot be in the past');
+    }
 
     const customDays =
       dto.frequency === SubscriptionFrequency.CUSTOM_DAYS
         ? dto.custom_days
         : [];
     const nextDeliveryDate = this.deliveryFrequencyService.getNextDeliveryDate(
-      new Date(dto.start_date),
+      startDate,
       dto.frequency,
       customDays,
     );
 
     const totalPrice = this.priceCalculationService.calculateTotalPrice(
       dto.quantity,
-      product.price,
+      Number(product.price),
       dto.frequency,
-      new Date(dto.start_date),
+      startDate,
+      customDays,
     );
 
-    const paymentMode = this.paymentModeService.getPaymentMode();
+    const paymentMode = this.paymentModeService.getCurrentMode();
 
-    let hasDuplicate;
-    try {
-      hasDuplicate = await this.prisma.subscription.findFirst({
-        where: {
-          customerAddressId: customerAddress.id,
-          productId: dto.productId,
-        },
-      });
-    } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to check for duplicate subscription',
-      );
-    }
+    // let existingSubscription;
+    // try {
+    //   existingSubscription =
+    //     await this.subscriptionRepository.findByCustomerAndProduct(
+    //       user.id,
+    //       dto.productId,
+    //     );
+    // } catch (error) {
+    //   throw new InternalServerErrorException(
+    //     'Failed to check for duplicate subscription',
+    //   );
+    // }
 
-    if (hasDuplicate) {
-      throw new ConflictException(
-        'A subscription for this product already exists for this customer address.',
-      );
-    }
+    // if (existingSubscription && existingSubscription.length > 0) {
+    //   throw new ConflictException(
+    //     'A subscription for this product already exists for this customer address.',
+    //   );
+    // }
 
-    try {
-      const customer = await this.prisma.customer.findUnique({
-        where: { id: user.id },
-        select: {
-          name: true,
-          email: true,
-          phone: true,
-        },
-      });
+    const createdSubscription = await this.subscriptionRepository.create({
+      customerId: customerAddress.id,
+      productId: dto.productId,
+      quantity: dto.quantity,
+      price: totalPrice,
+      frequency: dto.frequency,
+      customDays: customDays,
+      startDate: startDate,
+      nextDeliveryDate: nextDeliveryDate,
+      status: 'PROCESSING',
+    });
 
-      if (!customer) {
-        throw new NotFoundException('Customer not found');
-      }
-
-      const createdSubscription = await this.prisma.subscription.create({
-        data: {
-          customerAddressId: customerAddress.id,
-          vendorId: product.vendorId,
-          productId: dto.productId,
-          quantity: dto.quantity,
-          frequency: dto.frequency,
-          custom_days: customDays as any,
-          next_delivery_date: nextDeliveryDate,
-          start_date: new Date(dto.start_date),
-          total_price: totalPrice,
-          payment_mode: paymentMode,
-        },
-      });
-
-      return {
-        id: "createdSubscription.id",
-        total_price: "createdSubscription.total_price",
-        payment_mode: paymentMode,
-        customer: {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-        },
-      };
-    } catch (error) {
-      throw new InternalServerErrorException('Failed to create subscription');
-    }
+    return {
+      id: createdSubscription.id,
+      total_price: createdSubscription.price,
+      payment_mode: paymentMode,
+      customer: {
+        name: customerAddress.customer.name,
+        email: customerAddress.customer.email,
+        phone: customerAddress.customer.phone,
+      },
+    };
   }
 
   /**
    * Retrieves all subscriptions for the authenticated customer.
+   * Supports pagination and filtering by status.
    * @param user - The authenticated customer user
    * @param status - Optional status filter, can be string or array of strings
-   * @param page - Page number for pagination
-   * @param limit - Number of items per page
-   * @returns Array of customer's subscriptions with relations
+   * @param page - Page number for pagination (default: 1)
+   * @param limit - Number of items per page (default: 10)
+   * @returns Object containing paginated subscriptions, total count, and pagination metadata
    */
   async getMySubscriptions(
     user: User,
@@ -138,26 +161,13 @@ export class CustomerSubscriptionService {
     page: number = 1,
     limit: number = 10,
   ) {
-    const query = {
-      customerAddress: {
-        customerId: user.id,
-        isDefault: true,
-      },
-    };
+    const subscriptions =
+      await this.subscriptionRepository.findByCustomerAndProduct(user.id, '');
     const skip = (page - 1) * limit;
-    const subscriptions = await this.prisma.subscription.findMany({
-      where: query,
-      include: {
-        customerAddress: true,
-        product: true,
-      },
-      skip,
-      take: limit,
-      orderBy: { created_at: 'desc' },
-    });
-    const total = await this.prisma.subscription.count({ where: query });
+    const paginatedSubscriptions = subscriptions.slice(skip, skip + limit);
+    const total = subscriptions.length;
     return {
-      subscriptions,
+      subscriptions: paginatedSubscriptions,
       total,
       page,
       limit,
@@ -167,19 +177,19 @@ export class CustomerSubscriptionService {
 
   /**
    * Retrieves a single subscription by ID, ensuring it belongs to the customer.
+   * Performs ownership validation to prevent unauthorized access.
    * @param id - The unique identifier of the subscription
    * @param user - The authenticated customer user
    * @returns The subscription with relations
+   * @throws NotFoundException if subscription is not found
+   * @throws ForbiddenException if user doesn't own the subscription
    */
   async getMySubscription(id: string, user: User) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { id },
-      include: { customerAddress: true },
-    });
+    const subscription = await this.subscriptionRepository.findById(id);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
-    if (subscription.customerAddress?.customerId !== user.id) {
+    if (subscription.customerId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
     return subscription;
@@ -187,24 +197,24 @@ export class CustomerSubscriptionService {
 
   /**
    * Updates a subscription, ensuring it belongs to the customer.
+   * Supports updating quantity, frequency, custom days, and start date.
    * @param id - The unique identifier of the subscription
-   * @param dto - The subscription data
+   * @param dto - The subscription data transfer object
    * @param user - The authenticated customer user
    * @returns The updated subscription
+   * @throws NotFoundException if subscription is not found
+   * @throws ForbiddenException if user doesn't own the subscription
    */
   async updateMySubscription(
     id: string,
     dto: UpdateSubscriptionDto,
     user: User,
   ) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { id },
-      include: { customerAddress: true },
-    });
+    const subscription = await this.subscriptionRepository.findById(id);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
-    if (subscription.customerAddress?.customerId !== user.id) {
+    if (subscription.customerId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
     const updateData: any = {};
@@ -222,71 +232,60 @@ export class CustomerSubscriptionService {
         dto.frequency === SubscriptionFrequency.CUSTOM_DAYS
           ? dto.custom_days
           : [];
-      updateData.custom_days = customDays;
+      updateData.customDays = customDays;
 
       const nextDeliveryDate =
         this.deliveryFrequencyService.getNextDeliveryDate(
-          subscription.start_date,
+          subscription.startDate,
           dto.frequency,
           customDays,
         );
-      updateData.next_delivery_date = nextDeliveryDate;
+      updateData.startDate = nextDeliveryDate;
     }
     if (dto.start_date !== undefined) {
-      updateData.start_date = new Date(dto.start_date);
+      updateData.startDate = new Date(dto.start_date);
     }
-    return this.prisma.subscription.update({
-      where: { id },
-      data: updateData,
-    });
+    return this.subscriptionRepository.update(id, updateData);
   }
 
   /**
    * Toggles the status of a subscription between ACTIVE and INACTIVE.
+   * This allows customers to pause and resume their subscriptions.
    * @param id - The unique identifier of the subscription
    * @param user - The authenticated customer user
-   * @param action - The action to perform (pause or resume)
    * @returns The updated subscription
+   * @throws NotFoundException if subscription is not found
+   * @throws ForbiddenException if user doesn't own the subscription
    */
   async toggleSubscriptionStatus(id: string, user: User) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { id },
-      include: { customerAddress: true },
-    });
+    const subscription = await this.subscriptionRepository.findById(id);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
-    if (subscription.customerAddress?.customerId !== user.id) {
+    if (subscription.customerId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
     const newStatus = subscription.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    return this.prisma.subscription.update({
-      where: { id },
-      data: {
-        status: newStatus,
-      },
-    });
+    return this.subscriptionRepository.update(id, { status: newStatus });
   }
 
   /**
    * Deletes a subscription, ensuring it belongs to the customer.
+   * Performs ownership validation before deletion.
    * @param id - The unique identifier of the subscription
    * @param user - The authenticated customer user
    * @returns The deleted subscription
+   * @throws NotFoundException if subscription is not found
+   * @throws ForbiddenException if user doesn't own the subscription
    */
   async deleteMySubscription(id: string, user: User) {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { id },
-      include: { customerAddress: true },
-    });
+    const subscription = await this.subscriptionRepository.findById(id);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
     }
-    if (subscription.customerAddress?.customerId !== user.id) {
+    if (subscription.customerId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
-    return this.prisma.subscription.delete({
-      where: { id },
-    });
+    return this.subscriptionRepository.delete(id);
   }
 }

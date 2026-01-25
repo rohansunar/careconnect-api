@@ -5,13 +5,14 @@ import {
   SubscriptionFrequency,
 } from '../../../src/subscription/interfaces/delivery-frequency.interface';
 import { BadRequestException } from '@nestjs/common';
+import { DeliveryFrequencyFactoryService } from '../../../src/subscription/services/delivery-frequency/delivery-frequency.factory';
 
 describe('DeliveryFrequencyService', () => {
   let service: DeliveryFrequencyService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [DeliveryFrequencyService],
+      providers: [DeliveryFrequencyService, DeliveryFrequencyFactoryService],
     }).compile();
 
     service = module.get<DeliveryFrequencyService>(DeliveryFrequencyService);
@@ -123,7 +124,7 @@ describe('DeliveryFrequencyService', () => {
   describe('getDeliveryDays', () => {
     it('should return all days for DAILY frequency', () => {
       const days = service.getDeliveryDays(SubscriptionFrequency.DAILY);
-      expect(days).toEqual(Object.values(DayOfWeek));
+      expect(days).toEqual([1, 2, 3, 4, 5, 6, 0]);
     });
 
     it('should return alternative days for ALTERNATIVE_DAYS frequency', () => {

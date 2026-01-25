@@ -1,106 +1,53 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { PaymentModeService } from './payment-mode.service';
 
+/**
+ * Service for managing administrative subscription operations.
+ * This service provides functionality for administrators to manage payment modes
+ * and other subscription-related configurations.
+ */
 @Injectable()
 export class AdminSubscriptionService {
-  private readonly configPath: string;
   private readonly logger = new Logger(AdminSubscriptionService.name);
 
-  constructor() {
-    this.configPath = path.join(
-      __dirname,
-      '..',
-      'config',
-      'payment-mode.config.json',
-    );
-  }
+  constructor(private readonly paymentModeService: PaymentModeService) {}
 
   /**
-   *
-   * Toggles the default payment mode (UPFRONT|POST_DELIVERY) for all subscription creations.
+   * Toggles the default payment mode between UPFRONT and POST_DELIVERY.
+   * This affects all new subscription creations.
    * @returns An object with a success message and the updated payment mode
-   * @throws NotFoundException if the config file is not found or invalid
    */
   async togglePaymentMode(): Promise<{
     message: string;
     payment_mode: string;
   }> {
     try {
-      const configData = fs.readFileSync(this.configPath, 'utf-8');
-      const config = JSON.parse(configData);
-      const currentMode = config.payment_mode;
-      const newMode = currentMode === 'UPFRONT' ? 'POST_DELIVERY' : 'UPFRONT';
-      const updatedConfig = { payment_mode: newMode };
-      fs.writeFileSync(this.configPath, JSON.stringify(updatedConfig, null, 2));
-      this.logger.log(`Payment mode toggled from ${currentMode} to ${newMode}`);
+      const newMode = this.paymentModeService.toggleMode();
+      this.logger.log(`Payment mode toggled to ${newMode}`);
       return {
         message: 'Payment mode toggled successfully',
         payment_mode: newMode,
       };
     } catch (error) {
       this.logger.error(`Failed to toggle payment mode: ${error.message}`);
-      if (error.code === 'ENOENT') {
-        throw new NotFoundException(
-          'Payment mode configuration file not found',
-        );
-      } else if (error instanceof SyntaxError) {
-        throw new NotFoundException(
-          'Payment mode configuration file is corrupted',
-        );
-      } else {
-        throw new NotFoundException(
-          'Failed to toggle payment mode configuration',
-        );
-      }
+      throw new NotFoundException(
+        'Failed to toggle payment mode configuration',
+      );
     }
   }
 
   /**
    * Retrieves the current default payment mode.
    * @returns An object with the current payment mode
-   * @throws NotFoundException if the config file is not found or invalid
    */
   async getPaymentMode(): Promise<{ payment_mode: string }> {
     try {
-      const configData = fs.readFileSync(this.configPath, 'utf-8');
-      const config = JSON.parse(configData);
-      this.logger.log(`Payment mode retrieved: ${config.payment_mode}`);
-      return { payment_mode: config.payment_mode };
+      const currentMode = this.paymentModeService.getCurrentMode();
+      this.logger.log(`Payment mode retrieved: ${currentMode}`);
+      return { payment_mode: currentMode };
     } catch (error) {
-      if (error.code === 'ENOENT') {
-        try {
-          const directoryPath = path.dirname(this.configPath);
-          if (!fs.existsSync(directoryPath)) {
-            fs.mkdirSync(directoryPath, { recursive: true });
-            this.logger.log(`Created directory structure at ${directoryPath}`);
-          }
-          const defaultConfig = { payment_mode: 'UPFRONT' };
-          fs.writeFileSync(
-            this.configPath,
-            JSON.stringify(defaultConfig, null, 2),
-          );
-          this.logger.log(
-            'Created default payment mode configuration with UPFRONT',
-          );
-          return defaultConfig;
-        } catch (fileError) {
-          this.logger.error(
-            `Failed to create payment mode configuration: ${fileError.message}`,
-          );
-          throw new NotFoundException(
-            'Failed to create payment mode configuration',
-          );
-        }
-      } else if (error instanceof SyntaxError) {
-        this.logger.error('Payment mode configuration file is corrupted');
-        throw new NotFoundException(
-          'Payment mode configuration file is corrupted',
-        );
-      } else {
-        this.logger.error(`Failed to retrieve payment mode: ${error.message}`);
-        throw new NotFoundException('Payment mode configuration not found');
-      }
+      this.logger.error(`Failed to retrieve payment mode: ${error.message}`);
+      throw new NotFoundException('Payment mode configuration not found');
     }
   }
 }

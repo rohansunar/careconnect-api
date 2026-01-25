@@ -7,6 +7,7 @@ import {
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
+import multipart from '@fastify/multipart';
 
 async function bootstrap() {
   const adapter = new FastifyAdapter({
@@ -24,7 +25,7 @@ async function bootstrap() {
   });
 
   // Multipart support for file uploads
-  await app.register(import('@fastify/multipart'), {
+  await app.register(multipart, {
     limits: {
       fileSize: 5 * 1024 * 1024, // 5MB limit
       files: 10, // max 10 files
