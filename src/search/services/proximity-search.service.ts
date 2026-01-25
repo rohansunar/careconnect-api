@@ -49,6 +49,13 @@ export class ProximitySearchService {
       throw new HttpException('Invalid limit: must be a positive integer', HttpStatus.BAD_REQUEST);
     }
 
+     const customer =
+      await this.customerAddressRetriever.getCustomer(customerId);
+
+    if (!customer) {
+      throw new HttpException('CUSTOMER_NOT_FOUND', HttpStatus.NOT_FOUND);
+    }
+
     const address =
       await this.customerAddressRetriever.getCustomerAddress(customerId);
 

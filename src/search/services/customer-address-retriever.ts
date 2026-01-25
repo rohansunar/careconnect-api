@@ -19,6 +19,24 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
     * @param customerId The customer's ID
     * @returns Customer's address or null if not found
     */
+  async getCustomer(
+    customerId: string,
+  ): Promise<{name:string} | null> {
+    try {
+      return await this.prisma.customer.findUnique({
+        where: { id: customerId },
+      });
+    } catch (error) {
+      this.logger.error('Error fetching customer:', error);
+      return null;
+    }
+  }
+
+  /**
+    * Retrieves the customer's default active address.
+    * @param customerId The customer's ID
+    * @returns Customer's address or null if not found
+    */
   async getCustomerAddress(
     customerId: string,
   ): Promise<ICustomerAddress | null> {

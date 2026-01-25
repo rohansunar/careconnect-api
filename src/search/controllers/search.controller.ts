@@ -32,6 +32,10 @@ export class SearchController {
      description: 'Invalid input parameters',
    })
    @ApiResponse({
+    status: 404,
+    description: 'CUSTOMER_NOT_FOUND',
+   })
+   @ApiResponse({
      status: 404,
      description: 'CUSTOMER_ADDRESS_NOT_FOUND',
    })
