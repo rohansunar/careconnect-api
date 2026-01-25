@@ -32,7 +32,7 @@ export class ProductRepository implements IProductRepository {
     limit: number,
   ): Promise<{ results: IProximitySearchResult[]; total: number }> {
     const offset = (page - 1) * limit;
-    const customerGeoPoint = `SRID=4326;POINT(${customerLocation.lng} ${customerLocation.lat})`;
+    const customerGeoPoint = `'SRID=4326;POINT(${customerLocation.lng} ${customerLocation.lat})'`;
     const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {

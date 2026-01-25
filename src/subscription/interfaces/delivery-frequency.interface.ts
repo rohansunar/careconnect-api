@@ -44,13 +44,6 @@ export interface DeliveryFrequencyService {
   ): void;
 
   /**
-   * Validates that custom days are provided and contain no duplicates.
-   * @param customDays - Array of days for custom delivery schedule
-   * @throws BadRequestException if validation fails
-   */
-  validateCustomDays(customDays: DayOfWeek[]): void;
-
-  /**
    * Calculates the next delivery date based on the start date and frequency.
    * For custom days, finds the next valid day in the custom schedule.
    * @param startDate - The starting date for the subscription
@@ -64,19 +57,4 @@ export interface DeliveryFrequencyService {
     frequency: SubscriptionFrequency,
     customDays?: DayOfWeek[],
   ): Date;
-
-  /**
-   * Returns the days of the week that deliveries will occur based on frequency.
-   * For DAILY: returns all days
-   * For ALTERNATIVE_DAYS: returns Monday, Wednesday, Friday, Sunday
-   * For CUSTOM_DAYS: returns the provided custom days
-   * @param frequency - The subscription frequency type
-   * @param customDays - Optional array of days for custom frequency
-   * @returns Array of days when deliveries will occur
-   * @throws BadRequestException if customDays are required but not provided
-   */
-  getDeliveryDays(
-    frequency: SubscriptionFrequency,
-    customDays?: DayOfWeek[],
-  ): DayOfWeek[];
 }

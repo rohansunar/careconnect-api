@@ -41,6 +41,7 @@ export class SubscriptionValidationService implements SubscriptionValidator {
   ): Promise<ValidationResult> {
     const customerAddress = await this.prisma.customerAddress.findFirst({
       where: { customerId: user.id, is_active: true, isDefault: true },
+      include: { customer: true },
     });
 
     if (!customerAddress) {
@@ -48,20 +49,13 @@ export class SubscriptionValidationService implements SubscriptionValidator {
     }
 
     const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId },
+      where: { id: dto.productId, is_schedulable: true },
     });
 
     if (!product) {
       return {
         isValid: false,
-        errors: ['Product not found'],
-      };
-    }
-
-    if (!product.is_schedulable) {
-      return {
-        isValid: false,
-        errors: ['Product cannot be subscribed'],
+        errors: ['Product not found or cannot be subscribed'],
       };
     }
 
@@ -74,6 +68,6 @@ export class SubscriptionValidationService implements SubscriptionValidator {
       return { isValid: false, errors: [error.message] };
     }
 
-    return { isValid: true };
+    return { isValid: true, customerAddress, product };
   }
 }

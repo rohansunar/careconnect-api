@@ -22,19 +22,6 @@ export class AlternateFrequencyService implements DeliveryFrequencyStrategy {
   }
 
   /**
-   * Gets the delivery days for alternate frequency (Mon, Wed, Fri, Sun).
-   * @returns Array of days when deliveries will occur
-   */
-  getDeliveryDays(): DayOfWeek[] {
-    return [
-      DayOfWeek.MONDAY,
-      DayOfWeek.WEDNESDAY,
-      DayOfWeek.FRIDAY,
-      DayOfWeek.SUNDAY,
-    ];
-  }
-
-  /**
    * Validates the alternate frequency configuration.
    * Alternate frequency doesn't require custom days.
    */

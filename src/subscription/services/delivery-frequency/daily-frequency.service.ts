@@ -25,16 +25,6 @@ export class DailyFrequencyService implements DeliveryFrequencyStrategy {
   }
 
   /**
-   * Gets all days of the week for daily delivery.
-   * @returns Array of all days when deliveries will occur
-   */
-  getDeliveryDays(): DayOfWeek[] {
-    return Object.values(DayOfWeek).filter(
-      (day): day is number => typeof day === 'number',
-    );
-  }
-
-  /**
    * Validates the daily frequency configuration.
    * Daily frequency doesn't require custom days.
    */

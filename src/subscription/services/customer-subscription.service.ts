@@ -60,22 +60,8 @@ export class CustomerSubscriptionService {
       );
     }
 
-    const customerAddress = await this.prisma.customerAddress.findFirst({
-      where: { customerId: user.id, is_active: true, isDefault: true },
-      include: { customer: true },
-    });
-
-    if (!customerAddress) {
-      throw new NotFoundException('Customer Address not found');
-    }
-
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId, is_schedulable: true },
-    });
-
-    if (!product) {
-      throw new NotFoundException('Product not found or cannot be subscribed');
-    }
+    const customerAddress = validationResult.customerAddress!;
+    const product = validationResult.product!;
 
     const startDate = new Date(dto.start_date);
     const currentDate = new Date();
@@ -83,10 +69,7 @@ export class CustomerSubscriptionService {
       throw new BadRequestException('Start date cannot be in the past');
     }
 
-    const customDays =
-      dto.frequency === SubscriptionFrequency.CUSTOM_DAYS
-        ? dto.custom_days
-        : [];
+    const customDays = this.extractCustomDays(dto.frequency, dto.custom_days);
     const nextDeliveryDate = this.deliveryFrequencyService.getNextDeliveryDate(
       startDate,
       dto.frequency,
@@ -228,10 +211,7 @@ export class CustomerSubscriptionService {
       );
       updateData.frequency = dto.frequency;
 
-      const customDays =
-        dto.frequency === SubscriptionFrequency.CUSTOM_DAYS
-          ? dto.custom_days
-          : [];
+      const customDays = this.extractCustomDays(dto.frequency, dto.custom_days);
       updateData.customDays = customDays;
 
       const nextDeliveryDate =
@@ -287,5 +267,20 @@ export class CustomerSubscriptionService {
       throw new ForbiddenException('Access denied');
     }
     return this.subscriptionRepository.delete(id);
+  }
+
+  /**
+   * Extracts custom days based on frequency.
+   * @param frequency - The subscription frequency
+   * @param customDays - Optional custom days array
+   * @returns Array of custom days or empty array
+   */
+  private extractCustomDays(
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): DayOfWeek[] {
+    return frequency === SubscriptionFrequency.CUSTOM_DAYS
+      ? customDays || []
+      : [];
   }
 }

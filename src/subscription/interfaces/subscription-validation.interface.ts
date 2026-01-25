@@ -21,4 +21,6 @@ import { User } from '../../common/interfaces/user.interface';
 export interface ValidationResult {
   isValid: boolean;
   errors?: string[];
+  customerAddress?: any;
+  product?: any;
 }

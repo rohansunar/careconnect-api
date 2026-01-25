@@ -32,11 +32,4 @@ export interface PaymentModeService {
    * @returns Updated payment mode
    */
   toggleMode(): string;
-
-  /**
-   * Validates if a payment mode is supported.
-   * @param mode - Payment mode to validate
-   * @returns True if valid, false otherwise
-   */
-  validateMode(mode: string): boolean;
 }

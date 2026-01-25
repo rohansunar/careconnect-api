@@ -63,14 +63,6 @@ export class CustomFrequencyService implements DeliveryFrequencyStrategy {
   }
 
   /**
-   * Gets the custom delivery days.
-   * @returns Array of custom days when deliveries will occur
-   */
-  getDeliveryDays(): DayOfWeek[] {
-    return this.customDays;
-  }
-
-  /**
    * Validates the custom frequency configuration.
    * Ensures custom days are provided and valid.
    */

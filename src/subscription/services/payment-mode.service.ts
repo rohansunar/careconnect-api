@@ -1,6 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Injectable } from '@nestjs/common';
 import { PaymentModeService as IPaymentModeService } from '../interfaces/payment-mode.interface';
 import { JsonPaymentModeRepository } from './payment-mode/payment-mode.repository';
 
@@ -31,16 +29,5 @@ export class PaymentModeService implements IPaymentModeService {
     const newMode = currentMode === 'UPFRONT' ? 'POST_DELIVERY' : 'UPFRONT';
     this.paymentModeRepository.setPaymentMode(newMode);
     return newMode;
-  }
-
-  /**
-   * Validates if a payment mode is supported.
-   * Currently supports UPFRONT and POST_DELIVERY modes.
-   * @param paymentMode - Payment mode to validate
-   * @returns True if the payment mode is valid, false otherwise
-   */
-  validateMode(paymentMode: string): boolean {
-    const validModes = ['UPFRONT', 'POST_DELIVERY'];
-    return validModes.includes(paymentMode);
   }
 }

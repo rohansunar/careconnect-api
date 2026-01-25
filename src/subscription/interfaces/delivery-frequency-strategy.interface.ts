@@ -11,12 +11,6 @@ export interface DeliveryFrequencyStrategy {
   getNextDeliveryDate(startDate: Date): Date;
 
   /**
-   * Gets the delivery days for this frequency.
-   * @returns Array of days when deliveries will occur
-   */
-  getDeliveryDays(): DayOfWeek[];
-
-  /**
    * Validates the strategy configuration.
    * @throws Error if validation fails
    */
