@@ -6,7 +6,6 @@ export interface User {
   email?: string;
   role: UserRole;
   isActive: boolean;
-  monthlyPaymentMode: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -14,6 +13,6 @@ export interface User {
 export enum UserRole {
   CUSTOMER = 'customer',
   VENDOR = 'vendor',
-  DELIVERY_RIDER = 'delivery_rider',
+  RIDER = 'rider',
   ADMIN = 'admin',
 }
