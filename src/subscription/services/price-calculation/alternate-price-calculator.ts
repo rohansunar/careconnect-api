@@ -3,10 +3,10 @@ import { PriceCalculator } from '../../interfaces/price-calculation.interface';
 import {
   differenceInCalendarDays,
   lastDayOfMonth,
-  addDays,
   startOfMonth,
   endOfMonth,
 } from 'date-fns';
+import { getNextMonthDates } from './date-utils';
 
 /**
  * Price calculator implementation for alternate days frequency subscriptions.
@@ -42,8 +42,7 @@ export class AlternatePriceCalculator implements PriceCalculator {
    * @returns Total price for next month
    */
   private calculateNextMonth(price: number): number {
-    const nextMonthStart = startOfMonth(addDays(new Date(), 32));
-    const nextMonthEnd = endOfMonth(nextMonthStart);
+    const { nextMonthStart, nextMonthEnd } = getNextMonthDates();
     const days = differenceInCalendarDays(nextMonthEnd, nextMonthStart) + 1;
     const deliveries = Math.ceil(days / 2);
     return price * deliveries;

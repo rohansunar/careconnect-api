@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { DayOfWeek } from '../../interfaces/delivery-frequency.interface';
 import { DeliveryFrequencyStrategy } from '../../interfaces/delivery-frequency-strategy.interface';
 
 /**

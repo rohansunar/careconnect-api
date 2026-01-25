@@ -8,6 +8,7 @@ import {
   endOfMonth,
 } from 'date-fns';
 import { DayOfWeek } from '../../interfaces/delivery-frequency.interface';
+import { getNextMonthDates } from './date-utils';
 
 /**
  * Price calculator implementation for custom days frequency subscriptions.
@@ -51,8 +52,7 @@ export class CustomPriceCalculator implements PriceCalculator {
    * @returns Total price for next month
    */
   private calculateNextMonth(price: number): number {
-    const nextMonthStart = startOfMonth(addDays(new Date(), 32));
-    const nextMonthEnd = endOfMonth(nextMonthStart);
+    const { nextMonthStart, nextMonthEnd } = getNextMonthDates();
     const count = this.countWeekDaysInRange(
       nextMonthStart,
       nextMonthEnd,

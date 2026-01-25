@@ -168,13 +168,7 @@ export class CustomerSubscriptionService {
    * @throws ForbiddenException if user doesn't own the subscription
    */
   async getMySubscription(id: string, user: User) {
-    const subscription = await this.subscriptionRepository.findById(id);
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-    if (subscription.customerId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
+    const subscription = await this.validateSubscriptionOwnership(id, user);
     return subscription;
   }
 
@@ -193,13 +187,7 @@ export class CustomerSubscriptionService {
     dto: UpdateSubscriptionDto,
     user: User,
   ) {
-    const subscription = await this.subscriptionRepository.findById(id);
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-    if (subscription.customerId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
+    const subscription = await this.validateSubscriptionOwnership(id, user);
     const updateData: any = {};
     if (dto.quantity !== undefined) {
       updateData.quantity = dto.quantity;
@@ -238,13 +226,7 @@ export class CustomerSubscriptionService {
    * @throws ForbiddenException if user doesn't own the subscription
    */
   async toggleSubscriptionStatus(id: string, user: User) {
-    const subscription = await this.subscriptionRepository.findById(id);
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-    if (subscription.customerId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
+    const subscription = await this.validateSubscriptionOwnership(id, user);
     const newStatus = subscription.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     return this.subscriptionRepository.update(id, { status: newStatus });
   }
@@ -259,6 +241,19 @@ export class CustomerSubscriptionService {
    * @throws ForbiddenException if user doesn't own the subscription
    */
   async deleteMySubscription(id: string, user: User) {
+    const subscription = await this.validateSubscriptionOwnership(id, user);
+    return this.subscriptionRepository.delete(id);
+  }
+
+  /**
+   * Validates subscription ownership by fetching the subscription, checking existence, and verifying ownership.
+   * @param id - The unique identifier of the subscription
+   * @param user - The authenticated customer user
+   * @returns The subscription if valid
+   * @throws NotFoundException if subscription is not found
+   * @throws ForbiddenException if user doesn't own the subscription
+   */
+  private async validateSubscriptionOwnership(id: string, user: User) {
     const subscription = await this.subscriptionRepository.findById(id);
     if (!subscription) {
       throw new NotFoundException('Subscription not found');
@@ -266,7 +261,7 @@ export class CustomerSubscriptionService {
     if (subscription.customerId !== user.id) {
       throw new ForbiddenException('Access denied');
     }
-    return this.subscriptionRepository.delete(id);
+    return subscription;
   }
 
   /**
