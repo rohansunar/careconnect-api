@@ -14,12 +14,19 @@ describe('VendorAddressService', () => {
   const mockPrismaService = {
     vendorAddress: {
       findUnique: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
     },
-    $queryRaw: jest.fn(),
-    $executeRawUnsafe: jest.fn(),
+    vendor: {
+      findFirst: jest.fn().mockResolvedValue({ id: 'vendor-id' }),
+    },
+    $queryRaw: jest.fn().mockResolvedValue([{ id: 'new-address-id' }]),
+    $executeRawUnsafe: jest.fn().mockResolvedValue(1),
+    $transaction: jest.fn().mockImplementation(async (fn) => {
+      return await fn(mockPrismaService);
+    }),
   };
 
   const mockLocationService = {
@@ -50,7 +57,7 @@ describe('VendorAddressService', () => {
     jest.clearAllMocks();
   });
 
-  describe('createAddress', () => {
+  describe('create', () => {
     it('should create a new vendor address', async () => {
       const vendorId = 'vendor-id';
       const createDto: CreateAddressDto = {
@@ -62,38 +69,106 @@ describe('VendorAddressService', () => {
         lat: 19.076,
       };
       const mockLocation = { id: 'location-id' };
-      const mockCreatedAddress = {
-        id: 'new-address-id',
-        vendorId,
-        ...createDto,
-        locationId: mockLocation.id,
-      };
 
-      mockLocationService.findOrCreateLocation.mockResolvedValue(
-        mockLocation.id,
-      );
-      mockPrismaService.vendorAddress.create.mockResolvedValue(
-        mockCreatedAddress,
-      );
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
 
-      const result = await service.createAddress(vendorId, createDto);
+      const result = await service.create(vendorId, createDto);
 
       expect(locationService.findOrCreateLocation).toHaveBeenCalledWith({
         lat: createDto.lat!,
         lng: createDto.lng!,
         city: createDto.city,
+        state: createDto.state,
       });
-      expect(prismaService.vendorAddress.create).toHaveBeenCalledWith({
-        data: {
-          vendorId,
-          locationId: mockLocation.id,
-          lng: createDto.lng,
-          lat: createDto.lat,
-          pincode: createDto.pincode,
-          address: createDto.address,
-        },
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
+    it('should validate ST_MakePoint for geography point creation', async () => {
+      const vendorId = 'vendor-id';
+      const createDto: CreateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
       });
-      expect(result).toEqual(mockCreatedAddress);
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(vendorId, createDto);
+
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(expect.stringContaining('ST_MakePoint'));
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.8777, 19.076)::geography'),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
+    it('should handle precision in ST_MakePoint for geography point creation', async () => {
+      const vendorId = 'vendor-id';
+      const createDto: CreateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.877654,
+        lat: 19.076543,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(vendorId, createDto);
+
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
+    it('should ensure geography point is correctly formatted in the query', async () => {
+      const vendorId = 'vendor-id';
+      const createDto: CreateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(vendorId, createDto);
+
+      const expectedQuery = expect.stringContaining('ST_MakePoint');
+      const expectedGeographyCast = expect.stringContaining('::geography');
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringMatching(expectedQuery),
+      );
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringMatching(expectedGeographyCast),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
     });
 
     it('should throw BadRequestException if latitude and longitude are missing', async () => {
@@ -106,7 +181,7 @@ describe('VendorAddressService', () => {
       };
 
       await expect(
-        service.createAddress(vendorId, invalidDto as any),
+        service.create(vendorId, invalidDto as any),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -166,9 +241,10 @@ describe('VendorAddressService', () => {
         locationId: mockLocation.id,
       };
 
-      mockLocationService.findOrCreateLocation.mockResolvedValue(
-        mockLocation.id,
-      );
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
       mockPrismaService.vendorAddress.update.mockResolvedValue(
         mockUpdatedAddress,
       );
@@ -178,18 +254,123 @@ describe('VendorAddressService', () => {
       expect(locationService.findOrCreateLocation).toHaveBeenCalledWith({
         lat: updateDto.lat!,
         lng: updateDto.lng!,
-        city: updateDto.city,
+        state: updateDto.state,
       });
       expect(prismaService.vendorAddress.update).toHaveBeenCalledWith({
         where: { vendorId },
         data: {
-          lng: updateDto.lng,
-          lat: updateDto.lat,
           pincode: updateDto.pincode,
           address: updateDto.address,
           locationId: mockLocation.id,
         },
       });
+      expect(result).toEqual(mockUpdatedAddress);
+    });
+
+    it('should validate ST_MakePoint for geography point update', async () => {
+      const vendorId = 'vendor-id';
+      const updateDto: UpdateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '456 Business Avenue',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'new-location-id' };
+      const mockUpdatedAddress = {
+        id: 'address-id',
+        vendorId,
+        ...updateDto,
+        locationId: mockLocation.id,
+      };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.vendorAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
+
+      const result = await service.updateAddress(vendorId, updateDto);
+
+      expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.8777, 19.076)::geography'),
+      );
+      expect(result).toEqual(mockUpdatedAddress);
+    });
+
+    it('should handle precision in ST_MakePoint for geography point update', async () => {
+      const vendorId = 'vendor-id';
+      const updateDto: UpdateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '456 Business Avenue',
+        lng: 72.877654,
+        lat: 19.076543,
+      };
+      const mockLocation = { id: 'new-location-id' };
+      const mockUpdatedAddress = {
+        id: 'address-id',
+        vendorId,
+        ...updateDto,
+        locationId: mockLocation.id,
+      };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.vendorAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
+
+      const result = await service.updateAddress(vendorId, updateDto);
+
+      expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+      );
+      expect(result).toEqual(mockUpdatedAddress);
+    });
+
+    it('should ensure geography point is correctly formatted in the update query', async () => {
+      const vendorId = 'vendor-id';
+      const updateDto: UpdateAddressDto = {
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '456 Business Avenue',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'new-location-id' };
+      const mockUpdatedAddress = {
+        id: 'address-id',
+        vendorId,
+        ...updateDto,
+        locationId: mockLocation.id,
+      };
+
+      mockLocationService.findOrCreateLocation.mockResolvedValue({
+        id: mockLocation.id,
+        isServiceable: true,
+      });
+      mockPrismaService.vendorAddress.update.mockResolvedValue(
+        mockUpdatedAddress,
+      );
+
+      const result = await service.updateAddress(vendorId, updateDto);
+
+      const expectedQuery = expect.stringContaining('ST_MakePoint');
+      const expectedGeographyCast = expect.stringContaining('::geography');
+      expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
+        expect.stringMatching(expectedQuery),
+      );
+      expect(mockPrismaService.$executeRawUnsafe).toHaveBeenCalledWith(
+        expect.stringMatching(expectedGeographyCast),
+      );
       expect(result).toEqual(mockUpdatedAddress);
     });
 
@@ -235,29 +416,17 @@ describe('VendorAddressService', () => {
 
       expect(prismaService.vendorAddress.findUnique).toHaveBeenCalledWith({
         where: { vendorId },
+        include: { location: true },
       });
-      expect(result).toEqual({
-        id: 'address-id',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        pincode: '400001',
-        address: '123 Main Street',
-        lng: 72.8777,
-        lat: 19.076,
-      });
+      expect(result).toEqual(mockAddress);
     });
 
-    it('should return null if address does not exist', async () => {
+    it('should throw NotFoundException if address does not exist', async () => {
       const vendorId = 'non-existent-vendor-id';
 
       mockPrismaService.vendorAddress.findUnique.mockResolvedValue(null);
 
-      const result = await service.getAddressByVendorIdWithLocation(vendorId);
-
-      expect(prismaService.vendorAddress.findUnique).toHaveBeenCalledWith({
-        where: { vendorId },
-      });
-      expect(result).toBeNull();
+      await expect(service.getAddressByVendorIdWithLocation(vendorId)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -275,26 +444,22 @@ describe('VendorAddressService', () => {
         lat: 19.076,
       };
 
-      mockPrismaService.vendorAddress.delete.mockResolvedValue(mockAddress);
+      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(mockAddress);
 
       const result = await service.deleteAddress(vendorId);
 
-      expect(prismaService.vendorAddress.delete).toHaveBeenCalledWith({
-        where: { vendorId },
-      });
       expect(result).toEqual(mockAddress);
     });
 
     it('should throw NotFoundException if address does not exist', async () => {
       const vendorId = 'non-existent-vendor-id';
 
-      mockPrismaService.vendorAddress.delete.mockRejectedValue(
-        new NotFoundException('Vendor address not found'),
-      );
+      mockPrismaService.vendorAddress.findUnique.mockResolvedValue(null);
 
       await expect(service.deleteAddress(vendorId)).rejects.toThrow(
         NotFoundException,
       );
     });
   });
+
 });

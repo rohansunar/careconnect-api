@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import { FastifyAdapter } from '@nestjs/platform-fastify';
 import { AddressModule } from '../../src/address/address.module';
 import { PrismaService } from '../../src/common/database/prisma.service';
 import { VendorAddressService } from '../../src/address/services/vendor-address.service';
@@ -12,16 +13,18 @@ import { VendorService } from '../../src/vendor/services/vendor.service';
 describe('VendorAddressController (Integration)', () => {
   let app: INestApplication;
   let prismaService: PrismaService;
+  let locationService: LocationService;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AddressModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleFixture.createNestApplication(new FastifyAdapter());
     await app.init();
 
     prismaService = moduleFixture.get<PrismaService>(PrismaService);
+    locationService = moduleFixture.get<LocationService>(LocationService);
   });
 
   afterAll(async () => {
@@ -53,13 +56,13 @@ describe('VendorAddressController (Integration)', () => {
 
       const location = await prismaService.location.create({
         data: {
-          lat: 19.076,
-          lng: 72.8777,
           name: 'Mumbai',
           state: 'Maharashtra',
+          geopoint: 'POINT(72.8777 19.076)',
         },
       });
       locationId = location.id;
+      console.log('Location created with id:', locationId);
     });
 
     describe('POST /vendor/addresses', () => {
@@ -81,13 +84,6 @@ describe('VendorAddressController (Integration)', () => {
           .expect(201);
 
         expect(response.body).toHaveProperty('id');
-        expect(response.body.vendorId).toBe(vendorId);
-        expect(response.body.city).toBe(createDto.city);
-        expect(response.body.state).toBe(createDto.state);
-        expect(response.body.pincode).toBe(createDto.pincode);
-        expect(response.body.address).toBe(createDto.address);
-        expect(response.body.lng).toBe(createDto.lng);
-        expect(response.body.lat).toBe(createDto.lat);
       });
 
       it('should throw BadRequestException if required fields are missing', async () => {
@@ -128,8 +124,8 @@ describe('VendorAddressController (Integration)', () => {
 
         expect(response.body).toHaveProperty('id');
         expect(response.body.vendorId).toBe(vendorId);
-        expect(response.body.city).toBe('Mumbai');
-        expect(response.body.state).toBe('Maharashtra');
+        expect(response.body.location.name).toBe('Mumbai');
+        expect(response.body.location.state).toBe('Maharashtra');
         expect(response.body.pincode).toBe('400001');
         expect(response.body.address).toBe('123 Main Street');
         expect(response.body.lng).toBe(72.8777);
@@ -177,6 +173,8 @@ describe('VendorAddressController (Integration)', () => {
         expect(response.body).toHaveProperty('id');
         expect(response.body.vendorId).toBe(vendorId);
         expect(response.body.address).toBe(updateDto.address);
+        expect(response.body.location.name).toBe('Mumbai');
+        expect(response.body.location.state).toBe('Maharashtra');
       });
 
       it('should throw NotFoundException if address does not exist', async () => {

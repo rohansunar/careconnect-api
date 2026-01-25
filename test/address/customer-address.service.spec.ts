@@ -23,9 +23,17 @@ describe('CustomerAddressService', () => {
       findUnique: jest.fn(),
     },
     customer: {
-      findFirst: jest.fn(),
+      findFirst: jest.fn().mockImplementation((args) => {
+        console.log('customer.findFirst called with:', JSON.stringify(args, null, 2));
+        return Promise.resolve({ id: args.where.id });
+      }),
       findUnique: jest.fn(),
     },
+    $transaction: jest.fn().mockImplementation(async (fn) => {
+      return await fn(mockPrismaService);
+    }),
+    $queryRaw: jest.fn().mockResolvedValue([]),
+    $executeRawUnsafe: jest.fn().mockResolvedValue(1),
   };
 
   const mockLocationService = {
@@ -85,10 +93,10 @@ describe('CustomerAddressService', () => {
       const result = await service.findAll(customerId);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(prismaService.customerAddress.findMany).toHaveBeenCalledWith({
-        where: { customerId, isActive: true },
+        where: { customerId, is_active: true },
         include: { location: true },
         orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
       });
@@ -102,6 +110,44 @@ describe('CustomerAddressService', () => {
 
       await expect(service.findAll(customerId)).rejects.toThrow(
         NotFoundException,
+      );
+    });
+  });
+
+  describe('validateAddress', () => {
+    it('should validate an existing address', async () => {
+      const addressId = 'address-id';
+      const mockAddress = {
+        id: addressId,
+        customerId: 'customer-id',
+        label: 'Home',
+        address: '123 Main Street',
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        lng: 72.8777,
+        lat: 19.076,
+        isDefault: true,
+      };
+
+      mockPrismaService.customerAddress.findUnique.mockResolvedValue(
+        mockAddress,
+      );
+
+      await expect(service.validateAddress(addressId)).resolves.not.toThrow();
+
+      expect(prismaService.customerAddress.findUnique).toHaveBeenCalledWith({
+        where: { id: addressId },
+      });
+    });
+
+    it('should throw BadRequestException if address does not exist', async () => {
+      const addressId = 'non-existent-address-id';
+
+      mockPrismaService.customerAddress.findUnique.mockResolvedValue(null);
+
+      await expect(service.validateAddress(addressId)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -134,10 +180,10 @@ describe('CustomerAddressService', () => {
       const result = await service.findOne(customerId, addressId);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(prismaService.customerAddress.findFirst).toHaveBeenCalledWith({
-        where: { id: addressId, customerId, isActive: true },
+        where: { id: addressId, customerId, is_active: true },
         include: { location: true },
       });
       expect(result).toEqual(mockAddress);
@@ -187,14 +233,12 @@ describe('CustomerAddressService', () => {
         mockLocation.id,
       );
       mockPrismaService.customerAddress.count.mockResolvedValue(0);
-      mockPrismaService.customerAddress.create.mockResolvedValue(
-        mockCreatedAddress,
-      );
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
 
       const result = await service.create(customerId, createDto);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(locationService.findOrCreateLocation).toHaveBeenCalledWith({
         lat: createDto.lat!,
@@ -202,20 +246,108 @@ describe('CustomerAddressService', () => {
         city: createDto.city,
         state: createDto.state,
       });
-      expect(prismaService.customerAddress.create).toHaveBeenCalledWith({
-        data: {
-          customerId,
-          label: createDto.label,
-          address: createDto.address,
-          locationId: mockLocation.id,
-          pincode: createDto.pincode,
-          lng: createDto.lng,
-          lat: createDto.lat,
-          isDefault: true,
-        },
-      });
-      expect(result).toEqual(mockCreatedAddress);
+      expect(result).toEqual([{ id: 'new-address-id' }]);
     });
+
+    it('should validate ST_MakePoint for geography point creation', async () => {
+      const customerId = 'customer-id';
+      const createDto: CreateCustomerAddressDto = {
+        label: AddressLabel.Home,
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+      mockLocationService.findOrCreateLocation.mockResolvedValue(
+        mockLocation.id,
+      );
+      mockPrismaService.customerAddress.count.mockResolvedValue(0);
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(customerId, createDto);
+
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(expect.stringContaining('ST_MakePoint'));
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.8777, 19.076)::geography'),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
+    it('should handle precision in ST_MakePoint for geography point creation', async () => {
+      const customerId = 'customer-id';
+      const createDto: CreateCustomerAddressDto = {
+        label: AddressLabel.Home,
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.877654,
+        lat: 19.076543,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+      mockLocationService.findOrCreateLocation.mockResolvedValue(
+        mockLocation.id,
+      );
+      mockPrismaService.customerAddress.count.mockResolvedValue(0);
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(customerId, createDto);
+
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringContaining('ST_MakePoint(72.877654, 19.076543)::geography'),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
+    it('should ensure geography point is correctly formatted in the query', async () => {
+      const customerId = 'customer-id';
+      const createDto: CreateCustomerAddressDto = {
+        label: AddressLabel.Home,
+        city: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001',
+        address: '123 Main Street',
+        lng: 72.8777,
+        lat: 19.076,
+      };
+      const mockLocation = { id: 'location-id' };
+
+      mockPrismaService.customer.findFirst.mockResolvedValue({
+        id: customerId,
+      });
+      mockPrismaService.customerAddress.findFirst.mockResolvedValue(null);
+      mockLocationService.findOrCreateLocation.mockResolvedValue(
+        mockLocation.id,
+      );
+      mockPrismaService.customerAddress.count.mockResolvedValue(0);
+      mockPrismaService.$queryRaw.mockResolvedValue([{ id: 'new-address-id' }]);
+
+      const result = await service.create(customerId, createDto);
+
+      const expectedQuery = expect.stringContaining('ST_MakePoint');
+      const expectedGeographyCast = expect.stringContaining('::geography');
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringMatching(expectedQuery),
+      );
+      expect(mockPrismaService.$queryRaw).toHaveBeenCalledWith(
+        expect.stringMatching(expectedGeographyCast),
+      );
+      expect(result).toEqual([{ id: 'new-address-id' }]);
+    });
+
 
     it('should throw BadRequestException if latitude and longitude are missing', async () => {
       const customerId = 'customer-id';
@@ -310,10 +442,10 @@ describe('CustomerAddressService', () => {
       const result = await service.update(customerId, addressId, updateDto);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(prismaService.customerAddress.findFirst).toHaveBeenCalledWith({
-        where: { id: addressId, customerId, isActive: true },
+        where: { id: addressId, customerId, is_active: true },
       });
       expect(locationService.findOrCreateLocation).toHaveBeenCalledWith({
         lat: updateDto.lat!,
@@ -374,7 +506,7 @@ describe('CustomerAddressService', () => {
         pincode: '400001',
         lng: 72.8777,
         lat: 19.076,
-        isActive: true,
+        is_active: true,
       };
 
       mockPrismaService.customer.findFirst.mockResolvedValue({
@@ -390,14 +522,14 @@ describe('CustomerAddressService', () => {
       const result = await service.delete(customerId, addressId);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(prismaService.customerAddress.findFirst).toHaveBeenCalledWith({
         where: { id: addressId, customerId },
       });
       expect(prismaService.customerAddress.update).toHaveBeenCalledWith({
         where: { id: addressId },
-        data: { isActive: false },
+        data: { is_active: false },
       });
       expect(result).toEqual({
         message: 'Customer address deleted successfully',
@@ -454,13 +586,13 @@ describe('CustomerAddressService', () => {
       const result = await service.setDefaultAddress(customerId, addressId);
 
       expect(prismaService.customer.findFirst).toHaveBeenCalledWith({
-        where: { id: customerId, isActive: true },
+        where: { id: customerId, is_active: true },
       });
       expect(prismaService.customerAddress.findFirst).toHaveBeenCalledWith({
-        where: { id: addressId, customerId, isActive: true },
+        where: { id: addressId, customerId, is_active: true },
       });
       expect(prismaService.customerAddress.updateMany).toHaveBeenCalledWith({
-        where: { customerId, id: { not: addressId }, isActive: true },
+        where: { customerId, id: { not: addressId }, is_active: true },
         data: { isDefault: false },
       });
       expect(prismaService.customerAddress.update).toHaveBeenCalledWith({
@@ -485,41 +617,4 @@ describe('CustomerAddressService', () => {
     });
   });
 
-  describe('validateAddress', () => {
-    it('should validate an existing address', async () => {
-      const addressId = 'address-id';
-      const mockAddress = {
-        id: addressId,
-        customerId: 'customer-id',
-        label: 'Home',
-        address: '123 Main Street',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        pincode: '400001',
-        lng: 72.8777,
-        lat: 19.076,
-        isDefault: true,
-      };
-
-      mockPrismaService.customerAddress.findUnique.mockResolvedValue(
-        mockAddress,
-      );
-
-      await expect(service.validateAddress(addressId)).resolves.not.toThrow();
-
-      expect(prismaService.customerAddress.findUnique).toHaveBeenCalledWith({
-        where: { id: addressId },
-      });
-    });
-
-    it('should throw BadRequestException if address does not exist', async () => {
-      const addressId = 'non-existent-address-id';
-
-      mockPrismaService.customerAddress.findUnique.mockResolvedValue(null);
-
-      await expect(service.validateAddress(addressId)).rejects.toThrow(
-        BadRequestException,
-      );
-    });
-  });
 });

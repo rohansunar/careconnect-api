@@ -13,7 +13,7 @@ describe('VendorAddressController', () => {
   let service: VendorAddressService;
 
   const mockVendorAddressService = {
-    createAddress: jest.fn(),
+    create: jest.fn(),
     getAddressByVendorIdWithLocation: jest.fn(),
     updateAddress: jest.fn(),
     deleteAddress: jest.fn(),
@@ -68,7 +68,7 @@ describe('VendorAddressController', () => {
         ...createDto,
       };
 
-      mockVendorAddressService.createAddress.mockResolvedValue(
+      mockVendorAddressService.create.mockResolvedValue(
         mockCreatedAddress,
       );
 
@@ -76,7 +76,7 @@ describe('VendorAddressController', () => {
         id: vendorId,
       });
 
-      expect(service.createAddress).toHaveBeenCalledWith(vendorId, createDto);
+      expect(service.create).toHaveBeenCalledWith(vendorId, createDto);
       expect(result).toEqual(mockCreatedAddress);
     });
 
@@ -89,7 +89,7 @@ describe('VendorAddressController', () => {
         address: '123 Main Street',
       };
 
-      mockVendorAddressService.createAddress.mockRejectedValue(
+      mockVendorAddressService.create.mockRejectedValue(
         new BadRequestException('Latitude and longitude are required'),
       );
 
