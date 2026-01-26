@@ -110,6 +110,7 @@ export class CustomerSubscriptionService {
       productId: dto.productId,
       quantity: dto.quantity,
       price: totalPrice,
+      priceSnapshot: Number(product.price),
       frequency: dto.frequency,
       customDays: customDays,
       startDate: startDate,

@@ -42,12 +42,18 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
     customerId: string,
     productId: string,
   ): Promise<Subscription[]> {
-    const results = await this.prisma.subscription.findMany({
-      where: { customerAddress: { customerId }, productId },
-      include: { customerAddress: true },
-      orderBy: { created_at: 'desc' },
-    });
-    return results.map(this.mapToSubscription);
+    try{
+      const results = await this.prisma.subscription.findMany({
+        where: { customerAddress: { customerId }, productId },
+        include: { customerAddress: true },
+        orderBy: { created_at: 'desc' },
+      });
+      return results.map(this.mapToSubscription);
+    }catch(error){
+      console.debug("findByCustomerAndProduct",error)
+      return []
+    }
+    
   }
 
   /**
@@ -62,6 +68,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         productId: subscription.productId,
         quantity: subscription.quantity,
         total_price: subscription.price,
+        price_snapshot: subscription.priceSnapshot,
         frequency: subscription.frequency,
         custom_days: subscription.customDays
           ? this.mapDayOfWeekToPrisma(subscription.customDays)

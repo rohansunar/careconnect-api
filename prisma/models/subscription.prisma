@@ -36,7 +36,9 @@ model Subscription {
   payment_mode       String @default("UPFRONT")
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now())
+  price_snapshot     Float              @default(0)
 
   @@index([customerAddressId])
   @@index([productId])
+  @@index([next_delivery_date])
 }
