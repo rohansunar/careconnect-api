@@ -1,0 +1,18 @@
+{
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/.git/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true
+  },
+   "typescript.tsserver.maxTsServerMemory": 1024,
+   "git.autofetch": false,
+  "editor.minimap.enabled": false,
+  "editor.codeLens": false,
+  "breadcrumbs.enabled": false
+}
