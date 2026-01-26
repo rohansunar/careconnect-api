@@ -1,9 +1,19 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { OrderService } from './order.service';
+import { OrderNumberService } from './order-number.service';
+import { PrismaService } from '../../common/database/prisma.service';
+import { CartService } from '../../cart/services/cart.service';
 import type { User } from '../../common/interfaces/user.interface';
 
 @Injectable()
 export class RiderOrderService extends OrderService {
+  constructor(
+    prisma: PrismaService,
+    cartService: CartService,
+    orderNumberService: OrderNumberService,
+  ) {
+    super(prisma, cartService, orderNumberService);
+  }
   /**
    * Retrieves all orders assigned to the authenticated rider.
    * @param user - The authenticated rider user

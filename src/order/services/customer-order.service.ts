@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
+import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
@@ -29,10 +30,11 @@ export class CustomerOrderService extends OrderService {
   constructor(
     prisma: PrismaService,
     cartService: CartService,
+    orderNumberService: OrderNumberService,
     private paymentService: PaymentService,
     private notificationService: NotificationService,
   ) {
-    super(prisma, cartService);
+    super(prisma, cartService, orderNumberService);
   }
   /**
    * Retrieves all orders for the authenticated customer.
@@ -52,7 +54,10 @@ export class CustomerOrderService extends OrderService {
       OrderStatus.PENDING,
       OrderStatus.OUT_FOR_DELIVERY,
     ];
-    const query = { customerId: user.id, delivery_status: { in: statuses as any } };
+    const query = {
+      customerId: user.id,
+      delivery_status: { in: statuses as any },
+    };
     const include = {
       address: {
         include: { location: true },

@@ -1,8 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { OrderService } from './order.service';
+import { OrderNumberService } from './order-number.service';
+import { PrismaService } from '../../common/database/prisma.service';
+import { CartService } from '../../cart/services/cart.service';
 
 @Injectable()
 export class AdminOrderService extends OrderService {
+  constructor(
+    prisma: PrismaService,
+    cartService: CartService,
+    orderNumberService: OrderNumberService,
+  ) {
+    super(prisma, cartService, orderNumberService);
+  }
   /**
    * Retrieves all orders for admin.
    * @returns Array of all orders with relations

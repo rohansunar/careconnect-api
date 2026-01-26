@@ -16,12 +16,12 @@ enum PaymentMode {
 model Order {
   id                    String   @id @default(uuid())
   orderNo               String   @unique
-  customerId            String?
-  customer              Customer? @relation("orders", fields: [customerId], references: [id])
-  vendorId              String?
-  vendor                Vendor? @relation("orders", fields: [vendorId], references: [id])
-  addressId             String?
-  address               CustomerAddress? @relation("orders", fields: [addressId], references: [id])
+  customerId            String
+  customer              Customer @relation("orders", fields: [customerId], references: [id])
+  vendorId              String
+  vendor                Vendor @relation("orders", fields: [vendorId], references: [id])
+  addressId             String
+  address               CustomerAddress @relation("orders", fields: [addressId], references: [id])
   cartId                String?
   cart                  Cart? @relation("orders", fields: [cartId], references: [id])
   total_amount          Decimal  @db.Decimal(10, 2)

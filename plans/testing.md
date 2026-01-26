@@ -37,3 +37,8 @@ Okay, I see the document and it looks good. It's more of the happy path for the 
 Also reference the existing schema @/prisma/models in update needed
 @/src/subscription
 @plans/subscription
+
+
+Propose indexes for analytics
+Suggest Prisma schema
+Or show query patterns for growth metrics

@@ -145,7 +145,8 @@ export class NotificationService {
    * @param message - Notification message.
    */
   async notifyAdmin(subject: string, message: string): Promise<void> {
-    const adminEmail = this.configService.get<string>('ADMIN_EMAIL') || 'admin@example.com';
+    const adminEmail =
+      this.configService.get<string>('ADMIN_EMAIL') || 'admin@example.com';
     const html = `<p>${message}</p>`;
     await this.sendEmail(adminEmail, subject, html);
   }

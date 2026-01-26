@@ -32,6 +32,6 @@ import { MonthEndAdjustmentService } from './services/month-end-adjustment.servi
     JsonPaymentModeRepository,
     MonthEndAdjustmentService,
   ],
-  exports: [CustomerSubscriptionService],
+  exports: [CustomerSubscriptionService, DeliveryFrequencyService],
 })
 export class SubscriptionModule {}

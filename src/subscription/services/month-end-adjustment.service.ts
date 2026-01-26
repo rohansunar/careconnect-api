@@ -51,11 +51,16 @@ export class MonthEndAdjustmentService {
 
   private async calculateAndApplyAdjustment(subscription: any, month: Date) {
     if (!subscription.customerAddress) {
-      this.logger.warn(`Subscription ${subscription.id} has no customer address`);
+      this.logger.warn(
+        `Subscription ${subscription.id} has no customer address`,
+      );
       return;
     }
 
-    const expectedDeliveries = this.calculateExpectedDeliveries(subscription, month);
+    const expectedDeliveries = this.calculateExpectedDeliveries(
+      subscription,
+      month,
+    );
 
     const actualDeliveries = await this.prisma.order.count({
       where: {
@@ -68,7 +73,9 @@ export class MonthEndAdjustmentService {
       },
     });
 
-    const adjustmentAmount = (expectedDeliveries - actualDeliveries) * (subscription as any).price_snapshot;
+    const adjustmentAmount =
+      (expectedDeliveries - actualDeliveries) *
+      (subscription as any).price_snapshot;
 
     if (adjustmentAmount !== 0) {
       // Create monthly bill for adjustment
@@ -78,8 +85,16 @@ export class MonthEndAdjustmentService {
           month: month.toISOString().slice(0, 7), // YYYY-MM
           total_amount: adjustmentAmount,
           status: adjustmentAmount > 0 ? 'PENDING' : 'PENDING', // Refund or charge
-          billing_period_start: new Date(month.getFullYear(), month.getMonth(), 1),
-          billing_period_end: new Date(month.getFullYear(), month.getMonth() + 1, 0),
+          billing_period_start: new Date(
+            month.getFullYear(),
+            month.getMonth(),
+            1,
+          ),
+          billing_period_end: new Date(
+            month.getFullYear(),
+            month.getMonth() + 1,
+            0,
+          ),
         },
       });
 
@@ -89,7 +104,9 @@ export class MonthEndAdjustmentService {
         `Adjustment of ${adjustmentAmount} for subscription ${subscription.id} in ${month.toISOString().slice(0, 7)}`,
       );
 
-      this.logger.log(`Applied adjustment of ${adjustmentAmount} for subscription ${subscription.id}`);
+      this.logger.log(
+        `Applied adjustment of ${adjustmentAmount} for subscription ${subscription.id}`,
+      );
     }
   }
 
@@ -109,7 +126,10 @@ export class MonthEndAdjustmentService {
     });
 
     // Group by customer
-    const customerBills = new Map<string, { subscriptions: any[]; customer: any }>();
+    const customerBills = new Map<
+      string,
+      { subscriptions: any[]; customer: any }
+    >();
 
     for (const subscription of postDeliverySubscriptions) {
       if (!subscription.customerAddress) continue;
@@ -124,11 +144,19 @@ export class MonthEndAdjustmentService {
     }
 
     for (const [customerId, { subscriptions, customer }] of customerBills) {
-      await this.generateMonthlyBillForCustomer(customerId, subscriptions, month);
+      await this.generateMonthlyBillForCustomer(
+        customerId,
+        subscriptions,
+        month,
+      );
     }
   }
 
-  private async generateMonthlyBillForCustomer(customerId: string, subscriptions: any[], month: Date) {
+  private async generateMonthlyBillForCustomer(
+    customerId: string,
+    subscriptions: any[],
+    month: Date,
+  ) {
     let totalAmount = 0;
 
     for (const subscription of subscriptions) {
@@ -153,18 +181,32 @@ export class MonthEndAdjustmentService {
           month: month.toISOString().slice(0, 7),
           total_amount: totalAmount,
           status: 'PENDING',
-          billing_period_start: new Date(month.getFullYear(), month.getMonth(), 1),
-          billing_period_end: new Date(month.getFullYear(), month.getMonth() + 1, 0),
+          billing_period_start: new Date(
+            month.getFullYear(),
+            month.getMonth(),
+            1,
+          ),
+          billing_period_end: new Date(
+            month.getFullYear(),
+            month.getMonth() + 1,
+            0,
+          ),
         },
       });
 
-      this.logger.log(`Generated monthly bill of ${totalAmount} for customer ${customerId}`);
+      this.logger.log(
+        `Generated monthly bill of ${totalAmount} for customer ${customerId}`,
+      );
     }
   }
 
   private calculateExpectedDeliveries(subscription: any, month: Date): number {
     // Simplified: assume daily delivery
-    const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+    const daysInMonth = new Date(
+      month.getFullYear(),
+      month.getMonth() + 1,
+      0,
+    ).getDate();
     return daysInMonth; // For simplicity, assume daily
   }
 }

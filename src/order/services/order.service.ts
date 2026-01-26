@@ -8,12 +8,14 @@ import { CartService } from '../../cart/services/cart.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { PaymentMode } from '@prisma/client';
 import { CartStatus } from '../../common/constants/order-status.constants';
+import { OrderNumberService } from './order-number.service';
 
 @Injectable()
 export class OrderService {
   constructor(
     protected prisma: PrismaService,
     protected cartService: CartService,
+    private orderNumberService: OrderNumberService,
   ) {}
 
   /**
@@ -114,14 +116,7 @@ export class OrderService {
       throw new BadRequestException('Cart is empty or not found');
     }
 
-    // Increment order counter
-    const counter = await this.prisma.counter.upsert({
-      where: { type: 'order' },
-      update: { lastNumber: { increment: 1 } },
-      create: { type: 'order', lastNumber: 1 },
-    });
-
-    const orderNo = 'O' + counter.lastNumber.toString().padStart(6, '0');
+    const orderNo = await this.orderNumberService.generateOrderNumber();
 
     // Create order
     const order = await this.prisma.order.create({

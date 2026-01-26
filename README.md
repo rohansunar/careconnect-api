@@ -1,50 +1,121 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Water Delivery API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+[![License: UNLICENSED](https://img.shields.io/badge/License-UNLICENSED-red.svg)](https://opensource.org/licenses/UNLICENSED)
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A comprehensive NestJS-based API for managing water delivery services, including user authentication, subscription management, order processing, cart functionality, and automated order generation from subscriptions.
+
+## Table of Contents
+
+- [Description](#description)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Setup](#setup)
+- [Running the Application](#running-the-application)
+- [API Documentation](#api-documentation)
+- [Testing](#testing)
+- [Database Management](#database-management)
+- [Deployment](#deployment)
+- [Project Structure](#project-structure)
+- [Additional Documentation](#additional-documentation)
+- [License](#license)
+
+---
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This API provides backend services for a water delivery platform, supporting multiple user roles (customers, vendors, admins) with features like:
 
-## Project setup
+- ✅ User authentication and authorization
+- ✅ Subscription management with automated billing
+- ✅ Order creation and processing
+- ✅ Cart management
+- ✅ Location-based services
+- ✅ Payment integration with Razorpay
+- ✅ Notification system
+- ✅ Automated order generation from subscriptions
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Framework | NestJS |
+| Language | TypeScript |
+| Database | PostgreSQL with Prisma ORM |
+| Queue | BullMQ with Redis |
+| Server | Fastify |
+| Authentication | JWT with Passport |
+| Validation | class-validator |
+| Documentation | Swagger/OpenAPI |
+| Image Processing | Sharp |
+| Notifications | Twilio, Resend |
+| Payment Gateway | Razorpay |
+
+---
+
+## Installation
+
+🔧 To install dependencies, run:
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+---
+
+## Setup
+
+⚠️ **Important**: Ensure you have PostgreSQL and Redis set up before proceeding.
+
+1. Copy `example.env` to `.env` and configure your environment variables.
+2. Set up PostgreSQL database and Redis instance.
+3. Run Prisma migrations:
+
+   ```bash
+   $ npm run prisma:migrate
+   ```
+
+4. Generate Prisma client:
+
+   ```bash
+   $ npm run prisma:generate
+   ```
+
+5. (Optional) Seed initial data:
+
+   ```bash
+   $ npm run seed:data
+   ```
+
+> **Note**: Step 5 is optional and can be skipped if you prefer to start with an empty database.
+
+---
+
+## Running the Application
 
 ```bash
 # development
-$ npm run start
-
-# watch mode
 $ npm run start:dev
 
-# production mode
+# production
 $ npm run start:prod
+
+# debug mode
+$ npm run start:debug
 ```
 
-## Run tests
+The API will be available at `http://localhost:3000` by default.
+
+---
+
+## API Documentation
+
+Once the application is running, visit `http://localhost:3000/api` for Swagger documentation.
+
+---
+
+## Testing
 
 ```bash
 # unit tests
@@ -55,44 +126,122 @@ $ npm run test:e2e
 
 # test coverage
 $ npm run test:cov
+
+# test with debug
+$ npm run test:debug
 ```
+
+---
+
+## Database Management
+
+```bash
+# Build Prisma schema
+$ npm run prisma:build
+
+# Open Prisma Studio
+$ npm run prisma:studio
+
+# Validate schema
+$ npm run prisma:validate
+
+# Generate client
+$ npm run prisma:generate
+```
+
+---
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+This NestJS application can be deployed to various platforms. For production deployment:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+1. Build the application:
+   ```bash
+   $ npm run build
+   ```
 
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+2. Use PM2 or similar process manager for production:
+   ```bash
+   $ npm install -g pm2
+   $ pm2 start dist/main.js
+   ```
+
+For detailed deployment guides, refer to the [NestJS deployment documentation](https://docs.nestjs.com/deployment).
+
+---
+
+## Project Structure
+
+```
+src/
+├── app/                    # Main application module
+├── auth/                   # Authentication and authorization
+├── cart/                   # Shopping cart functionality
+├── customer/               # Customer management
+├── vendor/                 # Vendor management
+├── admin/                  # Admin functionality
+├── order/                  # Order processing and management
+├── subscription/           # Subscription services
+├── location/               # Location-based services
+├── address/                # Address management
+├── notification/           # Notification system
+├── common/                 # Shared utilities and services
+└── main.ts                 # Application entry point
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## Additional Documentation
 
-Check out a few resources that may come in handy when working with NestJS:
+### Order Generation Process
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+<details>
+<summary>🔍 Click to expand detailed order generation process documentation</summary>
 
-## Support
+The order generation process is a critical automated system designed to create orders from active subscriptions based on their predefined delivery frequencies. This process ensures that recurring deliveries are handled efficiently without manual intervention, improving reliability and customer satisfaction.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+#### Purpose
+- Automate the creation of orders for subscriptions to reduce manual effort and errors.
+- Ensure timely deliveries by scheduling order generation based on subscription frequencies.
+- Decouple order creation from user interactions for better system performance.
 
-## Stay in touch
+#### Key Principles
+- **Automation**: Uses cron jobs and queue-based processing for regular, asynchronous execution.
+- **Reliability**: Includes validation checks, error handling, and retry mechanisms.
+- **Scalability**: Employs queuing to handle load without blocking the main application.
+- **Data Integrity**: Prevents duplicate orders and ensures all necessary data is validated before order creation.
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+#### Architecture
+
+The order generation system follows a modular architecture leveraging NestJS, BullMQ, and Prisma. It consists of the following components:
+
+**Core Components**
+- **OrderGenerationService**: The main service class responsible for business logic, including subscription fetching, validation, order creation, and scheduling updates.
+- **OrderGenerationProcessor**: A BullMQ processor that handles asynchronous job processing for order generation tasks.
+- **Queue System**: BullMQ queue named 'order-generation' for decoupling and load management.
+- **Database Layer**: Prisma ORM for type-safe database operations.
+- **Scheduling Layer**: NestJS cron jobs for periodic execution.
+
+**Dependencies**
+- **PrismaService**: For database access.
+- **NotificationService**: For admin notifications on errors or special cases.
+- **DeliveryFrequencyService**: For calculating next delivery dates based on frequency rules.
+- **OrderNumberService**: For generating unique order numbers.
+
+#### Workflow Steps
+
+1. **Periodic Check (Cron Job)**: Runs every 10 seconds to fetch active subscriptions ready for order generation.
+2. **Job Enqueuing**: Adds jobs to the queue for each eligible subscription.
+3. **Job Processing**: Asynchronous processing of order creation.
+4. **Order Creation Logic**: Validates subscription, creates order, updates delivery dates.
+5. **Rescheduling (If Needed)**: Handles vendor unavailability by rescheduling.
+
+For detailed documentation, see [`src/order/docs/order-generation-process.md`](src/order/docs/order-generation-process.md).
+
+</details>
+
+---
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED
