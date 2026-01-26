@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { SubscriptionFrequency } from '../../subscription/interfaces/delivery-frequency.interface';
 import { PrismaService } from '../../common/database/prisma.service';
 import { NotificationService } from '../../notification/services/notification.service';
@@ -69,16 +69,19 @@ export class OrderGenerationService {
    * This method identifies subscriptions due for delivery today and adds them to a BullMQ queue for asynchronous processing.
    * Why: Cron scheduling ensures regular checks; queuing prevents overwhelming the system with synchronous processing.
    * How: Queries subscriptions with next_delivery_date <= today, adds jobs to queue with retry configuration.
-   * Algorithm: 
+   * Algorithm:
    * 1. Get current date (start of day).
-   * 2. Fetch active subscriptions due. 
-   * 3. If none, notify admin and return. 
-   * 4. Enqueue each subscription as a job. 
+   * 2. Fetch active subscriptions due.
+   * 3. If none, notify admin and return.
+   * 4. Enqueue each subscription as a job.
    * 5. Log completion.
    * Scalability: Runs frequently but processes in batches via queue; removeOnComplete/Fail limits queue size.
    * Bugs: If no subscriptions, notifies admin; handles empty results gracefully.
    */
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_10_SECONDS, {
+    name: 'order-generator-cron',
+    disabled: process.env.SCHEDULER_DISABLE === 'true',
+  })
   async enqueueDailyOrders() {
     this.logger.log('Starting daily order generation enqueue');
 
@@ -127,17 +130,17 @@ export class OrderGenerationService {
    * This method fetches subscription details, validates vendor availability, checks for duplicates, and creates a new order with associated order items.
    * Why: To generate orders automatically for subscriptions, ensuring all validations are performed.
    * How: Fetches subscription data, checks conditions, creates order via Prisma, updates subscription's next delivery date.
-   * Algorithm: 
+   * Algorithm:
    * 1. Fetch subscription details.
-   * 2. If not found, throw error. 
-   * 3. Check vendor active status. 
-   * 4. If vendor unavailable today, reschedule. 
-   * 5. Check for existing order today. 
-   * 6. Determine payment mode. 
-   * 7. Validate address. 
-   * 8. Generate order number. 
-   * 9. Create order with items. 
-   * 10. Update next delivery. 
+   * 2. If not found, throw error.
+   * 3. Check vendor active status.
+   * 4. If vendor unavailable today, reschedule.
+   * 5. Check for existing order today.
+   * 6. Determine payment mode.
+   * 7. Validate address.
+   * 8. Generate order number.
+   * 9. Create order with items.
+   * 10. Update next delivery.
    * 11. Log and return order.
    * Scalability: Database queries are selective; handles one subscription at a time via queue.
    * Bugs: Throws on missing subscription; skips on inactive vendor or existing order; warns on missing address.
@@ -273,9 +276,9 @@ export class OrderGenerationService {
    * Calculates the next delivery date based on frequency and custom days, updates the database, and optionally notifies admin if rescheduled.
    * Why: To keep subscription delivery dates accurate after order creation or rescheduling.
    * How: Uses DeliveryFrequencyService to compute next date, updates via Prisma.
-   * Algorithm: 
-   * 1. Calculate next delivery date. 
-   * 2. Update subscription in DB. 
+   * Algorithm:
+   * 1. Calculate next delivery date.
+   * 2. Update subscription in DB.
    * 3. If notifyRescheduled, send admin notification.
    * Scalability: Lightweight DB update; called per subscription.
    * Bugs: Relies on DeliveryFrequencyService for accurate calculations.

@@ -9,6 +9,7 @@ module.exports = {
       restart_delay: 4000,
       env: {
         NODE_ENV: 'production',
+        SCHEDULER_DISABLE: 'true' 
       },
       // Logging options
       log_file: './logs/combined.log',
