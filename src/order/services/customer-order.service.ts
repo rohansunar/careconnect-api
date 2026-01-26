@@ -52,19 +52,10 @@ export class CustomerOrderService extends OrderService {
       OrderStatus.PENDING,
       OrderStatus.OUT_FOR_DELIVERY,
     ];
-    const query = { customerId: user.id, status: { in: statuses } };
+    const query = { customerId: user.id, delivery_status: { in: statuses as any } };
     const include = {
       address: {
-        include: { city: true },
-      },
-      cart: {
-        include: {
-          cartItems: {
-            include: {
-              product: true,
-            },
-          },
-        },
+        include: { location: true },
       },
     };
     const skip = (page - 1) * limit;
@@ -145,7 +136,7 @@ export class CustomerOrderService extends OrderService {
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-          status: OrderStatus.CANCELLED,
+          delivery_status: OrderStatus.CANCELLED,
           cancelledAt: new Date(),
           cancelReason: dto.cancelReason,
           payment_status:
@@ -196,19 +187,19 @@ export class CustomerOrderService extends OrderService {
    */
   private validateOrderCancellation(order: OrderWithRelations) {
     // Check if order is already cancelled
-    if (order.status === OrderStatus.CANCELLED) {
+    if (order.delivery_status === OrderStatus.CANCELLED) {
       throw new BadRequestException('Order is already cancelled');
     }
 
     // Check if order is delivered
-    if (order.status === OrderStatus.DELIVERED) {
+    if (order.delivery_status === OrderStatus.DELIVERED) {
       throw new BadRequestException(
         'Order cannot be cancelled as it is already delivered',
       );
     }
 
     // Check if order is out for delivery
-    if (order.status === OrderStatus.OUT_FOR_DELIVERY) {
+    if (order.delivery_status === OrderStatus.OUT_FOR_DELIVERY) {
       throw new BadRequestException(
         'Order cannot be cancelled as it is already out for delivery',
       );

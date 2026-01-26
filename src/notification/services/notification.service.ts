@@ -138,4 +138,15 @@ export class NotificationService {
   async sendOTP(code: string, to: string): Promise<void> {
     this.logger.log(`OTP for ${to}: ${code}`);
   }
+
+  /**
+   * Notifies admin via email.
+   * @param subject - Notification subject.
+   * @param message - Notification message.
+   */
+  async notifyAdmin(subject: string, message: string): Promise<void> {
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL') || 'admin@example.com';
+    const html = `<p>${message}</p>`;
+    await this.sendEmail(adminEmail, subject, html);
+  }
 }

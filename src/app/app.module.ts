@@ -15,6 +15,7 @@ import { RiderModule } from 'src/rider/rider.module';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { AddressModule } from 'src/address/address.module';
 import { LocationModule } from 'src/location/location.module';
+import { QueueModule } from 'src/queue/queue.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { LocationModule } from 'src/location/location.module';
     SubscriptionModule,
     AddressModule,
     LocationModule,
+    QueueModule,
   ],
   controllers: [AppController],
   providers: [AppService],

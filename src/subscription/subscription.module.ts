@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from '../common/database/prisma.module';
+import { NotificationModule } from '../notification/notification.module';
 import { CustomerSubscriptionController } from './controllers/customer-subscription.controller';
 import { AdminSubscriptionController } from './controllers/admin-subscription.controller';
 import { CustomerSubscriptionService } from './services/customer-subscription.service';
@@ -12,9 +14,10 @@ import { SubscriptionRepositoryService } from './repositories/subscription.repos
 import { DeliveryFrequencyFactoryService } from './services/delivery-frequency/delivery-frequency.factory';
 import { PriceCalculatorFactoryService } from './services/price-calculation/price-calculator.factory';
 import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.repository';
+import { MonthEndAdjustmentService } from './services/month-end-adjustment.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ScheduleModule.forRoot(), NotificationModule],
   controllers: [CustomerSubscriptionController, AdminSubscriptionController],
   providers: [
     CustomerSubscriptionService,
@@ -27,6 +30,7 @@ import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.
     DeliveryFrequencyFactoryService,
     PriceCalculatorFactoryService,
     JsonPaymentModeRepository,
+    MonthEndAdjustmentService,
   ],
   exports: [CustomerSubscriptionService],
 })

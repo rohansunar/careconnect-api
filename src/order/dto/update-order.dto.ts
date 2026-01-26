@@ -1,4 +1,5 @@
-import { IsString, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsString, IsNumber, Min, IsOptional, IsEnum } from 'class-validator';
+import { OrderStatus } from '@prisma/client';
 
 /**
  * Data Transfer Object for updating an order
@@ -51,8 +52,8 @@ export class UpdateOrderDto {
    * Status of the order
    */
   @IsOptional()
-  @IsString()
-  status?: string;
+  @IsEnum(OrderStatus)
+  status?: OrderStatus;
 
   /**
    * Payment status of the order

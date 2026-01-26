@@ -29,13 +29,16 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUND_INITIA
 CREATE TYPE "ProductApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PENDING');
+CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PROCESSING');
 
 -- CreateEnum
 CREATE TYPE "SubscriptionFrequency" AS ENUM ('DAILY', 'ALTERNATIVE_DAYS', 'CUSTOM_DAYS');
 
 -- CreateEnum
 CREATE TYPE "DayOfWeek" AS ENUM ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY');
+
+-- CreateEnum
+CREATE TYPE "SubscriptionPaymentMode" AS ENUM ('UPFRONT', 'POST_DELIVERY');
 
 -- CreateEnum
 CREATE TYPE "OperatingDays" AS ENUM ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY');
@@ -201,13 +204,13 @@ CREATE TABLE "Order" (
     "addressId" TEXT,
     "cartId" TEXT,
     "total_amount" DECIMAL(10,2) NOT NULL,
-    "status" VARCHAR(32) NOT NULL DEFAULT 'PENDING',
     "payment_status" VARCHAR(32) NOT NULL DEFAULT 'PENDING',
     "assigned_rider_phone" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "payment_mode" "PaymentMode" NOT NULL,
     "subscriptionId" TEXT,
+    "delivery_status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "delivery_otp" TEXT,
     "otp_verified" BOOLEAN NOT NULL DEFAULT false,
     "otp_generated_at" TIMESTAMP(3),
@@ -321,16 +324,18 @@ CREATE TABLE "Rider" (
 CREATE TABLE "Subscription" (
     "id" TEXT NOT NULL,
     "customerAddressId" TEXT,
-    "vendorId" TEXT,
     "productId" TEXT,
     "quantity" INTEGER NOT NULL,
     "frequency" "SubscriptionFrequency" NOT NULL,
     "custom_days" "DayOfWeek"[],
     "next_delivery_date" TIMESTAMP(3),
-    "status" "SubscriptionStatus" NOT NULL DEFAULT 'ACTIVE',
+    "status" "SubscriptionStatus" NOT NULL DEFAULT 'PROCESSING',
     "start_date" TIMESTAMP(3) NOT NULL,
+    "total_price" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "payment_mode" "SubscriptionPaymentMode" NOT NULL DEFAULT 'UPFRONT',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "price_snapshot" DOUBLE PRECISION NOT NULL DEFAULT 0,
 
     CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
 );
@@ -454,10 +459,10 @@ CREATE UNIQUE INDEX "Rider_phone_key" ON "Rider"("phone");
 CREATE INDEX "Subscription_customerAddressId_idx" ON "Subscription"("customerAddressId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_vendorId_idx" ON "Subscription"("vendorId");
+CREATE INDEX "Subscription_productId_idx" ON "Subscription"("productId");
 
 -- CreateIndex
-CREATE INDEX "Subscription_productId_idx" ON "Subscription"("productId");
+CREATE INDEX "Subscription_next_delivery_date_idx" ON "Subscription"("next_delivery_date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Vendor_vendorNo_key" ON "Vendor"("vendorNo");
@@ -542,9 +547,6 @@ ALTER TABLE "Rider" ADD CONSTRAINT "Rider_vendorId_fkey" FOREIGN KEY ("vendorId"
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_customerAddressId_fkey" FOREIGN KEY ("customerAddressId") REFERENCES "CustomerAddress"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;

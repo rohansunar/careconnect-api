@@ -1,4 +1,10 @@
+
 CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- Enforce only one primary address per customer
+CREATE UNIQUE INDEX unique_primary_address_per_customer
+ON "CustomerAddress" ("customerId")
+WHERE "isDefault" = true;
 
 -- Add geography column to locations
 ALTER TABLE "Location"

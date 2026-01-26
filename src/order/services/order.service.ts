@@ -133,7 +133,7 @@ export class OrderService {
         cartId,
         total_amount: totalAmount,
         payment_mode: paymentMode,
-        status: 'PENDING',
+        delivery_status: 'PENDING',
         payment_status: 'PENDING',
         paymentId,
       },
@@ -278,5 +278,33 @@ export class OrderService {
     if (!product || !product.is_active) {
       throw new BadRequestException('Product not found or unavailable');
     }
+  }
+
+  /**
+   * Confirms delivery of an order.
+   * @param orderId - The order ID
+   * @returns The updated order
+   */
+  async confirmDelivery(orderId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Update order status
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        delivery_status: 'DELIVERED',
+      },
+    });
+
+    // For post-delivery subscriptions, this delivery will be accumulated for monthly billing
+    // The month-end adjustment service will handle the billing calculation
+
+    return this.findOne(orderId);
   }
 }

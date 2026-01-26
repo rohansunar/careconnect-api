@@ -25,13 +25,13 @@ model Order {
   cartId                String?
   cart                  Cart? @relation("orders", fields: [cartId], references: [id])
   total_amount          Decimal  @db.Decimal(10, 2)
-  status                String   @db.VarChar(32) @default("PENDING")
   payment_status        String   @db.VarChar(32) @default("PENDING")
   assigned_rider_phone  String?
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
   payment_mode          PaymentMode
   subscriptionId        String? // Link to subscription for scheduled orders
+  delivery_status       OrderStatus  @default(PENDING) // PENDING, DELIVERED, FAILED, etc.
   delivery_otp          String?
   otp_verified          Boolean @default(false)
   otp_generated_at      DateTime?

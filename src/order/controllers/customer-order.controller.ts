@@ -70,14 +70,14 @@ export class CustomerOrderController {
   @Get()
   async getMyOrders(
     @CurrentUser() user: User,
-    @Query('status') status?: string | string[],
+    @Query('delivery_status') delivery_status?: string | string[],
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const statuses = status
-      ? Array.isArray(status)
-        ? status
-        : status.split(',').map((s) => s.trim())
+    const statuses = delivery_status
+      ? Array.isArray(delivery_status)
+        ? delivery_status
+        : delivery_status.split(',').map((s) => s.trim())
       : undefined;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
