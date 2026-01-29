@@ -11,12 +11,12 @@ import { CartService } from '../../cart/services/cart.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
 import {
   OrderStatus,
-  CartStatus,
 } from '../../common/constants/order-status.constants';
 import { PaymentStatus, Order, Customer, Vendor } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
+
 
 interface OrderWithRelations extends Order {
   customer: Customer | null;
@@ -59,10 +59,28 @@ export class CustomerOrderService extends OrderService {
       delivery_status: { in: statuses as any },
     };
     const include = {
+      orderItems: {
+        select: { 
+          quantity: true,
+          product: { select: { name: true } } 
+           
+        },
+      },
       address: {
-        include: { location: true },
+        select: {
+          address: true,
+          pincode: true,
+          location: {
+            select: {
+              name: true,
+              state: true,
+              country: true,
+            },
+          },
+        },
       },
     };
+
     const skip = (page - 1) * limit;
     const orders = await super.findAll(query, skip, limit, include);
     const total = await this.prisma.order.count({ where: query });

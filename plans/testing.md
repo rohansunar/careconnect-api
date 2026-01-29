@@ -42,3 +42,13 @@ Also reference the existing schema @/prisma/models in update needed
 Propose indexes for analytics
 Suggest Prisma schema
 Or show query patterns for growth metrics
+If this query is slow, it's because of:
+Missing indexes
+Fetching too much relational data
+Large OFFSET pagination
+No caching
+Poor DB connection pooling
+We fix those — you get sub-second responses.
+
+
+await this.prisma.order.findMany({ where: query, skip, take: limit, include: { orderItems: { select: { quantity: true, product: { select: { name: true } }, }, }, address: { select: { address: true, pincode: true, location: { select: { name: true, state: true, country: true, }, }, }, }, }, orderBy: { created_at: 'desc' }, }); how to optimize this query to respinse in 1 sec for 1 lahks users

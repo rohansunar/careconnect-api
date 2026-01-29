@@ -25,15 +25,17 @@ export class OrderService {
    * @returns Array of orders with relations
    */
   async findAll(where = {}, skip: number = 0, limit?: number, include?: any) {
-    const defaultInclude = {
-      customer: true,
-      vendor: true,
-      address: { include: { location: true } },
-      cart: {
-        include: {
-          cartItems: {
-            include: {
-              product: true,
+    const defaultInclude = include || {
+      include: {
+        customer: true,
+        vendor: true,
+        address: { include: { location: true } },
+        cart: {
+          include: {
+            cartItems: {
+              include: {
+                product: true,
+              },
             },
           },
         },
@@ -154,7 +156,6 @@ export class OrderService {
     });
 
     return order;
-
   }
 
   /**
