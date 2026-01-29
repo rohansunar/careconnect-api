@@ -63,7 +63,8 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
   async create(subscription: SubscriptionData): Promise<Subscription> {
     const result = await this.prisma.subscription.create({
       data: {
-        customerAddressId: subscription.customerId,
+        customerAddressId: subscription.customerAddressId,
+        customerId: subscription.customerId,
         productId: subscription.productId,
         quantity: subscription.quantity,
         total_price: subscription.price,
@@ -76,7 +77,6 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         next_delivery_date: subscription.nextDeliveryDate,
         status: subscription.status as SubscriptionStatus,
       },
-      include: { customerAddress: true },
     });
     return this.mapToSubscription(result);
   }

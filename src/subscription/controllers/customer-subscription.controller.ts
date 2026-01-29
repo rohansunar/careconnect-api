@@ -102,17 +102,6 @@ export class CustomerSubscriptionController {
       'Retrieves a list of subscriptions for the authenticated customer, with optional status filtering and pagination.',
   })
   @ApiQuery({
-    name: 'status',
-    required: false,
-    schema: {
-      type: 'array',
-      items: { type: 'string' },
-      default: ['ACTIVE', 'INACTIVE'],
-    },
-    description:
-      'Filter by subscription status(es). Can be a single status or comma-separated string.',
-  })
-  @ApiQuery({
     name: 'page',
     required: false,
     schema: { type: 'integer', default: 1 },
@@ -131,20 +120,13 @@ export class CustomerSubscriptionController {
   @Get()
   async getMySubscriptions(
     @CurrentUser() user: User,
-    @Query('status') status?: string | string[],
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const statuses = status
-      ? Array.isArray(status)
-        ? status
-        : status.split(',').map((s) => s.trim())
-      : undefined;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.customerSubscriptionService.getMySubscriptions(
       user,
-      statuses,
       pageNum,
       limitNum,
     );

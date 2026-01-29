@@ -20,6 +20,16 @@ import {
   SubscriptionFrequency,
 } from '../interfaces/delivery-frequency.interface';
 
+// Constants for magic strings
+const SUBSCRIPTION_STATUS_PROCESSING = 'PROCESSING';
+const PAYMENT_MODE_UPFRONT = 'UPFRONT';
+const ERROR_VALIDATION_FAILED = 'Validation failed';
+const ERROR_START_DATE_PAST = 'Start date cannot be in the past';
+const ERROR_DUPLICATE_SUBSCRIPTION_CHECK =
+  'Failed to check for duplicate subscription';
+const ERROR_DUPLICATE_SUBSCRIPTION =
+  'A subscription for this product already exists for this customer address.';
+
 /**
  * Service for managing customer subscription operations.
  * This service provides functionality for customers to create, view, update, and manage their subscriptions.
@@ -34,6 +44,18 @@ export class CustomerSubscriptionService {
     private readonly subscriptionValidationService: SubscriptionValidationService,
     private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * Validates the start date to ensure it's not in the past.
+   * @param startDate - The start date to validate
+   * @private
+   */
+  private validateStartDate(startDate: Date) {
+    const currentDate = new Date();
+    if (startDate.setHours(0, 0, 0, 0) < currentDate.setHours(0, 0, 0, 0)) {
+      throw new BadRequestException(ERROR_START_DATE_PAST);
+    }
+  }
 
   /**
    * Creates a new subscription for the authenticated customer.
@@ -64,11 +86,7 @@ export class CustomerSubscriptionService {
     const product = validationResult.product!;
 
     const startDate = new Date(dto.start_date);
-    const currentDate = new Date();
-    if (startDate.setHours(0, 0, 0, 0) < currentDate.setHours(0, 0, 0, 0)) {
-      throw new BadRequestException('Start date cannot be in the past');
-    }
-
+    this.validateStartDate(startDate);
     const customDays = this.extractCustomDays(dto.frequency, dto.custom_days);
     const nextDeliveryDate = this.deliveryFrequencyService.getNextDeliveryDate(
       startDate,
@@ -106,7 +124,8 @@ export class CustomerSubscriptionService {
     }
 
     const createdSubscription = await this.subscriptionRepository.create({
-      customerId: customerAddress.id,
+      customerId: customerAddress.customerId,
+      customerAddressId: customerAddress.id,
       productId: dto.productId,
       quantity: dto.quantity,
       price: totalPrice,
@@ -139,19 +158,23 @@ export class CustomerSubscriptionService {
    * @param limit - Number of items per page (default: 10)
    * @returns Object containing paginated subscriptions, total count, and pagination metadata
    */
-  async getMySubscriptions(
-    user: User,
-    status?: string[],
-    page: number = 1,
-    limit: number = 10,
-  ) {
-    const subscriptions =
-      await this.subscriptionRepository.findByCustomerAndProduct(user.id, '');
+  async getMySubscriptions(user: User, page: number = 1, limit: number = 10) {
+    const query = { customerId: user.id };
     const skip = (page - 1) * limit;
-    const paginatedSubscriptions = subscriptions.slice(skip, skip + limit);
-    const total = subscriptions.length;
+    const subscriptions = await this.prisma.subscription.findMany({
+      where: query,
+      skip,
+      limit,
+      orderBy: { created_at: 'desc' },
+    });
+    const total = await this.prisma.subscription.count({
+      where: query,
+      skip,
+      limit,
+      orderBy: { created_at: 'desc' },
+    });
     return {
-      subscriptions: paginatedSubscriptions,
+      subscriptions: subscriptions,
       total,
       page,
       limit,

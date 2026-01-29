@@ -9,14 +9,11 @@ import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
-import {
-  OrderStatus,
-} from '../../common/constants/order-status.constants';
+import { OrderStatus } from '../../common/constants/order-status.constants';
 import { PaymentStatus, Order, Customer, Vendor } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
-
 
 interface OrderWithRelations extends Order {
   customer: Customer | null;
@@ -60,12 +57,11 @@ export class CustomerOrderService extends OrderService {
     };
     const include = {
       orderItems: {
-        select: { 
-          id:true,
-          price:true,
+        select: {
+          id: true,
+          price: true,
           quantity: true,
-          product: { select: { name: true } } 
-           
+          product: { select: { name: true } },
         },
       },
       address: {

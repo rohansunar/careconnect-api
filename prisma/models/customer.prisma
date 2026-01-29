@@ -8,8 +8,9 @@ model Customer {
   is_active Boolean @default(true)
 
   addresses CustomerAddress[]
-  notifications  Notification[]
+  subscription Subscription[]
   carts Cart[]
   orders Order[] @relation("orders")
   monthlyBills MonthlyBill[]
+  notifications  Notification[]
 }

@@ -24,6 +24,8 @@ model Subscription {
   id                 String             @id @default(uuid())
   customerAddressId  String?
   customerAddress    CustomerAddress?   @relation(fields: [customerAddressId], references: [id])
+  customerId         String?
+  customer           Customer?          @relation(fields: [customerId], references: [id])
   productId          String?
   product            Product?           @relation(fields: [productId], references: [id])
   quantity           Int
@@ -38,7 +40,10 @@ model Subscription {
   updated_at         DateTime           @default(now())
   price_snapshot     Float              @default(0)
 
-  @@index([customerAddressId])
+  @@index([status])
+  @@index([start_date])
+  @@index([created_at])
+  @@index([customerId])
   @@index([productId])
   @@index([next_delivery_date])
 }

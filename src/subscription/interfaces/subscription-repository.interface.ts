@@ -62,6 +62,7 @@ export interface Subscription {
 
 export interface SubscriptionData {
   customerId: string;
+  customerAddressId: string;
   productId: string;
   quantity: number;
   price: number;
