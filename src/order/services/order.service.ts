@@ -103,7 +103,6 @@ export class OrderService {
     // Validate entities
     await this.validateCustomer(customerId);
     await this.validateVendor(vendorId);
-    await this.validateAddress(addressId);
 
     // Fetch cart with items to create order items
     const cart = await this.prisma.cart.findUnique({
@@ -144,7 +143,7 @@ export class OrderService {
     });
 
     // Create order items from cart items
-    await this.prisma.orderItem.createMany({
+    return await this.prisma.orderItem.createMany({
       data: cart.cartItems.map((cartItem) => ({
         orderId: order.id,
         productId: cartItem.productId,
@@ -154,10 +153,6 @@ export class OrderService {
       })),
     });
 
-    // Delete the cart after order creation
-    await this.cartService.deleteCart(cartId);
-
-    return order;
   }
 
   /**
