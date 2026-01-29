@@ -21,14 +21,7 @@ import {
 } from '../interfaces/delivery-frequency.interface';
 
 // Constants for magic strings
-const SUBSCRIPTION_STATUS_PROCESSING = 'PROCESSING';
-const PAYMENT_MODE_UPFRONT = 'UPFRONT';
-const ERROR_VALIDATION_FAILED = 'Validation failed';
 const ERROR_START_DATE_PAST = 'Start date cannot be in the past';
-const ERROR_DUPLICATE_SUBSCRIPTION_CHECK =
-  'Failed to check for duplicate subscription';
-const ERROR_DUPLICATE_SUBSCRIPTION =
-  'A subscription for this product already exists for this customer address.';
 
 /**
  * Service for managing customer subscription operations.
@@ -164,20 +157,17 @@ export class CustomerSubscriptionService {
     const subscriptions = await this.prisma.subscription.findMany({
       where: query,
       skip,
-      limit,
+      take: limit,
       orderBy: { created_at: 'desc' },
     });
     const total = await this.prisma.subscription.count({
       where: query,
-      skip,
-      limit,
-      orderBy: { created_at: 'desc' },
     });
     return {
       subscriptions: subscriptions,
       total,
       page,
-      limit,
+      take: limit,
       totalPages: Math.ceil(total / limit),
     };
   }
