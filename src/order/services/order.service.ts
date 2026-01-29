@@ -143,7 +143,7 @@ export class OrderService {
     });
 
     // Create order items from cart items
-    return await this.prisma.orderItem.createMany({
+    await this.prisma.orderItem.createMany({
       data: cart.cartItems.map((cartItem) => ({
         orderId: order.id,
         productId: cartItem.productId,
@@ -152,6 +152,8 @@ export class OrderService {
         deposit: cartItem.deposit,
       })),
     });
+
+    return order;
 
   }
 
