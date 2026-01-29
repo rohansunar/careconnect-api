@@ -61,6 +61,8 @@ export class CustomerOrderService extends OrderService {
     const include = {
       orderItems: {
         select: { 
+          id:true,
+          price:true,
           quantity: true,
           product: { select: { name: true } } 
            
