@@ -49,7 +49,6 @@ export interface PaymentWithId {
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly CURRENCY = 'INR';
-  private readonly DEFAULT_PAYMENT_MODE = 'ONLINE';
   private readonly PENDING_STATUS = PaymentStatus.PENDING;
 
   constructor(
@@ -70,7 +69,7 @@ export class PaymentService {
 
     try {
       // Retrieve and validate cart details
-      const cart = await this.retrieveAndValidateCart(dto.cartId);
+      const cart = await this.cartService.validateCart(dto.cartId);
 
       // Retrieve customer's default address
       const defaultAddress = await this.getDefaultAddressForCustomer(
@@ -79,12 +78,17 @@ export class PaymentService {
       // Calculate total payment amount
       const totalAmount = this.calculateTotalAmount(cart.cartItems);
 
-      // Initiate payment with provider
-      const providerResponse = await this.initiatePayment(
-        totalAmount,
-        dto.cartId,
-      );
-      this.logger.debug(`Payment initiated with provider`);
+      let providerResponse: PaymentProviderResponse | null = null;
+
+      if (dto.paymentMode === 'ONLINE') {
+        // Initiate payment with provider
+        providerResponse = await this.paymentProvider.initiatePayment({
+          amount: totalAmount,
+          currency: this.CURRENCY,
+          orderId: dto.cartId,
+        });
+        this.logger.debug(`Payment initiated with provider`);
+      }
 
       // Create payment record in database
       const payment = await this.createPaymentRecord(
@@ -93,16 +97,13 @@ export class PaymentService {
       );
       this.logger.debug(`Payment record created: ${payment.id}`);
 
-      if (dto.paymentMode === 'ONLINE') {
-        // For ONLINE, update cart status to CHECKED_OUT
+      if (dto.paymentMode === 'COD' || dto.paymentMode === 'MONTHLY') {
+        // Update cart status to CHECKED_OUT
         await this.cartService.updateCartStatus(
           cart.id,
           CartStatus.CHECKED_OUT,
         );
-        this.logger.log(
-          `Payment created and cart checked out: payment ${payment.id}`,
-        );
-      } else if (dto.paymentMode === 'COD' || dto.paymentMode === 'MONTHLY') {
+
         // For COD or MONTHLY, create order and delete cart
         const order = await this.orderService.createOrder(
           cart.customerId,
@@ -123,10 +124,6 @@ export class PaymentService {
         this.logger.log(
           `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
         );
-      } else {
-        throw new BadRequestException(
-          `Unsupported payment mode: ${dto.paymentMode}`,
-        );
       }
 
       return payment;
@@ -137,44 +134,6 @@ export class PaymentService {
       );
       throw error; // Re-throw to maintain error handling
     }
-  }
-
-  /**
-   * Retrieves and validates the cart with all necessary details.
-   * @param cartId - The cart ID
-   * @returns The validated cart with details
-   * @throws NotFoundException if cart not found
-   * @throws BadRequestException if cart is empty
-   */
-  private async retrieveAndValidateCart(
-    cartId: string,
-  ): Promise<CartWithDetails> {
-    this.logger.debug(`Retrieving cart: ${cartId}`);
-    const cart = await this.prisma.cart.findUnique({
-      where: { id: cartId },
-      include: {
-        customer: true,
-        cartItems: {
-          include: {
-            product: {
-              include: {
-                vendor: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!cart) {
-      throw new NotFoundException(`Cart with ID ${cartId} not found`);
-    }
-
-    if (!cart.cartItems || cart.cartItems.length === 0) {
-      throw new BadRequestException(`Cart ${cartId} is empty`);
-    }
-
-    return cart as unknown as CartWithDetails;
   }
 
   /**
@@ -215,45 +174,22 @@ export class PaymentService {
   }
 
   /**
-   * Initiates payment with the payment provider.
-   * @param amount - The payment amount
-   * @param customerId - The customer ID
-   * @param vendorId - The vendor ID
-   * @param cartId - The cart ID (used as order ID)
-   * @returns The provider response
-   */
-  private async initiatePayment(
-    amount: number,
-    cartId: string,
-  ): Promise<PaymentProviderResponse> {
-    return await this.paymentProvider.initiatePayment({
-      amount,
-      currency: this.CURRENCY,
-      orderId: cartId,
-    });
-  }
-
-  /**
    * Creates a payment record in the database.
-   * @param cartId - The cart ID
-   * @param customerId - The customer ID
-   * @param vendorId - The vendor ID
    * @param amount - The payment amount
-   * @param paymentMode - The payment mode
-   * @param providerResponse - The provider response
+   * @param providerResponse - The provider response (optional for non-ONLINE modes)
    * @returns The created payment
    */
   private async createPaymentRecord(
     amount: number,
-    providerResponse: PaymentProviderResponse,
+    providerResponse?: PaymentProviderResponse | null,
   ): Promise<PaymentWithId> {
     return (await this.prisma.payment.create({
       data: {
         amount,
         currency: this.CURRENCY,
-        provider: providerResponse.provider,
-        provider_payment_id: providerResponse.providerPaymentId,
-        provider_payload: providerResponse.payload,
+        provider: providerResponse?.provider || undefined,
+        provider_payment_id: providerResponse?.providerPaymentId || undefined,
+        provider_payload: providerResponse?.payload || undefined,
         status: this.PENDING_STATUS,
       },
     })) as PaymentWithId;

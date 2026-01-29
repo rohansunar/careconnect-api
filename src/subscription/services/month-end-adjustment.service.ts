@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/database/prisma.service';
 import { NotificationService } from '../../notification/services/notification.service';
 
@@ -12,7 +12,10 @@ export class MonthEndAdjustmentService {
     private notificationService: NotificationService,
   ) {}
 
-  @Cron('0 0 1 * *') // 1st of every month at midnight
+  @Cron(CronExpression.EVERY_10_SECONDS, {
+    name: 'order-generator-cron',
+    disabled: process.env.SCHEDULER_DISABLE === 'true',
+  }) // 1st of every month at midnight
   async processMonthEndAdjustments() {
     this.logger.log('Starting month-end adjustments');
 
@@ -73,9 +76,13 @@ export class MonthEndAdjustmentService {
       },
     });
 
+    //  console.log("actualDeliveries", actualDeliveries)
+
     const adjustmentAmount =
       (expectedDeliveries - actualDeliveries) *
       (subscription as any).price_snapshot;
+
+    console.debug('adjustmentAmount', adjustmentAmount);
 
     if (adjustmentAmount !== 0) {
       // Create monthly bill for adjustment

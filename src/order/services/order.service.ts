@@ -28,7 +28,7 @@ export class OrderService {
     const defaultInclude = {
       customer: true,
       vendor: true,
-      address: { include: { city: true } },
+      address: { include: { location: true } },
       cart: {
         include: {
           cartItems: {
@@ -104,7 +104,6 @@ export class OrderService {
     await this.validateCustomer(customerId);
     await this.validateVendor(vendorId);
     await this.validateAddress(addressId);
-    await this.cartService.validateCart(cartId);
 
     // Fetch cart with items to create order items
     const cart = await this.prisma.cart.findUnique({

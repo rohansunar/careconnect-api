@@ -12,7 +12,7 @@
   },
    "typescript.tsserver.maxTsServerMemory": 1024,
    "git.autofetch": false,
-  "editor.minimap.enabled": false,
+  "editor.minimap.enabled": true,
   "editor.codeLens": false,
   "breadcrumbs.enabled": false
 }

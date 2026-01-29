@@ -206,16 +206,27 @@ export class CartService {
    */
   async validateCart(cartId: string) {
     const cart = await this.prisma.cart.findUnique({
-      where: { id: cartId },
-      include: { cartItems: true },
+      where: { id: cartId, status: 'ACTIVE' },
+      include: {
+        customer: true,
+        cartItems: {
+          include: {
+            product: {
+              include: {
+                vendor: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!cart) {
-      throw new BadRequestException('Cart not found');
+      throw new NotFoundException(`Cart with ID ${cartId} not found`);
     }
 
-    if (cart.status !== CartStatus.ACTIVE) {
-      throw new BadRequestException('Cart is not active or already processed');
+    if (!cart.cartItems || cart.cartItems.length === 0) {
+      throw new BadRequestException(`Cart ${cartId} is empty`);
     }
 
     return cart;

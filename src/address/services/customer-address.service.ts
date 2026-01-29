@@ -243,7 +243,7 @@ export class CustomerAddressService {
         is_active: true,
       } as any,
       include: {
-        location: true,
+        location: { select: { name: true } },
       },
       orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
     });
