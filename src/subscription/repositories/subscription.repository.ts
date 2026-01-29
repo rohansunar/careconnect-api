@@ -50,7 +50,6 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
       });
       return results.map(this.mapToSubscription);
     } catch (error) {
-      console.debug('findByCustomerAndProduct', error);
       return [];
     }
   }

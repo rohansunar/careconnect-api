@@ -239,7 +239,7 @@ export class PaymentService {
         throw new NotFoundException('Payment not found for webhook');
       }
 
-      const updatedPayment = await this.prisma.payment.update({
+      await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
           status: verifiedData.status as PaymentStatus,

@@ -19,6 +19,8 @@ import {
   DayOfWeek,
   SubscriptionFrequency,
 } from '../interfaces/delivery-frequency.interface';
+import { PaymentProviderService } from '../../payment/services/payment-provider.service';
+import { PaymentStatus, Order, PaymentMode } from '@prisma/client';
 
 // Constants for magic strings
 const ERROR_START_DATE_PAST = 'Start date cannot be in the past';
@@ -29,12 +31,14 @@ const ERROR_START_DATE_PAST = 'Start date cannot be in the past';
  */
 @Injectable()
 export class CustomerSubscriptionService {
+  private readonly CURRENCY = 'INR';
   constructor(
     private readonly subscriptionRepository: SubscriptionRepositoryService,
     private readonly deliveryFrequencyService: DeliveryFrequencyService,
     private readonly priceCalculationService: PriceCalculationService,
     private readonly paymentModeService: PaymentModeService,
     private readonly subscriptionValidationService: SubscriptionValidationService,
+    private paymentProvider: PaymentProviderService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -130,10 +134,26 @@ export class CustomerSubscriptionService {
       status: 'PROCESSING',
     });
 
+    const providerResponse = await this.paymentProvider.initiatePayment({
+      amount: createdSubscription.price,
+      currency: this.CURRENCY,
+      orderId: createdSubscription.id,
+    });
+
+    // Create payment record in database
+    const payment = (await this.prisma.payment.create({
+      data: {
+        amount: createdSubscription.price,
+        currency: this.CURRENCY,
+        provider: providerResponse?.provider || undefined,
+        provider_payment_id: providerResponse?.providerPaymentId || undefined,
+        provider_payload: providerResponse?.payload || undefined,
+        status: PaymentStatus.PENDING,
+      },
+    })) as { id: string };
+
     return {
-      id: createdSubscription.id,
-      total_price: createdSubscription.price,
-      payment_mode: paymentMode,
+      payment,
       customer: {
         name: customerAddress.customer.name,
         email: customerAddress.customer.email,

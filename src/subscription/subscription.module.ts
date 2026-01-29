@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from '../common/database/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
+import { PaymentModule } from '../payment/payment.module';
 import { CustomerSubscriptionController } from './controllers/customer-subscription.controller';
 import { AdminSubscriptionController } from './controllers/admin-subscription.controller';
 import { CustomerSubscriptionService } from './services/customer-subscription.service';
@@ -17,7 +18,7 @@ import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.
 import { MonthEndAdjustmentService } from './services/month-end-adjustment.service';
 
 @Module({
-  imports: [PrismaModule, ScheduleModule.forRoot(), NotificationModule],
+  imports: [PrismaModule, ScheduleModule.forRoot(), NotificationModule, PaymentModule],
   controllers: [CustomerSubscriptionController, AdminSubscriptionController],
   providers: [
     CustomerSubscriptionService,

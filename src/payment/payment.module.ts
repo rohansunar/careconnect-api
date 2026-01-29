@@ -10,6 +10,6 @@ import { CartModule } from '../cart/cart.module';
   imports: [PrismaModule, forwardRef(() => OrderModule), CartModule],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentProviderService],
-  exports: [PaymentService],
+  exports: [PaymentService, PaymentProviderService],
 })
 export class PaymentModule {}
