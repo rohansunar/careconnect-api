@@ -110,7 +110,7 @@ export class ProductRepository implements IProductRepository {
     if (distanceKm < 1) {
       return {
         value: Math.round(distanceKm * 1000),
-        unit: 'm',
+        unit: 'meters',
       };
     } else {
       return {

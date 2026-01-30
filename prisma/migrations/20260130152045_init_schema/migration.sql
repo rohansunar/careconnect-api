@@ -38,9 +38,6 @@ CREATE TYPE "SubscriptionFrequency" AS ENUM ('DAILY', 'ALTERNATIVE_DAYS', 'CUSTO
 CREATE TYPE "DayOfWeek" AS ENUM ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionPaymentMode" AS ENUM ('UPFRONT', 'POST_DELIVERY');
-
--- CreateEnum
 CREATE TYPE "OperatingDays" AS ENUM ('MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY');
 
 -- CreateTable
@@ -199,9 +196,9 @@ CREATE TABLE "Notification" (
 CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
     "orderNo" TEXT NOT NULL,
-    "customerId" TEXT,
-    "vendorId" TEXT,
-    "addressId" TEXT,
+    "customerId" TEXT NOT NULL,
+    "vendorId" TEXT NOT NULL,
+    "addressId" TEXT NOT NULL,
     "cartId" TEXT,
     "total_amount" DECIMAL(10,2) NOT NULL,
     "payment_status" VARCHAR(32) NOT NULL DEFAULT 'PENDING',
@@ -324,6 +321,7 @@ CREATE TABLE "Rider" (
 CREATE TABLE "Subscription" (
     "id" TEXT NOT NULL,
     "customerAddressId" TEXT,
+    "customerId" TEXT,
     "productId" TEXT,
     "quantity" INTEGER NOT NULL,
     "frequency" "SubscriptionFrequency" NOT NULL,
@@ -332,7 +330,7 @@ CREATE TABLE "Subscription" (
     "status" "SubscriptionStatus" NOT NULL DEFAULT 'PROCESSING',
     "start_date" TIMESTAMP(3) NOT NULL,
     "total_price" DOUBLE PRECISION NOT NULL DEFAULT 0,
-    "payment_mode" "SubscriptionPaymentMode" NOT NULL DEFAULT 'UPFRONT',
+    "payment_mode" TEXT NOT NULL DEFAULT 'UPFRONT',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "price_snapshot" DOUBLE PRECISION NOT NULL DEFAULT 0,
@@ -456,7 +454,16 @@ CREATE INDEX "Product_vendorId_created_at_idx" ON "Product"("vendorId", "created
 CREATE UNIQUE INDEX "Rider_phone_key" ON "Rider"("phone");
 
 -- CreateIndex
-CREATE INDEX "Subscription_customerAddressId_idx" ON "Subscription"("customerAddressId");
+CREATE INDEX "Subscription_status_idx" ON "Subscription"("status");
+
+-- CreateIndex
+CREATE INDEX "Subscription_start_date_idx" ON "Subscription"("start_date");
+
+-- CreateIndex
+CREATE INDEX "Subscription_created_at_idx" ON "Subscription"("created_at");
+
+-- CreateIndex
+CREATE INDEX "Subscription_customerId_idx" ON "Subscription"("customerId");
 
 -- CreateIndex
 CREATE INDEX "Subscription_productId_idx" ON "Subscription"("productId");
@@ -510,13 +517,13 @@ ALTER TABLE "Notification" ADD CONSTRAINT "Notification_customer_id_fkey" FOREIG
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_vendor_id_fkey" FOREIGN KEY ("vendor_id") REFERENCES "Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Order" ADD CONSTRAINT "Order_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Order" ADD CONSTRAINT "Order_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Order" ADD CONSTRAINT "Order_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "CustomerAddress"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Order" ADD CONSTRAINT "Order_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "CustomerAddress"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Order" ADD CONSTRAINT "Order_cartId_fkey" FOREIGN KEY ("cartId") REFERENCES "Cart"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -547,6 +554,9 @@ ALTER TABLE "Rider" ADD CONSTRAINT "Rider_vendorId_fkey" FOREIGN KEY ("vendorId"
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_customerAddressId_fkey" FOREIGN KEY ("customerAddressId") REFERENCES "CustomerAddress"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;

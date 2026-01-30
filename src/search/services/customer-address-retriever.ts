@@ -41,13 +41,16 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
     try {
       const address = await this.prisma.$queryRaw<ICustomerAddress[]>`
         SELECT
-          id,
-          "isServiceable",
-                        ST_Y(geoPoint::geometry) AS lat,
-                        ST_X(geoPoint::geometry) AS lng
-        FROM "CustomerAddress"
-        WHERE "customerId" = ${customerId}
-                      AND "is_active" = true AND "isDefault" = true;`;
+          ca.id,
+          ca."isServiceable",
+          ST_Y(ca.geopoint::geometry) AS lat,
+          ST_X(ca.geopoint::geometry) AS lng,
+          l."serviceRadiusKm"
+        FROM "CustomerAddress" ca
+        LEFT JOIN "Location" l
+          ON l.id = ca."locationId"
+        WHERE ca."customerId" = ${customerId}
+        AND ca."is_active" = true AND ca."isDefault" = true;`;
 
       if (
         address.length > 0 &&
@@ -58,6 +61,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
           lat: address[0].lat,
           lng: address[0].lng,
           isServiceable: address[0].isServiceable,
+          serviceRadiusKm:address[0].serviceRadiusKm
         };
       }
       return null;

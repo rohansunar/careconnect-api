@@ -3,7 +3,7 @@
  */
 export interface IDistance {
   value: number;
-  unit: 'm' | 'km';
+  unit: 'meters' | 'km';
 }
 
 /**
@@ -13,6 +13,7 @@ export interface ICustomerAddress {
   lat: number;
   lng: number;
   isServiceable: boolean;
+  serviceRadiusKm:string;
 }
 
 /**

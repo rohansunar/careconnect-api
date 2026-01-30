@@ -10,6 +10,7 @@ import { LocationService } from '../../location/services/location.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import * as fs from 'fs';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class VendorAddressService {
@@ -47,6 +48,19 @@ export class VendorAddressService {
       data.lng === null
     ) {
       throw new BadRequestException('Latitude and longitude are required');
+    }
+
+    if (
+      data.city === undefined ||
+      data.city === null ||
+      data.city === '' ||
+      data.state === undefined ||
+      data.state === null ||
+      data.state === ''
+    ) {
+      throw new BadRequestException(
+        'City and state are required for location lookup',
+      );
     }
   }
 
@@ -101,9 +115,11 @@ export class VendorAddressService {
         id: string;
       }[]
     >`
-    INSERT INTO "VendorAddress" (vendorId, address, locationId, pincode, geopoint, isServiceable)
-    VALUES ('${vendorId}', '${data.address}', '${locationId}', '${data.pincode}',
+    INSERT INTO "VendorAddress" 
+    (id, "vendorId", "locationId", address, pincode, geopoint, "updatedAt", "isServiceable")
+    VALUES (${randomUUID()}, ${vendorId}, ${locationId}, ${data.address}, ${data.pincode},
       ST_MakePoint(${Number((data.lng as number).toFixed(6))}, ${Number((data.lat as number).toFixed(6))})::geography,
+      ${new Date()},
       ${isServiceable}
     )
     RETURNING id;

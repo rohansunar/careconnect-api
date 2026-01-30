@@ -12,7 +12,7 @@ import type { IProximitySearchResult } from '../interfaces/search.interfaces';
 export class ProximitySearchService {
   private readonly DEFAULT_PAGE = 1;
   private readonly DEFAULT_LIMIT = 10;
-  private readonly DEFAULT_RADIUS_KM = 5;
+  private readonly DEFAULT_RADIUS_KM = 50;
 
   constructor(
     private customerAddressRetriever: CustomerAddressRetriever,
@@ -91,8 +91,8 @@ export class ProximitySearchService {
 
     const page = query.page ?? this.DEFAULT_PAGE;
     const limit = query.limit ?? this.DEFAULT_LIMIT;
-    const radiusKm = this.DEFAULT_RADIUS_KM; // Configurable via dependency injection for extension
-
+    const radiusKm = Number(address.serviceRadiusKm) || this.DEFAULT_RADIUS_KM; // Configurable via dependency injection for extension
+    console.log("Address",address)
     const { results, total } =
       await this.productRepository.findProductsWithinRadius(
         address,

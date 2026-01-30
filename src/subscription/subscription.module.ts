@@ -18,7 +18,12 @@ import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.
 import { MonthEndAdjustmentService } from './services/month-end-adjustment.service';
 
 @Module({
-  imports: [PrismaModule, ScheduleModule.forRoot(), NotificationModule, PaymentModule],
+  imports: [
+    PrismaModule,
+    ScheduleModule.forRoot(),
+    NotificationModule,
+    PaymentModule,
+  ],
   controllers: [CustomerSubscriptionController, AdminSubscriptionController],
   providers: [
     CustomerSubscriptionService,
