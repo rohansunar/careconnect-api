@@ -17,14 +17,14 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductService } from '../services/product.service';
-import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Product')
 @Controller('products')
-@UseGuards(AdminVendorGuard)
+@Roles('vendor')
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

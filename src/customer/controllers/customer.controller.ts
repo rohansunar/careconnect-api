@@ -1,13 +1,14 @@
 import { Controller, Get, Put, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { CustomerService } from '../services/customer.service';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Customer Profile')
 @Controller('customer/me')
-@UseGuards(CustomerAuthGuard)
+
+@Roles('customer')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 

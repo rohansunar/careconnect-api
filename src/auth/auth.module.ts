@@ -2,32 +2,40 @@ import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { VendorJwtStrategy } from './strategies/vendor-jwt.strategy';
-import { VendorAuthGuard } from './guards/vendor-auth.guard';
 import { VendorAuthService } from './services/vendor-auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { OtpModule } from '../otp/otp.module';
 import { VendorAuthController } from './controllers/vendor-auth.controller';
-import { AdminVendorGuard } from './guards/admin-vendor.guard';
-import { CustomerAuthGuard } from './guards/customer-auth.guard';
-import { CustomerJwtStrategy } from './strategies/customer-jwt.strategy';
 import { RolesGuard } from './guards/roles.guard';
-import { AdminJwtStrategy } from './strategies/admin-jwt.strategy';
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { AdminAuthService } from './services/admin-auth.service';
 import { CustomerAuthController } from './controllers/customer-auth.controller';
 import { CustomerAuthService } from './services/customer-auth.service';
+import { RiderAuthController } from './controllers/rider-auth.controller';
+import { RiderAuthService } from './services/rider-auth.service';
+import { UnifiedJwtStrategy } from './strategies/unified-jwt.strategy';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtTokenService } from './services/jwt-token.service';
 
+/**
+ * AuthModule provides unified JWT authentication for all user types.
+ * 
+ * Architecture:
+ * - Single UnifiedJwtStrategy for all user types (vendor, customer, rider, admin)
+ * - Single JwtAuthGuard for authentication
+ * - Single RolesGuard for authorization
+ * - Role-based access control using @Roles decorator
+ */
 @Module({
   imports: [
-    ConfigModule, // ensure ConfigService is available
+    ConfigModule,
     OtpModule,
-    PassportModule.register({ defaultStrategy: 'admin-jwt' }),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
-        secret: cfg.get<string>('ADMIN_JWT_SECRET') || 'JWT_ADMIN_SECRET',
+        secret: cfg.get<string>('JWT_SECRET') || 'your-unified-jwt-secret-key',
         signOptions: { expiresIn: '7d' },
       }),
     }),
@@ -36,20 +44,23 @@ import { CustomerAuthService } from './services/customer-auth.service';
     VendorAuthService,
     AdminAuthService,
     CustomerAuthService,
+    RiderAuthService,
     PrismaService,
-    AdminJwtStrategy,
-    VendorAuthGuard,
-    VendorJwtStrategy,
-    AdminVendorGuard,
-    CustomerAuthGuard,
-    CustomerJwtStrategy,
+    UnifiedJwtStrategy,
+    JwtAuthGuard,
+    JwtTokenService,
     RolesGuard,
   ],
   controllers: [
     VendorAuthController,
     AdminAuthController,
     CustomerAuthController,
+    RiderAuthController,
   ],
-  exports: [VendorAuthGuard, AdminVendorGuard, CustomerAuthGuard, RolesGuard],
+  exports: [
+    JwtAuthGuard,
+    RolesGuard,
+    JwtTokenService,
+  ],
 })
 export class AuthModule {}

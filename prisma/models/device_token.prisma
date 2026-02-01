@@ -1,0 +1,20 @@
+/// DeviceToken model for storing push notification tokens
+///
+/// Supports multi-device registration per user with lifecycle tracking
+model DeviceToken {
+  id           String   @id @default(uuid())
+  user_id      String
+  user_type    String   // CUSTOMER, RIDER, VENDOR
+  device_token String
+  device_id    String
+  device_type  String   // ANDROID, IOS, WEB
+  device_name  String?
+  is_active    Boolean  @default(true)
+  last_used_at DateTime @default(now())
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+
+  @@index([user_id, user_type])
+  @@index([device_token])
+  @@unique([user_id, device_id])
+}

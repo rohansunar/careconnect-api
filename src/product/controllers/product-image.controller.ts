@@ -19,9 +19,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { ProductImageService } from '../services/products-image.service';
-import { AdminVendorGuard } from 'src/auth/guards/admin-vendor.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
 import {
   UploadProductImagesDto,
   UploadProductImagesResponseDto,
@@ -32,7 +30,7 @@ import {
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 
 @ApiTags('Product Image')
-@UseGuards(AdminVendorGuard, RolesGuard)
+@Roles('vendor')
 @Controller('products/image')
 export class ProductImageController {
   constructor(private readonly productImageService: ProductImageService) {}

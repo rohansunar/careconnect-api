@@ -1,14 +1,14 @@
 import { Controller, Get, Put, Body, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorService } from '../services/vendor.service';
-import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { UpdateAvailabilityDto } from '../dto/update-availability.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Vendor Profile')
 @Controller('vendor/me')
-@UseGuards(VendorAuthGuard)
+@Roles('vendor')
 export class VendorController {
   constructor(private readonly vendorService: VendorService) {}
 

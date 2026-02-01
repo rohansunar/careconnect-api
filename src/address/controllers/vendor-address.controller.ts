@@ -11,12 +11,12 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { VendorAddressService } from '../services/vendor-address.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
-import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Vendor Addresses')
 @Controller('vendor')
-@UseGuards(VendorAuthGuard)
+@Roles('vendor')
 export class VendorAddressController {
   constructor(private readonly vendorAddressService: VendorAddressService) {}
 

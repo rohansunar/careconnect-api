@@ -22,11 +22,11 @@ import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
 @ApiTags('Customer Subscriptions')
 @Controller('customer/subscriptions')
-@UseGuards(CustomerAuthGuard)
+@Roles('customer')
 export class CustomerSubscriptionController {
   constructor(
     private readonly customerSubscriptionService: CustomerSubscriptionService,

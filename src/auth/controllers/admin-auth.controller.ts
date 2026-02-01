@@ -8,6 +8,7 @@ import {
 } from '@nestjs/swagger';
 import { AdminAuthService } from '../services/admin-auth.service';
 import { AdminLoginDto } from '../dtos/admin-login.dto';
+import { Public } from '../decorators/public.decorator';
 
 /**
  * AdminAuthController handles authentication endpoints for admin users.
@@ -25,6 +26,7 @@ import { AdminLoginDto } from '../dtos/admin-login.dto';
  *   reducing integration errors and improving maintainability.
  */
 @ApiTags('Auth')
+@Public()
 @Controller('auth/admin')
 export class AdminAuthController {
   constructor(private readonly adminAuthService: AdminAuthService) {}

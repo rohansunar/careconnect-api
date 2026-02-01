@@ -3,12 +3,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { VendorAuthService } from '../services/vendor-auth.service';
 import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
+import { Public } from '../decorators/public.decorator';
 
 @ApiTags('Auth')
 @Controller('auth/vendor')
 export class VendorAuthController {
   constructor(private readonly vendorAuthService: VendorAuthService) {}
 
+  @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -64,7 +66,8 @@ export class VendorAuthController {
   async requestOtp(@Body() dto: RequestOtpDto) {
     return this.vendorAuthService.requestOtp(dto.phone);
   }
-
+  
+  @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

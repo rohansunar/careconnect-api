@@ -6,12 +6,12 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { AdminSubscriptionService } from '../services/admin-subscription.service';
-import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
 @ApiTags('Admin Subscriptions')
 @ApiBearerAuth()
 @Controller('subscriptions')
-@UseGuards(AdminVendorGuard)
+@Roles('admin')
 export class AdminSubscriptionController {
   constructor(
     private readonly adminSubscriptionService: AdminSubscriptionService,

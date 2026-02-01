@@ -19,11 +19,11 @@ import { VendorOrderService } from '../services/vendor-order.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
-import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
 @ApiTags('Vendor Orders')
 @Controller('vendor/orders')
-@UseGuards(VendorAuthGuard)
+@Roles('vendor')
 export class VendorOrderController {
   constructor(private readonly vendorOrderService: VendorOrderService) {}
 

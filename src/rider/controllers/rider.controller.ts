@@ -1,18 +1,14 @@
 import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RiderService } from '../services/rider.service';
-import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
-import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
-import { RolesGuard } from '../../auth/guards/roles.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-import { UserRole } from '../../common/interfaces/user.interface';
 import type { User } from '../../common/interfaces/user.interface';
 import { CreateRiderDto } from '../dto/create-rider.dto';
 
 @ApiTags('Riders')
 @Controller('riders')
-@UseGuards(VendorAuthGuard)
+@Roles('vendor')
 export class RiderController {
   constructor(private readonly riderService: RiderService) {}
 
@@ -49,8 +45,7 @@ export class RiderController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Post('admin')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles('admin')
   async createRiderAdmin(@Body() dto: CreateRiderDto) {
     return this.riderService.createRider(dto, true);
   }
@@ -68,7 +63,7 @@ export class RiderController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
-  @UseGuards(AdminVendorGuard)
+  @Roles('admin')
   async getRiders(@CurrentUser() user: User) {
     return this.riderService.getRiders(user);
   }

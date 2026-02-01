@@ -16,6 +16,11 @@ import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { AddressModule } from 'src/address/address.module';
 import { LocationModule } from 'src/location/location.module';
 import { QueueModule } from 'src/queue/queue.module';
+import { TokenModule } from '../token/token.module';
+import { NotificationModule } from '../notification/notification.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -37,8 +42,19 @@ import { QueueModule } from 'src/queue/queue.module';
     AddressModule,
     LocationModule,
     QueueModule,
+    TokenModule,
+    NotificationModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,
+    {
+    provide: APP_GUARD,
+    useClass: JwtAuthGuard,
+  },
+  {
+    provide: APP_GUARD,
+    useClass: RolesGuard,
+  },
+  ],
 })
 export class AppModule {}

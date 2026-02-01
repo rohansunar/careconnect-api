@@ -17,7 +17,7 @@ import {
   ApiBody,
   ApiParam,
 } from '@nestjs/swagger';
-import { VendorAuthGuard } from '../../auth/guards/vendor-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { VendorBankAccountService } from '../services/vendor-bank-account.service';
 import { CreateBankAccountDto } from '../dto/create-bank-account.dto';
@@ -26,7 +26,7 @@ import { BankAccountResponseDto } from '../dto/bank-account-response.dto';
 
 @ApiTags('Vendor Bank Accounts')
 @Controller('vendor/bank-accounts')
-@UseGuards(VendorAuthGuard)
+@Roles('vendor')
 export class VendorBankAccountController {
   constructor(
     private readonly vendorBankAccountService: VendorBankAccountService,

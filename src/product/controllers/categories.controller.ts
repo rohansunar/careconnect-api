@@ -16,13 +16,13 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { CategoriesService } from '../services/categories.service';
-import { AdminVendorGuard } from '../../auth/guards/admin-vendor.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CreateCategoryDto } from '../dto/create-category.dto';
 import { UpdateCategoryDto } from '../dto/update-category.dto';
 
 @ApiTags('Categories')
 @Controller('categories')
-@UseGuards(AdminVendorGuard)
+@Roles('vendor')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 

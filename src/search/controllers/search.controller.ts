@@ -2,12 +2,12 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { SearchService } from '../services/search.service';
 import { SearchQueryDto } from '../dto/search-query.dto';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Search')
 @Controller('search')
-@UseGuards(CustomerAuthGuard)
+@Roles('customer')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

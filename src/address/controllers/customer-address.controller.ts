@@ -16,14 +16,14 @@ import {
   ApiBody,
 } from '@nestjs/swagger';
 import { CustomerAddressService } from '../services/customer-address.service';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 
 @ApiTags('Customer Addresses')
 @Controller('customer/addresses')
-@UseGuards(CustomerAuthGuard)
+@Roles('customer')
 export class CustomerAddressController {
   constructor(
     private readonly customerAddressService: CustomerAddressService,

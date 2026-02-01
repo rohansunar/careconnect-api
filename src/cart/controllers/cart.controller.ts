@@ -16,7 +16,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { CartService } from '../services/cart.service';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CreateCartItemDto } from '../dto/create-cart-item.dto';
 import { UpdateCartItemDto } from '../dto/update-cart-item.dto';
 import { CheckoutRequestDto, CheckoutResponseDto } from '../dto/checkout.dto';
@@ -24,7 +24,7 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Cart')
 @Controller('cart')
-@UseGuards(CustomerAuthGuard)
+@Roles('customer')
 export class CartController {
   constructor(private readonly cartService: CartService) {}
 

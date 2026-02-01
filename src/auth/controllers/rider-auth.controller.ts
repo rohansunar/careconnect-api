@@ -1,37 +1,34 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CustomerAuthService } from '../services/customer-auth.service';
+import { RiderAuthService } from '../services/rider-auth.service';
 import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
-import { Public } from '../decorators/public.decorator';
 
 /**
- * CustomerAuthController handles authentication endpoints for customers.
+ * RiderAuthController handles authentication endpoints for riders.
  *
  * Design Rationale:
- * - Separate controllers for modularity: Maintaining distinct controllers for vendors and customers
+ * - Separate controllers for modularity: Maintaining distinct controllers for riders, vendors, and customers
  *   ensures modularity, allowing each to evolve independently while adhering to single responsibility principle.
  *   This separation facilitates easier testing, maintenance, and scaling of authentication logic for different user types.
  * - OTP for security: One-Time Password (OTP) authentication provides enhanced security by eliminating
  *   the risks associated with static passwords, such as credential theft or brute-force attacks.
  *   It enables secure, passwordless login suitable for mobile-first applications.
- * - Mirroring for consistency: Replicating the structure and patterns from the vendor authentication controller
+ * - Mirroring for consistency: Replicating the structure and patterns from the customer authentication controller
  *   promotes code consistency across the application, reduces cognitive load for developers, and simplifies
  *   maintenance by establishing predictable patterns for similar functionality.
  */
 @ApiTags('Auth')
-@Controller('auth/customer')
-export class CustomerAuthController {
-  constructor(private readonly customerAuthService: CustomerAuthService) {}
+@Controller('auth/rider')
+export class RiderAuthController {
+  constructor(private readonly riderAuthService: RiderAuthService) {}
 
-
-  @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Send OTP for customer login',
+    summary: 'Send OTP for rider login',
     description:
-      'Generate and send OTP to customer phone number for authentication',
+      'Generate and send OTP to rider phone number for authentication',
   })
   @ApiBody({ type: RequestOtpDto })
   @ApiResponse({
@@ -56,12 +53,12 @@ export class CustomerAuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Customer not found',
+    description: 'Rider not found',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Customer not found' },
+        message: { type: 'string', example: 'Rider not found' },
         error: { type: 'string', example: 'Unauthorized' },
       },
     },
@@ -79,20 +76,19 @@ export class CustomerAuthController {
     },
   })
   async requestOtp(@Body() dto: RequestOtpDto) {
-    return this.customerAuthService.requestOtp(dto.phone);
+    return this.riderAuthService.requestOtp(dto.phone);
   }
-  
-  @Public()
+
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Verify OTP and authenticate customer',
-    description: 'Verify the OTP code and authenticate the customer if valid',
+    summary: 'Verify OTP and authenticate rider',
+    description: 'Verify the OTP code and authenticate the rider if valid',
   })
   @ApiBody({ type: VerifyOtpDto })
   @ApiResponse({
     status: 200,
-    description: 'OTP verified successfully, customer authenticated',
+    description: 'OTP verified successfully, rider authenticated',
     type: VerifyOtpResponseDto,
   })
   @ApiResponse({
@@ -109,7 +105,7 @@ export class CustomerAuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid OTP or customer not found',
+    description: 'Invalid OTP or rider not found',
     schema: {
       type: 'object',
       properties: {
@@ -120,6 +116,6 @@ export class CustomerAuthController {
     },
   })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.customerAuthService.verifyOtpAndCreateCustomer(dto);
+    return this.riderAuthService.verifyOtpAndCreateRider(dto);
   }
 }

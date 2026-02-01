@@ -9,7 +9,7 @@ import {
 import { PaymentService } from '../services/payment.service';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { WebhookDto } from '../dto/webhook.dto';
-import { CustomerAuthGuard } from '../../auth/guards/customer-auth.guard';
+import { Roles } from '../../auth/decorators/roles.decorator';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -127,7 +127,7 @@ export class PaymentController {
     },
   })
   @Post()
-  @UseGuards(CustomerAuthGuard)
+  @Roles('customer')
   async create(@Body() dto: CreatePaymentDto) {
     return this.paymentService.create(dto);
   }
@@ -183,7 +183,7 @@ export class PaymentController {
     },
   })
   @Get(':id')
-  @UseGuards(CustomerAuthGuard)
+  @Roles('customer')
   async findOne(@Param('id') id: string) {
     return this.paymentService.findOne(id);
   }
