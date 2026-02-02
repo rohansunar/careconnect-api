@@ -15,7 +15,7 @@ import { RegisterTokenDto } from '../dto/register-token.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Device Tokens')
-@Controller('api/tokens')
+@Controller('tokens')
 export class TokenController {
   constructor(private readonly tokenService: TokenService) {}
 
