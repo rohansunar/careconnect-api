@@ -24,7 +24,6 @@ import { Public } from '../decorators/public.decorator';
 export class CustomerAuthController {
   constructor(private readonly customerAuthService: CustomerAuthService) {}
 
-
   @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
@@ -81,7 +80,7 @@ export class CustomerAuthController {
   async requestOtp(@Body() dto: RequestOtpDto) {
     return this.customerAuthService.requestOtp(dto.phone);
   }
-  
+
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)

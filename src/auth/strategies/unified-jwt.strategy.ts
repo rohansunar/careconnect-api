@@ -18,7 +18,8 @@ export class UnifiedJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('JWT_SECRET') || 'your-unified-jwt-secret-key',
+      secretOrKey:
+        config.get<string>('JWT_SECRET') || 'your-unified-jwt-secret-key',
       passReqToCallback: false,
     });
   }

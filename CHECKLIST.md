@@ -31,5 +31,7 @@
     })
     ```
 9. Check Where Redis is Configure inside this Project. (Important)
+10. Download Firebase (FCM) credentials Json file and add it in root of the project folder).
+
 
 

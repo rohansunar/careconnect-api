@@ -13,7 +13,7 @@ export interface ICustomerAddress {
   lat: number;
   lng: number;
   isServiceable: boolean;
-  serviceRadiusKm:string;
+  serviceRadiusKm: string;
 }
 
 /**

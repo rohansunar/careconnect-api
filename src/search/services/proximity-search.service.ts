@@ -92,7 +92,7 @@ export class ProximitySearchService {
     const page = query.page ?? this.DEFAULT_PAGE;
     const limit = query.limit ?? this.DEFAULT_LIMIT;
     const radiusKm = Number(address.serviceRadiusKm) || this.DEFAULT_RADIUS_KM; // Configurable via dependency injection for extension
-    console.log("Address",address)
+    console.log('Address', address);
     const { results, total } =
       await this.productRepository.findProductsWithinRadius(
         address,

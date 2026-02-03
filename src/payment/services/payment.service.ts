@@ -12,6 +12,8 @@ import { Decimal } from '@prisma/client/runtime/library';
 import { OrderService } from '../../order/services/order.service';
 import { CartService } from '../../cart/services/cart.service';
 import { CartStatus } from '../../common/constants/order-status.constants';
+import { OrderNotificationPayloadDto } from '../../notification/dto/order-notification-payload.dto';
+import { PushNotificationService } from '../../notification/services/push-notification.service';
 
 interface CartWithDetails {
   id: string;
@@ -56,6 +58,7 @@ export class PaymentService {
     private paymentProvider: PaymentProviderService,
     private orderService: OrderService,
     private cartService: CartService,
+    private pushNotificationService: PushNotificationService,
   ) {}
 
   /**
@@ -124,6 +127,9 @@ export class PaymentService {
         this.logger.log(
           `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
         );
+
+        // Send push notification for order creation
+        await this.sendOrderCreatedNotification(order);
       }
 
       return payment;
@@ -133,6 +139,47 @@ export class PaymentService {
         error.stack,
       );
       throw error; // Re-throw to maintain error handling
+    }
+  }
+
+  /**
+   * Sends push notification when an order is created.
+   * Notifies both the customer and vendor about the new order.
+   * @param order - The created order with relations
+   */
+  private async sendOrderCreatedNotification(
+    order: any | Order,
+  ): Promise<void> {
+    try {
+      // Build order notification payload for customer
+      const orderPayload = new OrderNotificationPayloadDto();
+      orderPayload.orderId = order.id;
+      orderPayload.orderNumber = order.orderNo;
+      orderPayload.totalAmount = Number(order.total_amount);
+      orderPayload.currency = this.CURRENCY;
+      orderPayload.paymentMode = order.payment_mode;
+
+      if (order && order?.customer?.id) {
+        // Send notification to customer
+        await this.pushNotificationService.sendOrderCreatedNotification(
+          order.customer.id,
+          orderPayload,
+        );
+      }
+
+      // if (order && order?.vendor?.id) {
+      //   // Send notification to vendor
+      //   orderPayload.vendorName = order.vendor.name || undefined;
+      //   await this.pushNotificationService.sendOrderToVendorNotification(
+      //     order.vendor.id,
+      //     orderPayload,
+      //   );
+      // }
+    } catch (error) {
+      // Log error but don't fail the order creation
+      this.logger.error(
+        `Failed to send order created notifications for order ${order.orderNo}: ${error.message}`,
+      );
     }
   }
 

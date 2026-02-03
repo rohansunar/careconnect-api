@@ -19,7 +19,7 @@ import { JwtTokenService } from './services/jwt-token.service';
 
 /**
  * AuthModule provides unified JWT authentication for all user types.
- * 
+ *
  * Architecture:
  * - Single UnifiedJwtStrategy for all user types (vendor, customer, rider, admin)
  * - Single JwtAuthGuard for authentication
@@ -57,10 +57,6 @@ import { JwtTokenService } from './services/jwt-token.service';
     CustomerAuthController,
     RiderAuthController,
   ],
-  exports: [
-    JwtAuthGuard,
-    RolesGuard,
-    JwtTokenService,
-  ],
+  exports: [JwtAuthGuard, RolesGuard, JwtTokenService],
 })
 export class AuthModule {}

@@ -133,9 +133,6 @@ export class VendorAuthService {
     const PREFIX = 'V';
     const PADDING = 6;
 
-    return (
-      PREFIX +
-      counter.lastNumber.toString().padStart(PADDING, '0')
-    );
+    return PREFIX + counter.lastNumber.toString().padStart(PADDING, '0');
   }
 }

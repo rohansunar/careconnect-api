@@ -41,7 +41,10 @@ export class AdminAuthService {
         throw new BadRequestException('Invalid credentials');
       }
 
-      const isPasswordValid = await bcrypt.compare(password, admin.password_hash);
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        admin.password_hash,
+      );
 
       if (!isPasswordValid) {
         throw new BadRequestException('Invalid credentials');

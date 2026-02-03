@@ -339,10 +339,7 @@ describe('TokenService', () => {
     const userType = 'CUSTOMER';
 
     it('should return array of device tokens', async () => {
-      const tokens = [
-        { device_token: 'token_1' },
-        { device_token: 'token_2' },
-      ];
+      const tokens = [{ device_token: 'token_1' }, { device_token: 'token_2' }];
 
       mockPrisma.deviceToken.findMany.mockResolvedValue(tokens);
 

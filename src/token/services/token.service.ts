@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { RegisterTokenDto, DeviceType } from '../dto/register-token.dto';
 
@@ -24,11 +29,7 @@ export class TokenService {
    * @param dto - Token registration data
    * @returns The registered token record
    */
-  async registerToken(
-    userId: string,
-    userType: string,
-    dto: RegisterTokenDto,
-  ) {
+  async registerToken(userId: string, userType: string, dto: RegisterTokenDto) {
     this.logger.log(
       `Registering token for user ${userId} (${userType}), device: ${dto.deviceId}`,
     );
@@ -76,7 +77,9 @@ export class TokenService {
       },
     });
 
-    this.logger.log(`New token created for user ${userId}, device ${dto.deviceId}`);
+    this.logger.log(
+      `New token created for user ${userId}, device ${dto.deviceId}`,
+    );
     return token;
   }
 

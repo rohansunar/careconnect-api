@@ -7,7 +7,6 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Customer Profile')
 @Controller('customer/me')
-
 @Roles('customer')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}

@@ -66,7 +66,7 @@ export class VendorAuthController {
   async requestOtp(@Body() dto: RequestOtpDto) {
     return this.vendorAuthService.requestOtp(dto.phone);
   }
-  
+
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)

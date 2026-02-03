@@ -61,7 +61,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
           lat: address[0].lat,
           lng: address[0].lng,
           isServiceable: address[0].isServiceable,
-          serviceRadiusKm:address[0].serviceRadiusKm
+          serviceRadiusKm: address[0].serviceRadiusKm,
         };
       }
       return null;

@@ -9,7 +9,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { TokenService } from '../services/token.service';
 import { RegisterTokenDto } from '../dto/register-token.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
@@ -40,7 +45,11 @@ export class TokenController {
     @Body() dto: RegisterTokenDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.tokenService.registerToken(user.id, user.role.toUpperCase(), dto);
+    return this.tokenService.registerToken(
+      user.id,
+      user.role.toUpperCase(),
+      dto,
+    );
   }
 
   /**
@@ -59,7 +68,11 @@ export class TokenController {
     @Query('deviceId') deviceId: string,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.tokenService.refreshToken(user.id, user.role.toUpperCase(), deviceId);
+    return this.tokenService.refreshToken(
+      user.id,
+      user.role.toUpperCase(),
+      deviceId,
+    );
   }
 
   /**
@@ -78,6 +91,10 @@ export class TokenController {
     @Query('deviceId') deviceId: string,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.tokenService.revokeToken(user.id, user.role.toUpperCase(), deviceId);
+    return this.tokenService.revokeToken(
+      user.id,
+      user.role.toUpperCase(),
+      deviceId,
+    );
   }
 }
