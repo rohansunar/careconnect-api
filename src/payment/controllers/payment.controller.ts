@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Headers } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -10,6 +10,7 @@ import { PaymentService } from '../services/payment.service';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
 import { WebhookDto } from '../dto/webhook.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { Public } from 'src/auth/decorators/public.decorator';
 
 @ApiTags('Payments')
 @Controller('payments')
@@ -24,107 +25,16 @@ export class PaymentController {
   @ApiOperation({
     summary: 'Create a new payment',
     description:
-      'Creates a new payment for the specified cart. For ONLINE mode, initiates payment with provider (Razorpay or Mock) and checks out the cart. For COD/MONTHLY modes, creates an order and links the payment to it without provider initiation.',
+      'Creates a new payment for the specified cart. For ONLINE mode, initiates payment with provider and checks out the cart. For COD/MONTHLY modes, creates an order and links the payment to it without provider initiation.',
   })
-  @ApiBody({
-    type: CreatePaymentDto,
-    examples: {
-      online: {
-        summary: 'Create online payment',
-        value: {
-          cartId: 'cart-uuid-123',
-          paymentMode: 'ONLINE',
-        },
-      },
-      cod: {
-        summary: 'Create cash on delivery payment',
-        value: {
-          cartId: 'cart-uuid-456',
-          paymentMode: 'COD',
-        },
-      },
-      monthly: {
-        summary: 'Create monthly payment',
-        value: {
-          cartId: 'cart-uuid-789',
-          paymentMode: 'MONTHLY',
-        },
-      },
-    },
-  })
+  @ApiBody({ type: CreatePaymentDto })
   @ApiResponse({
     status: 201,
-    description:
-      'Payment created successfully. For ONLINE mode, payment is initiated with provider (Razorpay or Mock) and cart is checked out. For COD/MONTHLY modes, order is created and payment is linked to the order.',
-    schema: {
-      examples: {
-        online: {
-          summary: 'Online payment response',
-          value: {
-            id: 'payment-uuid-123',
-            amount: 100.0,
-            currency: 'INR',
-            status: 'PENDING',
-            payment_mode: 'ONLINE',
-            provider: 'RAZORPAY',
-            provider_payment_id: 'order_1234567890_cart-uuid-123',
-            created_at: '2023-12-01T10:00:00.000Z',
-          },
-        },
-        online_razorpay: {
-          summary: 'Online payment response with Razorpay',
-          value: {
-            id: 'payment-uuid-123',
-            amount: 100.0,
-            currency: 'INR',
-            status: 'PENDING',
-            payment_mode: 'ONLINE',
-            provider: 'RAZORPAY',
-            provider_payment_id: 'order_1234567890_cart-uuid-123',
-            created_at: '2023-12-01T10:00:00.000Z',
-          },
-        },
-        cod: {
-          summary: 'Cash on delivery payment response',
-          value: {
-            id: 'payment-uuid-456',
-            order_id: 'order-uuid-456',
-            amount: 100.0,
-            currency: 'INR',
-            status: 'PENDING',
-            payment_mode: 'COD',
-            provider: null,
-            provider_payment_id: null,
-            created_at: '2023-12-01T10:00:00.000Z',
-          },
-        },
-        monthly: {
-          summary: 'Monthly payment response',
-          value: {
-            id: 'payment-uuid-789',
-            order_id: 'order-uuid-789',
-            amount: 100.0,
-            currency: 'INR',
-            status: 'PENDING',
-            payment_mode: 'MONTHLY',
-            provider: null,
-            provider_payment_id: null,
-            created_at: '2023-12-01T10:00:00.000Z',
-          },
-        },
-      },
-    },
+    description: 'Payment created successfully.',
   })
   @ApiResponse({
     status: 400,
     description: 'Bad request - invalid data or order not found.',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: 'Order not found',
-        error: 'Bad Request',
-      },
-    },
   })
   @Post()
   @Roles('customer')
@@ -145,42 +55,14 @@ export class PaymentController {
   @ApiParam({
     name: 'id',
     description: 'Unique identifier of the payment (UUID)',
-    example: 'payment-uuid-123',
   })
   @ApiResponse({
     status: 200,
     description: 'Payment details retrieved successfully.',
-    schema: {
-      example: {
-        id: 'payment-uuid-123',
-        order_id: 'order-uuid-123',
-        amount: 100.0,
-        currency: 'INR',
-        payment_mode: 'ONLINE',
-        provider: 'RAZORPAY',
-        provider_payment_id: 'order_1234567890_order-uuid-123',
-        status: 'PENDING',
-        created_at: '2023-12-01T10:00:00.000Z',
-        order: {
-          id: 'order-uuid-123',
-          total_amount: 100.0,
-          paymentId: 'payment-uuid-123',
-        },
-        customer: { id: 'customer-uuid-456', name: 'John Doe' },
-        vendor: { id: 'vendor-uuid-789', name: 'Vendor Inc' },
-      },
-    },
   })
   @ApiResponse({
     status: 404,
     description: 'Payment not found.',
-    schema: {
-      example: {
-        statusCode: 404,
-        message: 'Payment not found',
-        error: 'Not Found',
-      },
-    },
   })
   @Get(':id')
   @Roles('customer')
@@ -190,65 +72,29 @@ export class PaymentController {
 
   /**
    * Handles webhooks for payment status updates.
-   * @param webhookData - The webhook payload
+   * @param dto - The webhook payload
    * @returns Updated payment information
    */
+  @Public()
   @ApiOperation({
     summary: 'Handle payment webhook',
     description:
       'Processes webhook notifications from payment providers to update payment status.',
   })
-  @ApiBody({
-    type: WebhookDto,
-    examples: {
-      example1: {
-        summary: 'Webhook example',
-        value: {
-          payload: {
-            paymentId: 'order_1234567890_order-uuid-123',
-            status: 'COMPLETED',
-            amount: 100.0,
-          },
-        },
-      },
-      example2: {
-        summary: 'Razorpay webhook example',
-        value: {
-          payload: {
-            paymentId: 'order_1234567890_order-uuid-123',
-            status: 'COMPLETED',
-            amount: 100.0,
-          },
-        },
-      },
-    },
-  })
+  @ApiBody({ type: WebhookDto })
   @ApiResponse({
     status: 200,
     description: 'Webhook processed successfully.',
-    schema: {
-      example: {
-        id: 'payment-uuid-123',
-        status: 'COMPLETED',
-        completed_at: '2023-12-01T10:05:00.000Z',
-      },
-    },
   })
   @ApiResponse({
     status: 400,
     description: 'Invalid webhook data.',
-    schema: {
-      example: {
-        statusCode: 400,
-        message: 'Invalid webhook data',
-        error: 'Bad Request',
-      },
-    },
   })
   @Post('webhook')
-  async handleWebhook(@Body() webhookData: WebhookDto) {
-    return this.paymentService.handleWebhook(
-      webhookData.payload || webhookData,
-    );
+  async handleWebhook(
+    @Body() dto: any,
+    @Headers('x-razorpay-signature') signature: string,
+  ) {
+    return this.paymentService.handleWebhook(dto, signature);
   }
 }

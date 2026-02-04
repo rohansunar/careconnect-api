@@ -1,11 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { AppService } from '../services/app.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Public } from '../../auth/decorators/public.decorator';
 
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
-
+  @Public()
   @Get()
   @ApiOperation({
     summary: 'Get App Running Status',

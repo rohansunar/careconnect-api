@@ -1,54 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Razorpay from 'razorpay';
+import * as crypto from 'crypto';
+import {
+  InitiatePaymentData,
+  ProviderResponse,
+  RefundProviderResponse,
+  WebhookVerificationData,
+  InitiateRefundData,
+} from '../interfaces/payment.interface';
 
 /**
- * Interface for payment initiation data
- */
-interface InitiatePaymentData {
-  amount: number;
-  currency: string;
-  orderId: string;
-}
-
-/**
- * Interface for payment provider response
- */
-interface ProviderResponse {
-  provider: string;
-  providerPaymentId: string;
-  payload: any;
-}
-
-/**
- * Interface for webhook verification data
- */
-interface WebhookVerificationData {
-  providerPaymentId: string;
-  status: string;
-}
-
-/**
- * Interface for refund initiation data
- */
-interface InitiateRefundData {
-  paymentId: string;
-  amount: number;
-  reason: string;
-}
-
-/**
- * Interface for refund provider response
- */
-interface RefundProviderResponse {
-  refundId: string;
-  status: string;
-  payload: any;
-}
-
-/**
- * Service for handling payment provider integrations.
- * Currently supports mock implementation, configurable for Razorpay.
+ * Service for handling Razorpay payment provider integration.
  */
 @Injectable()
 export class PaymentProviderService {
@@ -57,29 +20,25 @@ export class PaymentProviderService {
   private razorpayInstance: Razorpay;
 
   constructor(private configService: ConfigService) {
-    // Default to mock, can be configured via env
-    this.provider = this.configService.get<string>('PAYMENT_PROVIDER', 'MOCK');
+    this.provider = 'RAZORPAY';
 
-    // Initialize Razorpay if configured
-    if (this.provider === 'RAZORPAY') {
-      const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
-      const razorpayKeySecret = this.configService.get<string>(
-        'RAZORPAY_KEY_SECRET',
-      );
+    const razorpayKeyId = this.configService.get<string>('RAZORPAY_KEY_ID');
+    const razorpayKeySecret = this.configService.get<string>(
+      'RAZORPAY_KEY_SECRET',
+    );
 
-      if (!razorpayKeyId || !razorpayKeySecret) {
-        throw new Error('Razorpay key ID and secret must be configured');
-      }
-
-      this.razorpayInstance = new Razorpay({
-        key_id: razorpayKeyId,
-        key_secret: razorpayKeySecret,
-      });
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      throw new Error('Razorpay key ID and secret must be configured');
     }
+
+    this.razorpayInstance = new Razorpay({
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret,
+    });
   }
 
   /**
-   * Initiates a payment with the configured provider.
+   * Initiates a payment with Razorpay.
    * @param data - Payment initiation data
    * @returns Provider response
    */
@@ -88,34 +47,36 @@ export class PaymentProviderService {
       `Initiating payment for order: ${data.orderId} with provider: ${this.provider}`,
     );
 
-    switch (this.provider) {
-      case 'RAZORPAY':
-        return this.initiateRazorpayPayment(data);
-      case 'MOCK':
-      default:
-        return this.initiateMockPayment(data);
-    }
+    return this.initiateRazorpayPayment(data);
   }
 
   /**
-   * Verifies and processes webhook data from payment provider.
+   * Verifies and processes webhook data from Razorpay.
    * @param webhookData - Raw webhook payload
+   * @param signature - Optional webhook signature for verification
    * @returns Verified webhook data
    */
-  async verifyWebhook(webhookData: any): Promise<WebhookVerificationData> {
+  async verifyWebhook(
+    webhookData: any,
+    signature?: string,
+  ): Promise<WebhookVerificationData> {
     this.logger.log(`Verifying webhook with provider: ${this.provider}`);
 
-    switch (this.provider) {
-      case 'RAZORPAY':
-        return this.verifyRazorpayWebhook(webhookData);
-      case 'MOCK':
-      default:
-        return this.verifyMockWebhook(webhookData);
+    if (signature) {
+      const isValid = await this.verifyRazorpayWebhookSignature(
+        webhookData,
+        signature,
+      );
+      if (!isValid) {
+        throw new Error('Invalid webhook signature');
+      }
     }
+
+    return this.verifyRazorpayWebhook(webhookData);
   }
 
   /**
-   * Initiates a refund with the configured provider.
+   * Initiates a refund with Razorpay.
    * @param data - Refund initiation data
    * @returns Refund provider response
    */
@@ -126,70 +87,42 @@ export class PaymentProviderService {
       `Initiating refund for payment: ${data.paymentId} with provider: ${this.provider}`,
     );
 
-    switch (this.provider) {
-      case 'RAZORPAY':
-        return this.initiateRazorpayRefund(data);
-      case 'MOCK':
-      default:
-        return this.initiateMockRefund(data);
-    }
+    return this.initiateRazorpayRefund(data);
   }
 
   /**
-   * Mock payment initiation for development/testing.
+   * Verifies Razorpay webhook signature for security.
+   * @param webhookData - Raw webhook payload
+   * @param signature - Signature from Razorpay header
+   * @returns True if signature is valid
    */
-  private async initiateMockPayment(
-    data: InitiatePaymentData,
-  ): Promise<ProviderResponse> {
-    const mockPaymentId = `mock_${Date.now()}_${data.orderId}`;
-
-    return {
-      provider: 'MOCK',
-      providerPaymentId: mockPaymentId,
-      payload: {
-        mock: true,
-        amount: data.amount,
-        currency: data.currency,
-        orderId: data.orderId,
-      },
-    };
-  }
-
-  /**
-   * Mock refund initiation for development/testing.
-   */
-  private async initiateMockRefund(
-    data: InitiateRefundData,
-  ): Promise<RefundProviderResponse> {
-    const mockRefundId = `mock_refund_${Date.now()}_${data.paymentId}`;
-
-    this.logger.log(
-      `Mock refund initiated: ${mockRefundId} for payment: ${data.paymentId}`,
-    );
-
-    return {
-      refundId: mockRefundId,
-      status: 'COMPLETED',
-      payload: {
-        mock: true,
-        originalPaymentId: data.paymentId,
-        amount: data.amount,
-        reason: data.reason,
-      },
-    };
-  }
-
-  /**
-   * Mock webhook verification.
-   */
-  private async verifyMockWebhook(
+  private async verifyRazorpayWebhookSignature(
     webhookData: any,
-  ): Promise<WebhookVerificationData> {
-    // In mock, assume payment is completed
-    return {
-      providerPaymentId: webhookData.paymentId || 'mock_payment_id',
-      status: 'COMPLETED',
-    };
+    signature: string,
+  ): Promise<boolean> {
+    try {
+      const webhookSecret = this.configService.get<string>(
+        'RAZORPAY_WEBHOOK_SECRET',
+      );
+
+      if (!webhookSecret) {
+        this.logger.warn('Razorpay webhook secret not configured');
+        return false;
+      }
+
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(JSON.stringify(webhookData))
+        .digest('hex');
+
+      return signature === expectedSignature;
+    } catch (error) {
+      this.logger.error(
+        `Failed to verify webhook signature: ${error.message}`,
+        error.stack,
+      );
+      return false;
+    }
   }
 
   /**
@@ -201,10 +134,10 @@ export class PaymentProviderService {
   ): Promise<ProviderResponse> {
     try {
       const options = {
-        amount: data.amount * 100, // Razorpay expects amount in paise
+        amount: data.amount * 100,
         currency: data.currency,
         receipt: data.orderId,
-        payment_capture: 1, // Auto-capture payment
+        payment_capture: 1,
       };
 
       const order = await this.razorpayInstance.orders.create(options);
@@ -231,14 +164,13 @@ export class PaymentProviderService {
 
   /**
    * Razorpay webhook verification.
-   * Verifies the authenticity of the webhook using Razorpay's signature verification.
+   * Extracts payment ID and status from webhook payload.
    */
   private async verifyRazorpayWebhook(
     webhookData: any,
   ): Promise<WebhookVerificationData> {
     try {
-      // Extract payment ID and status from webhook payload
-      const paymentId = webhookData.payload?.payment?.entity?.id;
+      const paymentId = webhookData.payload?.payment?.entity?.order_id;
       const status = webhookData.payload?.payment?.entity?.status;
 
       if (!paymentId || !status) {
@@ -271,7 +203,7 @@ export class PaymentProviderService {
       const refund = await this.razorpayInstance.payments.refund(
         data.paymentId,
         {
-          amount: data.amount * 100, // Razorpay expects amount in paise
+          amount: data.amount * 100,
           speed: 'normal',
           notes: {
             reason: data.reason,

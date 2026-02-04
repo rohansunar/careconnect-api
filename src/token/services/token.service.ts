@@ -30,9 +30,7 @@ export class TokenService {
    * @returns The registered token record
    */
   async registerToken(userId: string, userType: string, dto: RegisterTokenDto) {
-    this.logger.log(
-      `Registering token for user ${userId} (${userType}), device: ${dto.deviceId}`,
-    );
+    this.logger.log(`Registering token for (${userType})`);
 
     // Check if token already exists for this device
     const existingToken = await this.prisma.deviceToken.findUnique({

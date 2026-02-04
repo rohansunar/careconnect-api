@@ -56,7 +56,7 @@ export class OrderNotificationPayloadDto {
       }),
       ...(this.itemCount && { itemCount: this.itemCount.toString() }),
       notificationType: 'ORDER_CREATED',
-      screen: "Orders"
+      screen: 'Orders',
     };
   }
 }

@@ -7,7 +7,12 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { CreatePaymentDto } from '../dto/create-payment.dto';
-import { PaymentStatus, Order, PaymentMode } from '@prisma/client';
+import {
+  PaymentStatus,
+  Order,
+  PaymentMode,
+  SubscriptionStatus,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { OrderService } from '../../order/services/order.service';
 import { CartService } from '../../cart/services/cart.service';
@@ -100,34 +105,30 @@ export class PaymentService {
       );
       this.logger.debug(`Payment record created: ${payment.id}`);
 
+      const order = await this.orderService.createOrder(
+        cart.customerId,
+        cart.cartItems[0].product.vendorId,
+        defaultAddress.id,
+        cart.id,
+        totalAmount,
+        dto.paymentMode,
+        payment.id,
+      );
+
+      // Update cart status to CHECKED_OUT
+      await this.cartService.updateCartStatus(cart.id, CartStatus.CHECKED_OUT);
+
+      // Link payment to order
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { order_id: order.id },
+      });
+
+      this.logger.log(
+        `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
+      );
+      // For COD or MONTHLY, create order and delete cart
       if (dto.paymentMode === 'COD' || dto.paymentMode === 'MONTHLY') {
-        // Update cart status to CHECKED_OUT
-        await this.cartService.updateCartStatus(
-          cart.id,
-          CartStatus.CHECKED_OUT,
-        );
-
-        // For COD or MONTHLY, create order and delete cart
-        const order = await this.orderService.createOrder(
-          cart.customerId,
-          cart.cartItems[0].product.vendorId,
-          defaultAddress.id,
-          cart.id,
-          totalAmount,
-          dto.paymentMode,
-          payment.id,
-        );
-
-        // Link payment to order
-        await this.prisma.payment.update({
-          where: { id: payment.id },
-          data: { order_id: order.id },
-        });
-
-        this.logger.log(
-          `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
-        );
-
         // Send push notification for order creation
         await this.sendOrderCreatedNotification(order);
       }
@@ -166,15 +167,6 @@ export class PaymentService {
           orderPayload,
         );
       }
-
-      // if (order && order?.vendor?.id) {
-      //   // Send notification to vendor
-      //   orderPayload.vendorName = order.vendor.name || undefined;
-      //   await this.pushNotificationService.sendOrderToVendorNotification(
-      //     order.vendor.id,
-      //     orderPayload,
-      //   );
-      // }
     } catch (error) {
       // Log error but don't fail the order creation
       this.logger.error(
@@ -267,56 +259,285 @@ export class PaymentService {
   /**
    * Handles webhook updates for payment status.
    * @param webhookData - The webhook payload
+   * @param signature - Optional webhook signature for verification
    * @returns Updated payment
    */
-  async handleWebhook(webhookData: Record<string, any>) {
-    this.logger.log(`Processing webhook for payment: ${webhookData.paymentId}`);
-
+  async handleWebhook(webhookData: Record<string, any>, signature?: string) {
+    this.logger.log(`Processing webhook for payment`);
     try {
       // Verify webhook with provider
-      const verifiedData =
-        await this.paymentProvider.verifyWebhook(webhookData);
+      const verifiedData = await this.paymentProvider.verifyWebhook(
+        webhookData,
+        signature,
+      );
 
       // Find and update payment status
       const payment = await this.prisma.payment.findFirst({
         where: { provider_payment_id: verifiedData.providerPaymentId },
+        include: { order: true }, 
       });
 
       if (!payment) {
+        console.log("verifiedData.providerPaymentId",verifiedData.providerPaymentId, payment)
         throw new NotFoundException('Payment not found for webhook');
       }
 
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: verifiedData.status as PaymentStatus,
-          completed_at:
-            verifiedData.status === 'COMPLETED' ? new Date() : undefined,
-          provider_payload: webhookData,
-        },
-        include: {
-          order: true,
-        },
-      });
+      // Route by payment status
+      const status = verifiedData.status.toUpperCase();
 
-      // Update order payment status if payment completed
-      if (verifiedData.status === PaymentStatus.PAID) {
-        await this.prisma.order.update({
-          where: { id: payment.order_id! },
-          data: { payment_status: 'PAID' },
-        });
+      switch (status) {
+        case 'CAPTURED':
+        case 'PAID':
+        case 'COMPLETED':
+          return this.handleSuccessfulPayment(payment, webhookData);
+        case 'FAILED':
+          return this.handleFailedPayment(payment, webhookData);
+        case 'REFUNDED':
+          return this.handleRefundedPayment(payment, webhookData);
+        default:
+          this.logger.warn(`Unknown payment status: ${status}`);
+          return payment;
       }
-
-      this.logger.log(
-        `Payment status updated: ${payment.id} to ${verifiedData.status}`,
-      );
-      return payment;
     } catch (error) {
       this.logger.error(
         `Webhook processing failed: ${error.message}`,
         error.stack,
       );
       throw new BadRequestException('Invalid webhook data');
+    }
+  }
+
+  /**
+   * Handles successful payment webhook.
+   * Updates payment status, order payment status, and subscription status.
+   * Creates a review payment record for admin approval.
+   * @param payment - The existing payment record
+   * @param webhookData - The webhook payload
+   * @returns Result object
+   */
+  private async handleSuccessfulPayment(
+    payment: any,
+    webhookData: any,
+  ): Promise<{ success: boolean; action: string }> {
+    this.logger.log(`Processing successful payment: ${payment.id}`);
+
+    try {
+      // 1. Update existing Payment record
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.PAID,
+          completed_at: new Date(),
+          provider_payload: webhookData,
+        },
+      });
+
+      // 2. Update Order payment status if linked
+      if (payment.order_id) {
+        await this.prisma.order.update({
+          where: { id: payment.order_id },
+          data: { payment_status: 'PAID' },
+        });
+      }
+
+      // 3. Update Subscription status to ACTIVE
+      await this.updateSubscriptionStatus(
+        payment.order?.subscriptionId,
+        payment.metadata as any,
+        SubscriptionStatus.ACTIVE,
+      );
+
+      // 4. Create NEW Payment record for admin review queue
+      // await this.prisma.payment.create({
+      //   data: {
+      //     order_id: payment.order_id,
+      //     amount: payment.amount,
+      //     currency: 'INR',
+      //     provider: 'RAZORPAY',
+      //     provider_payment_id: `${payment.provider_payment_id}_review_${Date.now()}`,
+      //     status: PaymentStatus.PAID,
+      //     completed_at: new Date(),
+      //     reconciled: false, // Pending admin approval
+      //     provider_payload: webhookData,
+      //     metadata: {
+      //       originalPaymentId: payment.id,
+      //       subscriptionId:
+      //         payment.order?.subscriptionId ||
+      //         (payment.metadata as any)?.subscriptionId,
+      //       reviewType: 'subscription_payment',
+      //     },
+      //   },
+      // });
+
+      this.logger.log(`Payment success processed: ${payment.id}`);
+      return { success: true, action: 'payment_success' };
+    } catch (error) {
+      this.logger.error(
+        `Failed to process successful payment: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Handles failed payment webhook.
+   * Updates payment status, order payment status, and subscription status.
+   * Creates a failed payment record for admin review.
+   * @param payment - The existing payment record
+   * @param webhookData - The webhook payload
+   * @returns Result object
+   */
+  private async handleFailedPayment(
+    payment: any,
+    webhookData: any,
+  ): Promise<{ success: boolean; action: string }> {
+    this.logger.log(`Processing failed payment: ${payment.id}`);
+
+    try {
+      // 1. Update existing Payment record
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.FAILED,
+          provider_payload: webhookData,
+        },
+      });
+
+      // 2. Update Order payment status
+      if (payment.order_id) {
+        await this.prisma.order.update({
+          where: { id: payment.order_id },
+          data: { payment_status: 'FAILED' },
+        });
+      }
+
+      // 3. Update Subscription to PROCESSING (requires retry)
+      await this.updateSubscriptionStatus(
+        payment.order?.subscriptionId,
+        payment.metadata as any,
+        SubscriptionStatus.PROCESSING,
+      );
+
+      // 4. Create FAILED Payment record for admin review
+      // await this.prisma.payment.create({
+      //   data: {
+      //     order_id: payment.order_id,
+      //     amount: payment.amount,
+      //     currency: 'INR',
+      //     provider: 'RAZORPAY',
+      //     provider_payment_id: `${payment.provider_payment_id}_failed_${Date.now()}`,
+      //     status: PaymentStatus.FAILED,
+      //     reconciled: false,
+      //     provider_payload: webhookData,
+      //     metadata: {
+      //       originalPaymentId: payment.id,
+      //       subscriptionId: payment.order?.subscriptionId,
+      //       reviewType: 'payment_failed',
+      //     },
+      //   },
+      // });
+
+      this.logger.log(`Payment failure processed: ${payment.id}`);
+      return { success: true, action: 'payment_failed' };
+    } catch (error) {
+      this.logger.error(
+        `Failed to process failed payment: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Handles refunded payment webhook.
+   * Updates payment status, order payment status, and subscription status.
+   * Creates a refunded payment record for admin review.
+   * @param payment - The existing payment record
+   * @param webhookData - The webhook payload
+   * @returns Result object
+   */
+  private async handleRefundedPayment(
+    payment: any,
+    webhookData: any,
+  ): Promise<{ success: boolean; action: string }> {
+    this.logger.log(`Processing refunded payment: ${payment.id}`);
+
+    try {
+      // 1. Update existing Payment record
+      await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PaymentStatus.REFUNDED,
+          provider_payload: webhookData,
+        },
+      });
+
+      // 2. Update Order payment status
+      if (payment.order_id) {
+        await this.prisma.order.update({
+          where: { id: payment.order_id },
+          data: { payment_status: 'REFUNDED' },
+        });
+      }
+
+      // 3. Update Subscription to INACTIVE
+      await this.updateSubscriptionStatus(
+        payment.order?.subscriptionId,
+        payment.metadata as any,
+        SubscriptionStatus.INACTIVE,
+      );
+
+      // // 4. Create REFUNDED Payment record for admin review
+      // await this.prisma.payment.create({
+      //   data: {
+      //     order_id: payment.order_id,
+      //     amount: payment.amount,
+      //     currency: 'INR',
+      //     provider: 'RAZORPAY',
+      //     provider_payment_id: `${payment.provider_payment_id}_refunded_${Date.now()}`,
+      //     status: PaymentStatus.REFUNDED,
+      //     reconciled: false,
+      //     provider_payload: webhookData,
+      //     metadata: {
+      //       originalPaymentId: payment.id,
+      //       subscriptionId: payment.order?.subscriptionId,
+      //       reviewType: 'payment_refunded',
+      //     },
+      //   },
+      // });
+
+      this.logger.log(`Payment refund processed: ${payment.id}`);
+      return { success: true, action: 'payment_refunded' };
+    } catch (error) {
+      this.logger.error(
+        `Failed to process refunded payment: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Updates subscription status if subscription ID is available.
+   * @param subscriptionId - The subscription ID from order or metadata
+   * @param metadata - The payment metadata
+   * @param status - The new status
+   */
+  private async updateSubscriptionStatus(
+    subscriptionId: string | null | undefined,
+    metadata: Record<string, any> | null,
+    status: SubscriptionStatus,
+  ): Promise<void> {
+    // Try to get subscription ID from order first, then from metadata
+    const subId = subscriptionId || metadata?.subscriptionId;
+
+    if (subId) {
+      await this.prisma.subscription.update({
+        where: { id: subId },
+        data: { status },
+      });
+      this.logger.log(`Subscription ${subId} updated to ${status}`);
     }
   }
 
