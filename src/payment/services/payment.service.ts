@@ -94,6 +94,7 @@ export class PaymentService {
           amount: totalAmount,
           currency: this.CURRENCY,
           orderId: dto.cartId,
+          notes: {},
         });
         this.logger.debug(`Payment initiated with provider`);
       }
@@ -274,11 +275,15 @@ export class PaymentService {
       // Find and update payment status
       const payment = await this.prisma.payment.findFirst({
         where: { provider_payment_id: verifiedData.providerPaymentId },
-        include: { order: true }, 
+        include: { order: true },
       });
 
       if (!payment) {
-        console.log("verifiedData.providerPaymentId",verifiedData.providerPaymentId, payment)
+        console.log(
+          'verifiedData.providerPaymentId',
+          verifiedData.providerPaymentId,
+          payment,
+        );
         throw new NotFoundException('Payment not found for webhook');
       }
 
@@ -342,8 +347,7 @@ export class PaymentService {
 
       // 3. Update Subscription status to ACTIVE
       await this.updateSubscriptionStatus(
-        payment.order?.subscriptionId,
-        payment.metadata as any,
+        webhookData.payload?.payment.entity.notes.subscribeID,
         SubscriptionStatus.ACTIVE,
       );
 
@@ -413,11 +417,11 @@ export class PaymentService {
       }
 
       // 3. Update Subscription to PROCESSING (requires retry)
-      await this.updateSubscriptionStatus(
-        payment.order?.subscriptionId,
-        payment.metadata as any,
-        SubscriptionStatus.PROCESSING,
-      );
+      // await this.updateSubscriptionStatus(
+      //   payment.order?.subscriptionId,
+      //   payment.metadata as any,
+      //   SubscriptionStatus.PROCESSING,
+      // );
 
       // 4. Create FAILED Payment record for admin review
       // await this.prisma.payment.create({
@@ -483,8 +487,7 @@ export class PaymentService {
 
       // 3. Update Subscription to INACTIVE
       await this.updateSubscriptionStatus(
-        payment.order?.subscriptionId,
-        payment.metadata as any,
+        webhookData.payload?.payment.entity.notes.subscribeID,
         SubscriptionStatus.INACTIVE,
       );
 
@@ -526,18 +529,14 @@ export class PaymentService {
    */
   private async updateSubscriptionStatus(
     subscriptionId: string | null | undefined,
-    metadata: Record<string, any> | null,
     status: SubscriptionStatus,
   ): Promise<void> {
-    // Try to get subscription ID from order first, then from metadata
-    const subId = subscriptionId || metadata?.subscriptionId;
-
-    if (subId) {
+    if (subscriptionId) {
       await this.prisma.subscription.update({
-        where: { id: subId },
+        where: { id: subscriptionId },
         data: { status },
       });
-      this.logger.log(`Subscription ${subId} updated to ${status}`);
+      this.logger.log(`Subscription ${subscriptionId} updated to ${status}`);
     }
   }
 

@@ -39,6 +39,8 @@ model Subscription {
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now())
   price_snapshot     Float              @default(0)
+  paymentId          String? // For linking payments to subscriptions
+  payment            Payment? @relation("subscriptionPayment", fields: [paymentId], references: [id])
 
   @@index([status])
   @@index([start_date])

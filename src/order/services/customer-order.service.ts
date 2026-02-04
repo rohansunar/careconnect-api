@@ -77,6 +77,11 @@ export class CustomerOrderService extends OrderService {
           },
         },
       },
+      payment: {
+        select: {
+          status: true,
+        },
+      },
     };
 
     const skip = (page - 1) * limit;

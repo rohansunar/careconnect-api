@@ -18,7 +18,7 @@ export class WebhookDto {
   @IsOptional()
   @ApiPropertyOptional({ description: 'Webhook event from payment provider' })
   event?: any;
-  
+
   @IsOptional()
   @ApiPropertyOptional({
     description: 'Webhook contains from payment provider',

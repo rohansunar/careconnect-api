@@ -138,6 +138,7 @@ export class PaymentProviderService {
         currency: data.currency,
         receipt: data.orderId,
         payment_capture: 1,
+        notes: data.notes,
       };
 
       const order = await this.razorpayInstance.orders.create(options);

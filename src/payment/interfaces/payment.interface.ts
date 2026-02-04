@@ -5,6 +5,7 @@ export interface InitiatePaymentData {
   amount: number;
   currency: string;
   orderId: string;
+  notes: any;
 }
 
 /**

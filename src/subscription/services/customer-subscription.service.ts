@@ -138,6 +138,7 @@ export class CustomerSubscriptionService {
       amount: createdSubscription.price,
       currency: this.CURRENCY,
       orderId: createdSubscription.id,
+      notes: { subscribeID: createdSubscription.id },
     });
 
     // Create payment record in database
@@ -151,6 +152,11 @@ export class CustomerSubscriptionService {
         status: PaymentStatus.PENDING,
       },
     })) as { id: string };
+
+    await this.prisma.subscription.update({
+      where: { id: createdSubscription.id },
+      data: { paymentId: payment.id },
+    });
 
     return {
       payment,
@@ -275,7 +281,7 @@ export class CustomerSubscriptionService {
    * @throws ForbiddenException if user doesn't own the subscription
    */
   async deleteMySubscription(id: string, user: User) {
-    const subscription = await this.validateSubscriptionOwnership(id, user);
+    await this.validateSubscriptionOwnership(id, user);
     return this.subscriptionRepository.delete(id);
   }
 
