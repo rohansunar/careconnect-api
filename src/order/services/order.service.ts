@@ -100,7 +100,6 @@ export class OrderService {
     cartId: string,
     totalAmount: number,
     paymentMode: PaymentMode,
-    paymentId: string,
   ) {
     // Validate entities
     await this.validateCustomer(customerId);
@@ -117,7 +116,6 @@ export class OrderService {
     }
 
     const orderNo = await this.orderNumberService.generateOrderNumber();
-
     // Create order
     const order = await this.prisma.order.create({
       data: {
@@ -130,17 +128,9 @@ export class OrderService {
         payment_mode: paymentMode,
         delivery_status: 'PENDING',
         payment_status: 'PENDING',
-        paymentId,
       },
       include: {
         customer: true,
-        vendor: true,
-        address: true,
-        cart: {
-          include: {
-            cartItems: true,
-          },
-        },
       },
     });
 

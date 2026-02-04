@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { CustomerOrderService } from '../services/customer-order.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
+import { CreateOrderFromCartDto } from '../dto/create-order-from-cart.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -26,6 +27,43 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 @Roles('customer')
 export class CustomerOrderController {
   constructor(private readonly customerOrderService: CustomerOrderService) {}
+
+  /**
+   * Creates a new order from an existing cart.
+   * This endpoint handles the complete order creation workflow including
+   * validation, inventory reservation, and order persistence.
+   * @param dto - The order creation data containing cartId and paymentMode
+   * @param user - The authenticated customer user
+   * @returns The created order with payment details
+   */
+  @ApiOperation({
+    summary: 'Create order from cart',
+    description:
+      "Creates a new order from the authenticated customer's cart. " +
+      'Validates cart items, calculates totals, initiates payment (if ONLINE), ' +
+      'and creates the order record with appropriate status management.',
+  })
+  @ApiBody({ type: CreateOrderFromCartDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request - invalid data, empty cart, or validation errors.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Cart not found.',
+  })
+  @Post('create')
+  async createOrder(
+    @Body() dto: CreateOrderFromCartDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.customerOrderService.createOrderFromCart(dto, user);
+  }
 
   /**
    * Retrieves all orders for the authenticated customer with optional filtering.

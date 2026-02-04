@@ -41,6 +41,5 @@ model Order {
   payment               Payment? @relation("orderPayment", fields: [paymentId], references: [id])
 
   orderItems  OrderItem[]
-  payments    Payment[] @relation("paymentOrder")
   @@index([orderNo])
 }

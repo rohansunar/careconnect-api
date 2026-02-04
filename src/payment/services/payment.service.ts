@@ -6,239 +6,93 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from './payment-provider.service';
-import { CreatePaymentDto } from '../dto/create-payment.dto';
-import {
-  PaymentStatus,
-  Order,
-  PaymentMode,
-  SubscriptionStatus,
-} from '@prisma/client';
-import { Decimal } from '@prisma/client/runtime/library';
-import { OrderService } from '../../order/services/order.service';
-import { CartService } from '../../cart/services/cart.service';
-import { CartStatus } from '../../common/constants/order-status.constants';
-import { OrderNotificationPayloadDto } from '../../notification/dto/order-notification-payload.dto';
-import { PushNotificationService } from '../../notification/services/push-notification.service';
+import { PaymentStatus, Order, SubscriptionStatus } from '@prisma/client';
 
-interface CartWithDetails {
-  id: string;
-  customerId: string;
-  customer: { id: string };
-  cartItems: {
-    price: Decimal;
-    quantity: number;
-    product: {
-      vendorId: string;
-      vendor: { id: string };
-    };
-  }[];
+/**
+ * Data for initiating a payment with the provider
+ */
+export interface InitiatePaymentData {
+  /** Payment amount */
+  amount: number;
+  /** Currency code (e.g., 'INR') */
+  currency: string;
+  /** Order or cart ID for reference */
+  orderId: string;
+  /** Additional notes for the payment */
+  notes?: Record<string, string>;
 }
 
-interface PaymentProviderResponse {
+/**
+ * Response from payment provider after initiation
+ */
+export interface PaymentProviderResponse {
+  /** Payment provider name (e.g., 'RAZORPAY') */
   provider: string;
+  /** Provider's payment/order ID */
   providerPaymentId: string;
+  /** Full provider response payload */
   payload: Record<string, any>;
-}
-
-interface CustomerAddressWithId {
-  id: string;
-}
-
-export interface PaymentWithId {
-  id: string;
 }
 
 /**
  * Service for handling payment operations.
- * Manages payment creation, retrieval, and status updates.
+ * Manages payment initiation, retrieval, status updates, and refunds.
+ * This service is focused on payment gateway communication only.
+ * Order creation is handled by the Order module.
  */
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
   private readonly CURRENCY = 'INR';
-  private readonly PENDING_STATUS = PaymentStatus.PENDING;
 
   constructor(
     private prisma: PrismaService,
     private paymentProvider: PaymentProviderService,
-    private orderService: OrderService,
-    private cartService: CartService,
-    private pushNotificationService: PushNotificationService,
   ) {}
 
   /**
-   * Creates a new payment for a cart.
-   * Orchestrates the payment creation process including validation, calculation, and record creation.
-   * @param dto - The payment creation data
-   * @returns The created payment
+   * Initiates a payment with the payment provider.
+   * This method handles the payment gateway communication for reserving
+   * payment authorization. The order creation is handled by the Order module.
+   *
+   * @param data - Payment initiation data including amount, currency, and reference
+   * @returns Provider response with payment details
    */
-  async create(dto: CreatePaymentDto) {
-    this.logger.log(`Starting payment creation for cart: ${dto.cartId}`);
+  async initiatePayment(
+    data: InitiatePaymentData,
+  ): Promise<PaymentProviderResponse> {
+    this.logger.log(
+      `Initiating payment for order: ${data.orderId} with amount: ${data.amount} ${data.currency}`,
+    );
 
     try {
-      // Retrieve and validate cart details
-      const cart = await this.cartService.validateCart(dto.cartId);
-
-      // Retrieve customer's default address
-      const defaultAddress = await this.getDefaultAddressForCustomer(
-        cart.customerId,
-      );
-      // Calculate total payment amount
-      const totalAmount = this.calculateTotalAmount(cart.cartItems);
-
-      let providerResponse: PaymentProviderResponse | null = null;
-
-      if (dto.paymentMode === 'ONLINE') {
-        // Initiate payment with provider
-        providerResponse = await this.paymentProvider.initiatePayment({
-          amount: totalAmount,
-          currency: this.CURRENCY,
-          orderId: dto.cartId,
-          notes: {},
-        });
-        this.logger.debug(`Payment initiated with provider`);
-      }
-
-      // Create payment record in database
-      const payment = await this.createPaymentRecord(
-        totalAmount,
-        providerResponse,
-      );
-      this.logger.debug(`Payment record created: ${payment.id}`);
-
-      const order = await this.orderService.createOrder(
-        cart.customerId,
-        cart.cartItems[0].product.vendorId,
-        defaultAddress.id,
-        cart.id,
-        totalAmount,
-        dto.paymentMode,
-        payment.id,
-      );
-
-      // Update cart status to CHECKED_OUT
-      await this.cartService.updateCartStatus(cart.id, CartStatus.CHECKED_OUT);
-
-      // Link payment to order
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: { order_id: order.id },
+      const providerResponse = await this.paymentProvider.initiatePayment({
+        amount: data.amount,
+        currency: data.currency,
+        orderId: data.orderId,
+        notes: data.notes || {},
       });
 
       this.logger.log(
-        `Payment and order created successfully: payment ${payment.id}, order ${order.id}`,
+        `Payment initiated successfully with provider: ${providerResponse.providerPaymentId}`,
       );
-      // For COD or MONTHLY, create order and delete cart
-      if (dto.paymentMode === 'COD' || dto.paymentMode === 'MONTHLY') {
-        // Send push notification for order creation
-        await this.sendOrderCreatedNotification(order);
-      }
 
-      return payment;
+      return providerResponse;
     } catch (error) {
       this.logger.error(
-        `Failed to create payment for cart ${dto.cartId}: ${error.message}`,
+        `Failed to initiate payment for order ${data.orderId}: ${error.message}`,
         error.stack,
       );
-      throw error; // Re-throw to maintain error handling
-    }
-  }
-
-  /**
-   * Sends push notification when an order is created.
-   * Notifies both the customer and vendor about the new order.
-   * @param order - The created order with relations
-   */
-  private async sendOrderCreatedNotification(
-    order: any | Order,
-  ): Promise<void> {
-    try {
-      // Build order notification payload for customer
-      const orderPayload = new OrderNotificationPayloadDto();
-      orderPayload.orderId = order.id;
-      orderPayload.orderNumber = order.orderNo;
-      orderPayload.totalAmount = Number(order.total_amount);
-      orderPayload.currency = this.CURRENCY;
-      orderPayload.paymentMode = order.payment_mode;
-
-      if (order && order?.customer?.id) {
-        // Send notification to customer
-        await this.pushNotificationService.sendOrderCreatedNotification(
-          order.customer.id,
-          orderPayload,
-        );
-      }
-    } catch (error) {
-      // Log error but don't fail the order creation
-      this.logger.error(
-        `Failed to send order created notifications for order ${order.orderNo}: ${error.message}`,
-      );
-    }
-  }
-
-  /**
-   * Retrieves the customer's default address.
-   * @param customerId - The customer ID
-   * @returns The default address
-   * @throws BadRequestException if no default address found
-   */
-  private async getDefaultAddressForCustomer(
-    customerId: string,
-  ): Promise<CustomerAddressWithId> {
-    this.logger.debug(`Retrieving default address for customer: ${customerId}`);
-    const address = await this.prisma.customerAddress.findFirst({
-      where: { customerId, isDefault: true },
-    });
-
-    if (!address) {
       throw new BadRequestException(
-        `No default address found for customer ${customerId}`,
+        `Failed to initiate payment: ${error.message}`,
       );
     }
-
-    return address as CustomerAddressWithId;
-  }
-
-  /**
-   * Calculates the total amount for the cart items.
-   * @param cartItems - The cart items
-   * @returns The total amount
-   */
-  private calculateTotalAmount(
-    cartItems: CartWithDetails['cartItems'],
-  ): number {
-    return cartItems.reduce(
-      (sum, item) => sum + item.price.toNumber() * item.quantity,
-      0,
-    );
-  }
-
-  /**
-   * Creates a payment record in the database.
-   * @param amount - The payment amount
-   * @param providerResponse - The provider response (optional for non-ONLINE modes)
-   * @returns The created payment
-   */
-  private async createPaymentRecord(
-    amount: number,
-    providerResponse?: PaymentProviderResponse | null,
-  ): Promise<PaymentWithId> {
-    return (await this.prisma.payment.create({
-      data: {
-        amount,
-        currency: this.CURRENCY,
-        provider: providerResponse?.provider || undefined,
-        provider_payment_id: providerResponse?.providerPaymentId || undefined,
-        provider_payload: providerResponse?.payload || undefined,
-        status: this.PENDING_STATUS,
-      },
-    })) as PaymentWithId;
   }
 
   /**
    * Retrieves payment details by ID.
    * @param id - The payment ID
-   * @returns The payment details
+   * @returns The payment details with order relation
    */
   async findOne(id: string) {
     this.logger.log(`Retrieving payment: ${id}`);
@@ -258,10 +112,10 @@ export class PaymentService {
   }
 
   /**
-   * Handles webhook updates for payment status.
-   * @param webhookData - The webhook payload
+   * Handles webhook updates for payment status from the provider.
+   * @param webhookData - The webhook payload from payment provider
    * @param signature - Optional webhook signature for verification
-   * @returns Updated payment
+   * @returns Updated payment or status result
    */
   async handleWebhook(webhookData: Record<string, any>, signature?: string) {
     this.logger.log(`Processing webhook for payment`);
@@ -279,10 +133,8 @@ export class PaymentService {
       });
 
       if (!payment) {
-        console.log(
-          'verifiedData.providerPaymentId',
-          verifiedData.providerPaymentId,
-          payment,
+        this.logger.warn(
+          `Payment not found for provider payment ID: ${verifiedData.providerPaymentId}`,
         );
         throw new NotFoundException('Payment not found for webhook');
       }
@@ -315,7 +167,6 @@ export class PaymentService {
   /**
    * Handles successful payment webhook.
    * Updates payment status, order payment status, and subscription status.
-   * Creates a review payment record for admin approval.
    * @param payment - The existing payment record
    * @param webhookData - The webhook payload
    * @returns Result object
@@ -327,7 +178,8 @@ export class PaymentService {
     this.logger.log(`Processing successful payment: ${payment.id}`);
 
     try {
-      // 1. Update existing Payment record
+      const notes = webhookData.payload?.payment?.entity?.notes;
+      // Update existing Payment record
       await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -337,41 +189,22 @@ export class PaymentService {
         },
       });
 
-      // 2. Update Order payment status if linked
-      if (payment.order_id) {
+      // Update Order payment status if linked
+      if (notes.orderID) {
         await this.prisma.order.update({
-          where: { id: payment.order_id },
+          where: { id: notes.orderID },
           data: { payment_status: 'PAID' },
         });
       }
 
-      // 3. Update Subscription status to ACTIVE
-      await this.updateSubscriptionStatus(
-        webhookData.payload?.payment.entity.notes.subscribeID,
-        SubscriptionStatus.ACTIVE,
-      );
-
-      // 4. Create NEW Payment record for admin review queue
-      // await this.prisma.payment.create({
-      //   data: {
-      //     order_id: payment.order_id,
-      //     amount: payment.amount,
-      //     currency: 'INR',
-      //     provider: 'RAZORPAY',
-      //     provider_payment_id: `${payment.provider_payment_id}_review_${Date.now()}`,
-      //     status: PaymentStatus.PAID,
-      //     completed_at: new Date(),
-      //     reconciled: false, // Pending admin approval
-      //     provider_payload: webhookData,
-      //     metadata: {
-      //       originalPaymentId: payment.id,
-      //       subscriptionId:
-      //         payment.order?.subscriptionId ||
-      //         (payment.metadata as any)?.subscriptionId,
-      //       reviewType: 'subscription_payment',
-      //     },
-      //   },
-      // });
+      // Update Subscription status to ACTIVE
+      // Update Order payment status if linked
+      if (notes.subscribeID) {
+        await this.updateSubscriptionStatus(
+          notes.subscribeID,
+          SubscriptionStatus.ACTIVE,
+        );
+      }
 
       this.logger.log(`Payment success processed: ${payment.id}`);
       return { success: true, action: 'payment_success' };
@@ -386,8 +219,7 @@ export class PaymentService {
 
   /**
    * Handles failed payment webhook.
-   * Updates payment status, order payment status, and subscription status.
-   * Creates a failed payment record for admin review.
+   * Updates payment status and order payment status.
    * @param payment - The existing payment record
    * @param webhookData - The webhook payload
    * @returns Result object
@@ -399,7 +231,7 @@ export class PaymentService {
     this.logger.log(`Processing failed payment: ${payment.id}`);
 
     try {
-      // 1. Update existing Payment record
+      // Update existing Payment record
       await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -408,39 +240,14 @@ export class PaymentService {
         },
       });
 
-      // 2. Update Order payment status
-      if (payment.order_id) {
+      // Update Order payment status
+      const failedOrderId = payment.order?.id;
+      if (failedOrderId) {
         await this.prisma.order.update({
-          where: { id: payment.order_id },
+          where: { id: failedOrderId },
           data: { payment_status: 'FAILED' },
         });
       }
-
-      // 3. Update Subscription to PROCESSING (requires retry)
-      // await this.updateSubscriptionStatus(
-      //   payment.order?.subscriptionId,
-      //   payment.metadata as any,
-      //   SubscriptionStatus.PROCESSING,
-      // );
-
-      // 4. Create FAILED Payment record for admin review
-      // await this.prisma.payment.create({
-      //   data: {
-      //     order_id: payment.order_id,
-      //     amount: payment.amount,
-      //     currency: 'INR',
-      //     provider: 'RAZORPAY',
-      //     provider_payment_id: `${payment.provider_payment_id}_failed_${Date.now()}`,
-      //     status: PaymentStatus.FAILED,
-      //     reconciled: false,
-      //     provider_payload: webhookData,
-      //     metadata: {
-      //       originalPaymentId: payment.id,
-      //       subscriptionId: payment.order?.subscriptionId,
-      //       reviewType: 'payment_failed',
-      //     },
-      //   },
-      // });
 
       this.logger.log(`Payment failure processed: ${payment.id}`);
       return { success: true, action: 'payment_failed' };
@@ -456,7 +263,6 @@ export class PaymentService {
   /**
    * Handles refunded payment webhook.
    * Updates payment status, order payment status, and subscription status.
-   * Creates a refunded payment record for admin review.
    * @param payment - The existing payment record
    * @param webhookData - The webhook payload
    * @returns Result object
@@ -468,7 +274,7 @@ export class PaymentService {
     this.logger.log(`Processing refunded payment: ${payment.id}`);
 
     try {
-      // 1. Update existing Payment record
+      // Update existing Payment record
       await this.prisma.payment.update({
         where: { id: payment.id },
         data: {
@@ -477,38 +283,20 @@ export class PaymentService {
         },
       });
 
-      // 2. Update Order payment status
-      if (payment.order_id) {
+      // Update Order payment status
+      const refundedOrderId = payment.order?.id;
+      if (refundedOrderId) {
         await this.prisma.order.update({
-          where: { id: payment.order_id },
+          where: { id: refundedOrderId },
           data: { payment_status: 'REFUNDED' },
         });
       }
 
-      // 3. Update Subscription to INACTIVE
+      // Update Subscription to INACTIVE
       await this.updateSubscriptionStatus(
-        webhookData.payload?.payment.entity.notes.subscribeID,
+        webhookData.payload?.payment?.entity?.notes?.subscribeID,
         SubscriptionStatus.INACTIVE,
       );
-
-      // // 4. Create REFUNDED Payment record for admin review
-      // await this.prisma.payment.create({
-      //   data: {
-      //     order_id: payment.order_id,
-      //     amount: payment.amount,
-      //     currency: 'INR',
-      //     provider: 'RAZORPAY',
-      //     provider_payment_id: `${payment.provider_payment_id}_refunded_${Date.now()}`,
-      //     status: PaymentStatus.REFUNDED,
-      //     reconciled: false,
-      //     provider_payload: webhookData,
-      //     metadata: {
-      //       originalPaymentId: payment.id,
-      //       subscriptionId: payment.order?.subscriptionId,
-      //       reviewType: 'payment_refunded',
-      //     },
-      //   },
-      // });
 
       this.logger.log(`Payment refund processed: ${payment.id}`);
       return { success: true, action: 'payment_refunded' };
@@ -524,7 +312,6 @@ export class PaymentService {
   /**
    * Updates subscription status if subscription ID is available.
    * @param subscriptionId - The subscription ID from order or metadata
-   * @param metadata - The payment metadata
    * @param status - The new status
    */
   private async updateSubscriptionStatus(
@@ -589,11 +376,15 @@ export class PaymentService {
           order: true,
         },
       });
+
       // Update order payment status
-      await this.prisma.order.update({
-        where: { id: payment.order_id! },
-        data: { payment_status: 'REFUNDED' },
-      });
+      const refundOrderId = payment.order?.id;
+      if (refundOrderId) {
+        await this.prisma.order.update({
+          where: { id: refundOrderId },
+          data: { payment_status: 'REFUNDED' },
+        });
+      }
 
       this.logger.log(`Refund initiated successfully: ${paymentId}`);
       return updatedPayment;

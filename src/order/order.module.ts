@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from '../common/database/prisma.module';
 import { CartModule } from '../cart/cart.module';
@@ -23,7 +23,7 @@ import { OrderGenerationProcessor } from '../queue/processors/order-generation.p
   imports: [
     PrismaModule,
     CartModule,
-    forwardRef(() => PaymentModule),
+    PaymentModule,
     NotificationModule,
     ScheduleModule.forRoot(),
     QueueModule,

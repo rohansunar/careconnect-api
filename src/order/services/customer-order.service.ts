@@ -3,17 +3,50 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
+import {
+  CreateOrderFromCartDto,
+  PaymentMode,
+} from '../dto/create-order-from-cart.dto';
 import { OrderStatus } from '../../common/constants/order-status.constants';
+import { CartStatus } from '../../common/constants/order-status.constants';
 import { PaymentStatus, Order, Customer, Vendor } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
+import { PushNotificationService } from '../../notification/services/push-notification.service';
+import { OrderNotificationPayloadDto } from '../../notification/dto/order-notification-payload.dto';
+import { UserType } from '../../notification/dto/user-type.enum';
+import { Decimal } from '@prisma/client/runtime/library';
+
+/**
+ * Interface for cart items with product details
+ */
+interface CartItemWithDetails {
+  id: string;
+  price: Decimal;
+  quantity: number;
+  product: {
+    vendorId: string;
+    vendor: { id: string };
+  };
+}
+
+/**
+ * Interface for cart with customer details
+ */
+interface CartWithDetails {
+  id: string;
+  customerId: string;
+  customer: { id: string };
+  cartItems: CartItemWithDetails[];
+}
 
 interface OrderWithRelations extends Order {
   customer: Customer | null;
@@ -24,15 +57,225 @@ interface OrderWithRelations extends Order {
 
 @Injectable()
 export class CustomerOrderService extends OrderService {
+  private readonly logger = new Logger(CustomerOrderService.name);
+  private readonly CURRENCY = 'INR';
+
   constructor(
     prisma: PrismaService,
     cartService: CartService,
     orderNumberService: OrderNumberService,
     private paymentService: PaymentService,
     private notificationService: NotificationService,
+    private pushNotificationService: PushNotificationService,
   ) {
     super(prisma, cartService, orderNumberService);
   }
+
+  /**
+   * Creates a new order from an existing cart.
+   * Handles the complete order creation workflow including:
+   * - Cart validation
+   * - Address validation
+   * - Total calculation
+   * - Payment initiation (for ONLINE mode)
+   * - Order record creation
+   * - Cart status update
+   * - Push notification sending
+   *
+   * @param dto - The order creation data containing cartId and paymentMode
+   * @param user - The authenticated customer user
+   * @returns The created order with payment details
+   */
+  async createOrderFromCart(dto: CreateOrderFromCartDto, user: User) {
+    this.logger.log(`Starting order creation for cart: ${dto.cartId}`);
+
+    try {
+      // Retrieve and validate cart details
+      const cart = await this.cartService.validateCart(dto.cartId);
+
+      // Verify cart belongs to the authenticated customer
+      if (cart.customerId !== user.id) {
+        throw new ForbiddenException(
+          'You are not authorized to create an order from this cart',
+        );
+      }
+
+      // Retrieve customer's default address
+      const defaultAddress = await this.getDefaultAddressForCustomer(
+        cart.customerId,
+      );
+
+      // Calculate total payment amount
+      const totalAmount = this.calculateTotalAmount(cart.cartItems);
+
+      let providerResponse: {
+        provider: string;
+        providerPaymentId: string;
+        payload: Record<string, any>;
+      } | null = null;
+
+      // Create order using the parent service method
+      const createdOrder = await super.createOrder(
+        cart.customerId,
+        cart.cartItems[0].product.vendorId,
+        defaultAddress.id,
+        cart.id,
+        totalAmount,
+        dto.paymentMode,
+      );
+
+      // Initiate payment with provider for ONLINE mode
+      if (dto.paymentMode === PaymentMode.ONLINE) {
+        providerResponse = await this.paymentService.initiatePayment({
+          amount: totalAmount,
+          currency: this.CURRENCY,
+          orderId: createdOrder.id,
+          notes: { orderId: createdOrder.id },
+        });
+        this.logger.debug(`Payment initiated with provider`);
+      }
+
+      const payment = (await this.prisma.payment.create({
+        data: {
+          amount: createdOrder.total_amount,
+          currency: this.CURRENCY,
+          provider: providerResponse?.provider || undefined,
+          provider_payment_id: providerResponse?.providerPaymentId || undefined,
+          provider_payload: providerResponse?.payload || undefined,
+          status: PaymentStatus.PENDING,
+        },
+      })) as { id: string };
+
+      await this.prisma.order.update({
+        where: { id: createdOrder.id },
+        data: { paymentId: payment.id },
+      });
+
+      // Update cart status to CHECKED_OUT
+      await this.prisma.cart.update({
+        where: { id: cart.id },
+        data: { status: CartStatus.CHECKED_OUT },
+      });
+
+      this.logger.log(
+        `Order created successfully: order ${createdOrder.orderNo}, payment ${providerResponse?.providerPaymentId || 'N/A'}`,
+      );
+
+      return {
+        payment,
+        description:"One time Product Purchase",
+        customer: {
+          name: createdOrder.customer.name,
+          email: createdOrder.customer.email,
+          phone: createdOrder.customer.phone,
+        },
+      };
+
+      // Send push notification for order creation (non-blocking)
+      // this.sendOrderCreatedNotification(order).catch((error) => {
+      //   this.logger.error(`Failed to send notification for order ${order.id}`, {
+      //     orderId: order.id,
+      //     timestamp: new Date().toISOString(),
+      //     error: error.message,
+      //   });
+      // });
+
+      // return {
+      //   order,
+      //   payment: {
+      //     id: order.paymentId,
+      //     providerPaymentId: providerResponse?.providerPaymentId,
+      //     amount: totalAmount,
+      //     currency: this.CURRENCY,
+      //     paymentMode: dto.paymentMode,
+      //   },
+      // };
+    } catch (error) {
+      this.logger.error(
+        `Failed to create order for cart ${dto.cartId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves the customer's default address.
+   * @param customerId - The customer ID
+   * @returns The default address
+   * @throws BadRequestException if no default address found
+   */
+  private async getDefaultAddressForCustomer(customerId: string) {
+    this.logger.debug(`Retrieving default address for customer: ${customerId}`);
+    const address = await this.prisma.customerAddress.findFirst({
+      where: { customerId, isDefault: true },
+    });
+
+    if (!address) {
+      throw new BadRequestException(
+        `No default address found for customer ${customerId}`,
+      );
+    }
+
+    return address;
+  }
+
+  /**
+   * Calculates the total amount for the cart items.
+   * @param cartItems - The cart items
+   * @returns The total amount
+   */
+  private calculateTotalAmount(cartItems: CartItemWithDetails[]): number {
+    return cartItems.reduce(
+      (sum, item) => sum + item.price.toNumber() * item.quantity,
+      0,
+    );
+  }
+
+  /**
+   * Sends push notification when an order is created.
+   * Notifies both the customer and vendor about the new order.
+   * @param order - The created order with relations
+   */
+  private async sendOrderCreatedNotification(
+    order: any | Order,
+  ): Promise<void> {
+    try {
+      // Build order notification payload
+      const orderPayload = new OrderNotificationPayloadDto();
+      orderPayload.orderId = order.id;
+      orderPayload.orderNumber = order.orderNo;
+      orderPayload.totalAmount = Number(order.total_amount);
+      orderPayload.currency = this.CURRENCY;
+      orderPayload.paymentMode = order.payment_mode;
+
+      // Send notification to customer
+      if (order.customer?.id) {
+        await this.pushNotificationService.sendOrderCreatedNotification(
+          order.customer.id,
+          orderPayload,
+        );
+      }
+
+      // Send notification to vendor
+      if (order.vendor?.id) {
+        await this.pushNotificationService.sendOrderToVendorNotification(
+          order.vendor.id,
+          orderPayload,
+        );
+      }
+
+      this.logger.log(
+        `Order created notifications sent for order ${order.orderNo}`,
+      );
+    } catch (error) {
+      // Log error but don't fail the order creation
+      this.logger.error(
+        `Failed to send order created notifications for order ${order.orderNo}: ${error.message}`,
+      );
+    }
+  }
+
   /**
    * Retrieves all orders for the authenticated customer.
    * @param user - The authenticated customer user
