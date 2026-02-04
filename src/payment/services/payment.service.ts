@@ -43,7 +43,6 @@ export interface PaymentProviderResponse {
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly CURRENCY = 'INR';
 
   constructor(
     private prisma: PrismaService,
@@ -188,11 +187,10 @@ export class PaymentService {
           provider_payload: webhookData,
         },
       });
-
       // Update Order payment status if linked
-      if (notes.orderID) {
+      if (notes.orderId) {
         await this.prisma.order.update({
-          where: { id: notes.orderID },
+          where: { id: notes.orderId },
           data: { payment_status: 'PAID' },
         });
       }
@@ -231,6 +229,7 @@ export class PaymentService {
     this.logger.log(`Processing failed payment: ${payment.id}`);
 
     try {
+      const notes = webhookData.payload?.payment?.entity?.notes;
       // Update existing Payment record
       await this.prisma.payment.update({
         where: { id: payment.id },
@@ -241,10 +240,9 @@ export class PaymentService {
       });
 
       // Update Order payment status
-      const failedOrderId = payment.order?.id;
-      if (failedOrderId) {
+      if (notes.orderId) {
         await this.prisma.order.update({
-          where: { id: failedOrderId },
+          where: { id: notes.orderId },
           data: { payment_status: 'FAILED' },
         });
       }

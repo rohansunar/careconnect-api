@@ -108,6 +108,7 @@ ngrok config add-authtoken YOUR_TOKEN_HERE
 
 ### ⚙️ Step B: Create the Auto-Start Service (Systemd)
 This makes ngrok start automatically when your VPS turns on.
+https://dashboard.ngrok.com/get-started/setup/linux
 
 #### Create a configuration file:
 ```bash

@@ -18,6 +18,7 @@ import {
 import { CustomerOrderService } from '../services/customer-order.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
 import { CreateOrderFromCartDto } from '../dto/create-order-from-cart.dto';
+import { GetMyOrdersQueryDto } from '../dto/get-my-orders-query.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -57,7 +58,7 @@ export class CustomerOrderController {
     status: 404,
     description: 'Cart not found.',
   })
-  @Post('create')
+  @Post()
   async createOrder(
     @Body() dto: CreateOrderFromCartDto,
     @CurrentUser() user: User,
@@ -68,9 +69,7 @@ export class CustomerOrderController {
   /**
    * Retrieves all orders for the authenticated customer with optional filtering.
    * @param user - The authenticated customer user
-   * @param status - Optional status filter (string or array)
-   * @param page - Page number for pagination (default 1)
-   * @param limit - Number of items per page (default 10)
+   * @param query - Query parameters including delivery_status filter and pagination
    * @returns Array of customer's orders
    */
   @ApiOperation({
@@ -79,15 +78,15 @@ export class CustomerOrderController {
       'Retrieves a list of orders for the authenticated customer, with optional status filtering and pagination.',
   })
   @ApiQuery({
-    name: 'status',
+    name: 'delivery_status',
     required: false,
     schema: {
       type: 'array',
-      items: { type: 'string' },
+      items: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'PROCESSING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'] },
       default: ['PENDING', 'OUT_FOR_DELIVERY'],
     },
     description:
-      'Filter by order status(es). Can be a single status or comma-separated string.',
+      'Filter by order delivery status(es). Can be a single status or comma-separated string of valid statuses.',
   })
   @ApiQuery({
     name: 'page',
@@ -105,23 +104,21 @@ export class CustomerOrderController {
     status: 200,
     description: 'Orders retrieved successfully.',
   })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request - invalid delivery_status value. Valid values are: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED.',
+  })
   @Get()
   async getMyOrders(
     @CurrentUser() user: User,
-    @Query('delivery_status') delivery_status?: string | string[],
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
+    @Query() query: GetMyOrdersQueryDto,
   ) {
-    const statuses = delivery_status
-      ? Array.isArray(delivery_status)
-        ? delivery_status
-        : delivery_status.split(',').map((s) => s.trim())
-      : undefined;
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const limitNum = limit ? parseInt(limit, 10) : 10;
+    const pageNum = query.page ? parseInt(query.page, 10) : 1;
+    const limitNum = query.limit ? parseInt(query.limit, 10) : 10;
     return this.customerOrderService.getMyOrders(
       user,
-      statuses,
+      query.delivery_status,
       pageNum,
       limitNum,
     );

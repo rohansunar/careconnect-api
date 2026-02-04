@@ -279,14 +279,14 @@ export class CustomerOrderService extends OrderService {
   /**
    * Retrieves all orders for the authenticated customer.
    * @param user - The authenticated customer user
-   * @param status - Optional status filter, can be string or array of strings
+   * @param status - Optional status filter, can be OrderStatus enum array
    * @param page - Page number for pagination
    * @param limit - Number of items per page
    * @returns Array of customer's orders with relations
    */
   async getMyOrders(
     user: User,
-    status?: string[],
+    status?: OrderStatus[],
     page: number = 1,
     limit: number = 10,
   ) {
