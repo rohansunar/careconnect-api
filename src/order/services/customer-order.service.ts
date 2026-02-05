@@ -16,7 +16,7 @@ import {
 } from '../dto/create-order-from-cart.dto';
 import { OrderStatus } from '../../common/constants/order-status.constants';
 import { CartStatus } from '../../common/constants/order-status.constants';
-import { PaymentStatus, Order, Customer, Vendor, Prisma } from '@prisma/client';
+import { PaymentStatus, Order, Customer, Vendor, Payment, Prisma } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
@@ -41,7 +41,7 @@ interface OrderWithRelations extends Order {
   customer: Customer | null;
   vendor: Vendor | null;
   address: any;
-  payments: any[];
+  payment: Payment | null;
 }
 
 /**
@@ -469,7 +469,7 @@ export class CustomerOrderService extends OrderService {
           customer: true,
           vendor: true,
           address: true,
-          payments: true,
+          payment: true,
         },
       });
 
@@ -487,10 +487,9 @@ export class CustomerOrderService extends OrderService {
       // Check if order can be cancelled
       this.validateOrderCancellation(order);
 
-      // Find completed payments that need refund
-      const completedPayments = order.payments.filter(
-        (payment) => payment.status === PaymentStatus.PAID,
-      );
+      // Find completed payment that needs refund
+      const completedPayment = order.payment;
+      const hasCompletedPayment = completedPayment?.status === PaymentStatus.PAID;
 
       // Update order status and cancellation details
       const updatedOrder = await tx.order.update({
@@ -500,33 +499,31 @@ export class CustomerOrderService extends OrderService {
           cancelledAt: new Date(),
           cancelReason: dto.cancelReason,
           payment_status:
-            completedPayments.length > 0 ? 'REFUNDED' : 'CANCELLED',
+            hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
         },
         include: {
           customer: true,
           vendor: true,
           address: true,
-          payments: true,
+          payment: true,
         },
       });
 
-      // Process refunds for completed payments
-      if (completedPayments.length > 0) {
-        for (const payment of completedPayments) {
-          try {
-            await this.paymentService.initiateRefund(
-              payment.id,
-              Number(payment.amount),
-              dto.cancelReason,
-            );
-          } catch (error) {
-            console.error(
-              `Failed to initiate refund for payment ${payment.id}:`,
-              error,
-            );
-            // Continue with cancellation even if refund fails
-            // In a real scenario, you might want to handle this differently
-          }
+      // Process refund for completed payment
+      if (hasCompletedPayment && completedPayment) {
+        try {
+          await this.paymentService.initiateRefund(
+            completedPayment.id,
+            Number(completedPayment.amount),
+            dto.cancelReason,
+          );
+        } catch (error) {
+          console.error(
+            `Failed to initiate refund for payment ${completedPayment.id}:`,
+            error,
+          );
+          // Continue with cancellation even if refund fails
+          // In a real scenario, you might want to handle this differently
         }
       }
 

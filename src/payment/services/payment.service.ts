@@ -99,7 +99,7 @@ export class PaymentService {
     const payment = await this.prisma.payment.findUnique({
       where: { id },
       include: {
-        order: true,
+        orders: true,
       },
     });
 
@@ -128,7 +128,7 @@ export class PaymentService {
       // Find and update payment status
       const payment = await this.prisma.payment.findFirst({
         where: { provider_payment_id: verifiedData.providerPaymentId },
-        include: { order: true },
+        include: { orders: true },
       });
 
       if (!payment) {
@@ -282,7 +282,7 @@ export class PaymentService {
       });
 
       // Update Order payment status
-      const refundedOrderId = payment.order?.id;
+      const refundedOrderId = payment.orders?.[0]?.id;
       if (refundedOrderId) {
         await this.prisma.order.update({
           where: { id: refundedOrderId },
@@ -338,7 +338,7 @@ export class PaymentService {
     try {
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
-        include: { order: true },
+        include: { orders: true },
       });
 
       if (!payment) {
@@ -371,12 +371,12 @@ export class PaymentService {
           },
         },
         include: {
-          order: true,
+          orders: true,
         },
       });
 
       // Update order payment status
-      const refundOrderId = payment.order?.id;
+      const refundOrderId = payment.orders?.[0]?.id;
       if (refundOrderId) {
         await this.prisma.order.update({
           where: { id: refundOrderId },
