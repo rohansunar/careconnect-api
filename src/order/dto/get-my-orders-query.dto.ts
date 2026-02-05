@@ -9,10 +9,12 @@ import {
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { OrderStatus } from '../../common/constants/order-status.constants';
+import { PaymentMode } from './create-order-from-cart.dto';
+import { PaymentStatus } from '@prisma/client';
 
 /**
  * Data Transfer Object for getMyOrders query parameters.
- * Validates delivery_status filter and pagination parameters.
+ * Validates delivery_status, payment_mode, payment_status filters and pagination parameters.
  */
 export class GetMyOrdersQueryDto {
   /**
@@ -22,17 +24,21 @@ export class GetMyOrdersQueryDto {
   @ApiProperty({
     name: 'delivery_status',
     required: false,
-    description: 'Filter by order delivery status(es). Can be a single status or comma-separated string.',
+    description:
+      'Filter by order delivery status(es). Can be a single status or comma-separated string.',
     example: ['PENDING', 'OUT_FOR_DELIVERY'],
     enum: OrderStatus,
     isArray: true,
   })
   @IsOptional()
-  @IsArray({ message: 'delivery_status must be an array of valid order statuses' })
+  @IsArray({
+    message: 'delivery_status must be an array of valid order statuses',
+  })
   @ArrayMaxSize(10, { message: 'Maximum 10 delivery statuses allowed' })
   @IsEnum(OrderStatus, {
     each: true,
-    message: 'Invalid delivery_status value. Valid values are: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED',
+    message:
+      'Invalid delivery_status value. Valid values are: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED',
   })
   @Transform(({ value }) => {
     if (typeof value === 'string') {

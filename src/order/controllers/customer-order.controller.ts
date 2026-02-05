@@ -17,11 +17,15 @@ import {
 } from '@nestjs/swagger';
 import { CustomerOrderService } from '../services/customer-order.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
-import { CreateOrderFromCartDto } from '../dto/create-order-from-cart.dto';
+import {
+  CreateOrderFromCartDto,
+  PaymentMode,
+} from '../dto/create-order-from-cart.dto';
 import { GetMyOrdersQueryDto } from '../dto/get-my-orders-query.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { PaymentStatus } from '@prisma/client';
 
 @ApiTags('Customer Orders')
 @Controller('customer/orders')
@@ -68,25 +72,59 @@ export class CustomerOrderController {
 
   /**
    * Retrieves all orders for the authenticated customer with optional filtering.
+   * Supports filtering by delivery_status, payment_mode, and payment_status.
    * @param user - The authenticated customer user
-   * @param query - Query parameters including delivery_status filter and pagination
+   * @param query - Query parameters including delivery_status, payment_mode, payment_status filters and pagination
    * @returns Array of customer's orders
    */
   @ApiOperation({
     summary: 'Get my orders',
     description:
-      'Retrieves a list of orders for the authenticated customer, with optional status filtering and pagination.',
+      'Retrieves a list of orders for the authenticated customer, with optional filtering by delivery status, payment mode, payment status, and pagination.',
   })
   @ApiQuery({
     name: 'delivery_status',
     required: false,
     schema: {
       type: 'array',
-      items: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'PROCESSING', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'] },
+      items: {
+        type: 'string',
+        enum: [
+          'PENDING',
+          'CONFIRMED',
+          'PROCESSING',
+          'OUT_FOR_DELIVERY',
+          'DELIVERED',
+          'CANCELLED',
+        ],
+      },
       default: ['PENDING', 'OUT_FOR_DELIVERY'],
     },
     description:
       'Filter by order delivery status(es). Can be a single status or comma-separated string of valid statuses.',
+  })
+  @ApiQuery({
+    name: 'payment_mode',
+    required: false,
+    schema: {
+      type: 'array',
+      items: { type: 'string', enum: ['ONLINE', 'COD', 'MONTHLY'] },
+    },
+    description:
+      'Filter by payment mode(s). Can be a single mode or comma-separated string of valid modes.',
+  })
+  @ApiQuery({
+    name: 'payment_status',
+    required: false,
+    schema: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: ['PENDING', 'PAID', 'FAILED', 'REFUND_INITIATED', 'REFUNDED'],
+      },
+    },
+    description:
+      'Filter by payment status(es). Can be a single status or comma-separated string of valid statuses.',
   })
   @ApiQuery({
     name: 'page',
@@ -107,7 +145,7 @@ export class CustomerOrderController {
   @ApiResponse({
     status: 400,
     description:
-      'Bad request - invalid delivery_status value. Valid values are: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED.',
+      'Bad request - invalid filter value. Valid delivery_status values are: PENDING, CONFIRMED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED. Valid payment_mode values are: ONLINE, COD, MONTHLY. Valid payment_status values are: PENDING, PAID, FAILED, REFUND_INITIATED, REFUNDED.',
   })
   @Get()
   async getMyOrders(

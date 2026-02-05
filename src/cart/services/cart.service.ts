@@ -222,7 +222,7 @@ export class CartService {
     });
 
     if (!cart) {
-      throw new NotFoundException(`Cart with ID ${cartId} not found`);
+      throw new NotFoundException(`Cart not found`);
     }
 
     if (!cart.cartItems || cart.cartItems.length === 0) {

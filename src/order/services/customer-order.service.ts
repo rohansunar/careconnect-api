@@ -16,13 +16,12 @@ import {
 } from '../dto/create-order-from-cart.dto';
 import { OrderStatus } from '../../common/constants/order-status.constants';
 import { CartStatus } from '../../common/constants/order-status.constants';
-import { PaymentStatus, Order, Customer, Vendor } from '@prisma/client';
+import { PaymentStatus, Order, Customer, Vendor, Prisma } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
 import { PushNotificationService } from '../../notification/services/push-notification.service';
 import { OrderNotificationPayloadDto } from '../../notification/dto/order-notification-payload.dto';
-import { UserType } from '../../notification/dto/user-type.enum';
 import { Decimal } from '@prisma/client/runtime/library';
 
 /**
@@ -38,21 +37,20 @@ interface CartItemWithDetails {
   };
 }
 
-/**
- * Interface for cart with customer details
- */
-interface CartWithDetails {
-  id: string;
-  customerId: string;
-  customer: { id: string };
-  cartItems: CartItemWithDetails[];
-}
-
 interface OrderWithRelations extends Order {
   customer: Customer | null;
   vendor: Vendor | null;
   address: any;
   payments: any[];
+}
+
+/**
+ * Interface for filtering orders by optional criteria.
+ * Supports filtering by delivery status, payment mode, and payment status.
+ */
+export interface OrderFiltersDto {
+  /** Optional delivery status filter */
+  status?: OrderStatus[];
 }
 
 @Injectable()
@@ -163,7 +161,7 @@ export class CustomerOrderService extends OrderService {
 
       return {
         payment,
-        description:"One time Product Purchase",
+        description: 'One time Product Purchase',
         customer: {
           name: createdOrder.customer.name,
           email: createdOrder.customer.email,
@@ -179,17 +177,6 @@ export class CustomerOrderService extends OrderService {
       //     error: error.message,
       //   });
       // });
-
-      // return {
-      //   order,
-      //   payment: {
-      //     id: order.paymentId,
-      //     providerPaymentId: providerResponse?.providerPaymentId,
-      //     amount: totalAmount,
-      //     currency: this.CURRENCY,
-      //     paymentMode: dto.paymentMode,
-      //   },
-      // };
     } catch (error) {
       this.logger.error(
         `Failed to create order for cart ${dto.cartId}: ${error.message}`,
@@ -276,29 +263,8 @@ export class CustomerOrderService extends OrderService {
     }
   }
 
-  /**
-   * Retrieves all orders for the authenticated customer.
-   * @param user - The authenticated customer user
-   * @param status - Optional status filter, can be OrderStatus enum array
-   * @param page - Page number for pagination
-   * @param limit - Number of items per page
-   * @returns Array of customer's orders with relations
-   */
-  async getMyOrders(
-    user: User,
-    status?: OrderStatus[],
-    page: number = 1,
-    limit: number = 10,
-  ) {
-    const statuses = status || [
-      OrderStatus.PENDING,
-      OrderStatus.OUT_FOR_DELIVERY,
-    ];
-    const query = {
-      customerId: user.id,
-      delivery_status: { in: statuses as any },
-    };
-    const include = {
+  private buildIncludeQuery() {
+    return {
       orderItems: {
         select: {
           id: true,
@@ -326,11 +292,136 @@ export class CustomerOrderService extends OrderService {
         },
       },
     };
+  }
 
-    const skip = (page - 1) * limit;
-    const orders = await super.findAll(query, skip, limit, include);
+  /**
+   * Builds a Prisma query for filtering orders based on user and optional filters.
+   * Preserves the original business logic: orders with ONLINE+PAID or COD+PENDING,
+   * excluding cancelled orders.
+   * @param userId - The customer ID
+   * @param filters - Optional filter parameters
+   * @returns Prisma.OrderWhereInput for database query
+   */
+  private buildOrderQuery(
+    userId: string,
+    filters?: OrderFiltersDto,
+  ): Prisma.OrderWhereInput {
+    // Base query: customer must match
+    const baseQuery: Prisma.OrderWhereInput = {
+      customerId: userId,
+    };
+    // Orders for Active Tab
+    // If no filters provided, return base query with default OR logic
+    if (!filters || !filters.status) {
+      return {
+        ...baseQuery,
+        OR: [
+          // Online orders that are successfully paid
+          {
+            AND: [
+              { payment_mode: { in: [PaymentMode.ONLINE] } },
+              { payment_status: { in: [PaymentStatus.PAID] } },
+              {
+                delivery_status: {
+                  notIn: [OrderStatus.CANCELLED, OrderStatus.DELIVERED],
+                },
+              },
+            ],
+          },
+          // COD orders that are still pending payment
+          {
+            AND: [
+              { payment_mode: { in: [PaymentMode.COD] } },
+              { payment_status: { in: [PaymentStatus.PENDING] } },
+              { delivery_status: { notIn: [OrderStatus.CANCELLED] } },
+            ],
+          },
+        ],
+      };
+    }
+    // Orders for History Tab
+    return {
+      ...baseQuery,
+      OR: [
+        // Case 1: Online payment still pending & not delivered yet
+        {
+          AND: [
+            { payment_mode: { in: [PaymentMode.ONLINE] } },
+            { payment_status: { in: [PaymentStatus.PENDING,PaymentStatus.FAILED] } },
+            { delivery_status: { in: [OrderStatus.PENDING,OrderStatus.CANCELLED] } },
+          ],
+        },
+        // Case 2: Online paid but order got cancelled
+        {
+          AND: [
+            { payment_mode: { in: [PaymentMode.ONLINE] } },
+            { payment_status: { in: [PaymentStatus.PAID] } },
+            { delivery_status: { in: [OrderStatus.CANCELLED, OrderStatus.DELIVERED] } },
+          ],
+        },
+        // COD orders that are still pending payment but order Cancelled
+        {
+          AND: [
+            { payment_mode: { in: [PaymentMode.COD] } },
+            { payment_status: { in: [PaymentStatus.PENDING] } },
+            { delivery_status: { in: [OrderStatus.CANCELLED] } },
+          ],
+        },
+        // COD orders that are Delivered
+        {
+          AND: [
+            { payment_mode: { in: [PaymentMode.COD] } },
+            { payment_status: { in: [PaymentStatus.PAID] } },
+            { delivery_status: { in: [OrderStatus.DELIVERED] } },
+          ],
+        },
+      ],
+    };
+  }
+
+  /**
+   * Retrieves all orders for the authenticated customer.
+   * Supports filtering by delivery_status, payment_mode, and payment_status.
+   *
+   * @param user - The authenticated customer user
+   * @param statusOrFilters - Either status array (old style) or OrderFiltersDto (new style)
+   * @param paymentMode - PaymentMode array (old style) or page number (new style)
+   * @param paymentStatus - PaymentStatus array (old style) or limit number (new style)
+   * @param page - Page number for pagination (new style only)
+   * @param limit - Number of items per page (new style only)
+   * @returns Array of customer's orders with relations and pagination info
+   */
+  async getMyOrders(
+    user: User,
+    status?: OrderStatus[],
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    // Determine if using old or new parameter style
+    let filters: OrderFiltersDto | undefined;
+    let resolvedPage = page;
+    let resolvedLimit = limit;
+
+    // Check if first parameter is OrderFiltersDto (new style)
+    if (status && typeof status === 'object') {
+      filters = {
+        status: status as OrderStatus[] | undefined,
+      };
+    }
+    // Build the query
+    const query = this.buildOrderQuery(user.id, filters);
+    const include = this.buildIncludeQuery();
+    console.log('QUERY', JSON.stringify(query));
+    const skip = (resolvedPage - 1) * resolvedLimit;
+    const orders = await super.findAll(query, skip, resolvedLimit, include);
     const total = await this.prisma.order.count({ where: query });
-    return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
+    return {
+      orders,
+      total,
+      page: resolvedPage,
+      limit: resolvedLimit,
+      totalPages: Math.ceil(total / resolvedLimit),
+    };
   }
 
   /**
@@ -466,21 +557,6 @@ export class CustomerOrderService extends OrderService {
         'Order cannot be cancelled as it is already delivered',
       );
     }
-
-    // Check if order is out for delivery
-    if (order.delivery_status === OrderStatus.OUT_FOR_DELIVERY) {
-      throw new BadRequestException(
-        'Order cannot be cancelled as it is already out for delivery',
-      );
-    }
-
-    // Add more business rules as needed
-    // For example, you might have a time-based rule:
-    // const orderAge = Date.now() - new Date(order.created_at).getTime();
-    // const maxCancellationTime = 24 * 60 * 60 * 1000; // 24 hours
-    // if (orderAge > maxCancellationTime) {
-    //   throw new BadRequestException('Order cancellation time has expired');
-    // }
   }
 
   /**
