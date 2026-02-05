@@ -2,6 +2,7 @@ enum SubscriptionStatus {
   ACTIVE
   INACTIVE
   PROCESSING
+  DELETED
 }
 
 enum SubscriptionFrequency {

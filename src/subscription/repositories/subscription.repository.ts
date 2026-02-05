@@ -114,12 +114,11 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
    * @param id - Subscription ID
    * @returns Deleted subscription
    */
-  async delete(id: string): Promise<Subscription> {
-    const result = await this.prisma.subscription.delete({
+  async delete(id: string): Promise<any> {
+    return await this.prisma.subscription.update({
       where: { id },
-      include: { customerAddress: true },
+      data: { status: 'DELETED' as SubscriptionStatus },
     });
-    return this.mapToSubscription(result);
   }
 
   /**

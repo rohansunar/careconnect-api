@@ -16,7 +16,14 @@ import {
 } from '../dto/create-order-from-cart.dto';
 import { OrderStatus } from '../../common/constants/order-status.constants';
 import { CartStatus } from '../../common/constants/order-status.constants';
-import { PaymentStatus, Order, Customer, Vendor, Payment, Prisma } from '@prisma/client';
+import {
+  PaymentStatus,
+  Order,
+  Customer,
+  Vendor,
+  Payment,
+  Prisma,
+} from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { NotificationService } from '../../notification/services/notification.service';
@@ -347,8 +354,16 @@ export class CustomerOrderService extends OrderService {
         {
           AND: [
             { payment_mode: { in: [PaymentMode.ONLINE] } },
-            { payment_status: { in: [PaymentStatus.PENDING,PaymentStatus.FAILED] } },
-            { delivery_status: { in: [OrderStatus.PENDING,OrderStatus.CANCELLED] } },
+            {
+              payment_status: {
+                in: [PaymentStatus.PENDING, PaymentStatus.FAILED],
+              },
+            },
+            {
+              delivery_status: {
+                in: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+              },
+            },
           ],
         },
         // Case 2: Online paid but order got cancelled
@@ -356,7 +371,11 @@ export class CustomerOrderService extends OrderService {
           AND: [
             { payment_mode: { in: [PaymentMode.ONLINE] } },
             { payment_status: { in: [PaymentStatus.PAID] } },
-            { delivery_status: { in: [OrderStatus.CANCELLED, OrderStatus.DELIVERED] } },
+            {
+              delivery_status: {
+                in: [OrderStatus.CANCELLED, OrderStatus.DELIVERED],
+              },
+            },
           ],
         },
         // COD orders that are still pending payment but order Cancelled
@@ -489,7 +508,8 @@ export class CustomerOrderService extends OrderService {
 
       // Find completed payment that needs refund
       const completedPayment = order.payment;
-      const hasCompletedPayment = completedPayment?.status === PaymentStatus.PAID;
+      const hasCompletedPayment =
+        completedPayment?.status === PaymentStatus.PAID;
 
       // Update order status and cancellation details
       const updatedOrder = await tx.order.update({
@@ -498,8 +518,7 @@ export class CustomerOrderService extends OrderService {
           delivery_status: OrderStatus.CANCELLED,
           cancelledAt: new Date(),
           cancelReason: dto.cancelReason,
-          payment_status:
-            hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
+          payment_status: hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
         },
         include: {
           customer: true,
