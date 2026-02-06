@@ -11,6 +11,7 @@ enum PaymentMode {
   ONLINE
   COD
   MONTHLY
+  SUBSCRIPTION
 }
 
 model Order {

@@ -27,4 +27,7 @@ model OrderItem {
 
   /// Index for efficient product-based queries
   @@index([productId])
+
+  /// Ledger entries for this order item
+  ledgers     Ledger[]
 }
