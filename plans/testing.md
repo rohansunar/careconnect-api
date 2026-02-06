@@ -7,16 +7,6 @@ npx jest test/subscription/services/customer-subscription.service.spec.ts --verb
 Enforce only one primary address per customer
 You can’t do partial unique indexes directly in Prisma schema (yet). Prisma’s schema DSL doesn’t support WHERE clauses on indexes.
 But you can still manage it cleanly using Prisma Migrate + raw SQL. That’s the production-grade approach teams use.
-```
-npx prisma migrate dev --name enforce_single_primary_address
-
--- Enforce only one primary address per customer
-
-CREATE UNIQUE INDEX unique_primary_address_per_customer
-ON "CustomerAddress" ("customerId")
-WHERE "isPrimary" = true;
-
-```
 
 List all files in src/subscription directory recursively
 Identify controller files containing create subscription, get subscription, and toggle subscription endpoints
@@ -49,6 +39,3 @@ Large OFFSET pagination
 No caching
 Poor DB connection pooling
 We fix those — you get sub-second responses.
-
-
-await this.prisma.order.findMany({ where: query, skip, take: limit, include: { orderItems: { select: { quantity: true, product: { select: { name: true } }, }, }, address: { select: { address: true, pincode: true, location: { select: { name: true, state: true, country: true, }, }, }, }, }, orderBy: { created_at: 'desc' }, }); how to optimize this query to respinse in 1 sec for 1 lahks users

@@ -20,7 +20,7 @@ CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'PAID', 'CONFIRMED', 'OUT_FOR_DELI
 CREATE TYPE "PaymentMode" AS ENUM ('ONLINE', 'COD', 'MONTHLY');
 
 -- CreateEnum
-CREATE TYPE "OtpPurpose" AS ENUM ('VENDOR_LOGIN', 'CUSTOMER_LOGIN', 'DELIVERY_VERIFICATION', 'PASSWORD_RESET');
+CREATE TYPE "OtpPurpose" AS ENUM ('VENDOR_LOGIN', 'CUSTOMER_LOGIN', 'RIDER_LOGIN', 'DELIVERY_VERIFICATION', 'PASSWORD_RESET');
 
 -- CreateEnum
 CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUND_INITIATED', 'REFUNDED');
@@ -29,7 +29,7 @@ CREATE TYPE "PaymentStatus" AS ENUM ('PENDING', 'PAID', 'FAILED', 'REFUND_INITIA
 CREATE TYPE "ProductApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateEnum
-CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PROCESSING');
+CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'INACTIVE', 'PROCESSING', 'DELETED');
 
 -- CreateEnum
 CREATE TYPE "SubscriptionFrequency" AS ENUM ('DAILY', 'ALTERNATIVE_DAYS', 'CUSTOM_DAYS');
@@ -148,6 +148,23 @@ CREATE TABLE "CustomerAddress" (
 );
 
 -- CreateTable
+CREATE TABLE "DeviceToken" (
+    "id" TEXT NOT NULL,
+    "user_id" TEXT NOT NULL,
+    "user_type" TEXT NOT NULL,
+    "device_token" TEXT NOT NULL,
+    "device_id" TEXT NOT NULL,
+    "device_type" TEXT NOT NULL,
+    "device_name" TEXT,
+    "is_active" BOOLEAN NOT NULL DEFAULT true,
+    "last_used_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DeviceToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "Location" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -250,7 +267,6 @@ CREATE TABLE "OtpCode" (
 -- CreateTable
 CREATE TABLE "Payment" (
     "id" TEXT NOT NULL,
-    "order_id" TEXT,
     "amount" DECIMAL(12,2) NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'INR',
     "provider" TEXT,
@@ -334,6 +350,7 @@ CREATE TABLE "Subscription" (
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "price_snapshot" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "paymentId" TEXT,
 
     CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id")
 );
@@ -410,6 +427,15 @@ CREATE INDEX "CustomerAddress_customerId_idx" ON "CustomerAddress"("customerId")
 
 -- CreateIndex
 CREATE INDEX "CustomerAddress_customerId_isDefault_is_active_idx" ON "CustomerAddress"("customerId", "isDefault", "is_active");
+
+-- CreateIndex
+CREATE INDEX "DeviceToken_user_id_user_type_idx" ON "DeviceToken"("user_id", "user_type");
+
+-- CreateIndex
+CREATE INDEX "DeviceToken_device_token_idx" ON "DeviceToken"("device_token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DeviceToken_user_id_device_id_key" ON "DeviceToken"("user_id", "device_id");
 
 -- CreateIndex
 CREATE INDEX "Location_isServiceable_idx" ON "Location"("isServiceable");
@@ -538,9 +564,6 @@ ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("or
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Payment" ADD CONSTRAINT "Payment_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "Order"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "PlatformFee" ADD CONSTRAINT "PlatformFee_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "Categories"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -560,6 +583,9 @@ ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_customerId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Subscription" ADD CONSTRAINT "Subscription_paymentId_fkey" FOREIGN KEY ("paymentId") REFERENCES "Payment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "VendorAddress" ADD CONSTRAINT "VendorAddress_vendorId_fkey" FOREIGN KEY ("vendorId") REFERENCES "Vendor"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
