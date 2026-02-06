@@ -25,7 +25,7 @@ export class AlternatePriceCalculator implements PriceCalculator {
   calculatePrice(quantity: number, price: number, startDate: Date): number {
     const endOfMonthDate = lastDayOfMonth(startDate);
     const remainingDays =
-      differenceInCalendarDays(endOfMonthDate, startDate) + 1;
+      differenceInCalendarDays(endOfMonthDate, startDate);
 
     if (remainingDays < 2) {
       return this.calculateNextMonth(price) * quantity;
@@ -43,7 +43,7 @@ export class AlternatePriceCalculator implements PriceCalculator {
    */
   private calculateNextMonth(price: number): number {
     const { nextMonthStart, nextMonthEnd } = getNextMonthDates();
-    const days = differenceInCalendarDays(nextMonthEnd, nextMonthStart) + 1;
+    const days = differenceInCalendarDays(nextMonthEnd, nextMonthStart);
     const deliveries = Math.ceil(days / 2);
     return price * deliveries;
   }
