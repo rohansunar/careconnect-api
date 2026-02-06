@@ -44,7 +44,11 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
   ): Promise<Subscription[]> {
     try {
       const results = await this.prisma.subscription.findMany({
-        where: { customerAddress: { customerId }, productId },
+        where: {
+          customerAddress: { customerId },
+          productId,
+          status: { not: 'DELETED' },
+        },
         include: { customerAddress: true },
         orderBy: { created_at: 'desc' },
       });

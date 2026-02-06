@@ -145,7 +145,7 @@ export class CustomerSubscriptionService {
 
     if (existingSubscription && existingSubscription.length > 0) {
       throw new ConflictException(
-        'A subscription for this product already exists for this customer address.',
+        'A subscription for this product already exists for this address.',
       );
     }
 
@@ -188,6 +188,7 @@ export class CustomerSubscriptionService {
     });
 
     return {
+      id:createdSubscription.id,
       payment,
       customer: {
         name: customerAddress.customer.name,
