@@ -5,13 +5,13 @@ export interface InitiatePaymentData {
   amount: number;
   currency: string;
   orderId: string;
-  notes: any;
+  notes?: Record<string, string>;
 }
 
 /**
  * Interface for payment provider response
  */
-export interface ProviderResponse {
+export interface PaymentProviderResponse {
   provider: string;
   providerPaymentId: string;
   payload: any;

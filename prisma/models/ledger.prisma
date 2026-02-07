@@ -1,0 +1,41 @@
+enum PlatformFeeType {
+  LISTING_FEE
+  PAYMENT_GATEWAY_FEE
+  GST
+  WHATSAPP_FEE
+  SMS_FEE
+  ADJUSTMENT
+}
+
+enum LedgerType {
+  SALE          // order completed
+  PLATFORM_FEE  // commission
+  REFUND        // money returned
+  PAYOUT        // settlement
+}
+
+model Ledger {
+  id           String   @id @default(cuid())
+  vendorId     String
+  orderItemId  String
+
+  type         LedgerType
+  feeType      PlatformFeeType?
+  amount       Decimal  @db.Decimal(12, 2)
+
+  paymentMode  PaymentMode
+
+  createdAt    DateTime @default(now())
+
+  /// Relation to Vendor (on delete -> CASCADE)
+  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  
+  /// Relation to OrderItem (on delete -> CASCADE)
+  orderItem    OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+
+  /// Indexes for efficient queries
+  @@index([vendorId])
+  @@index([orderItemId])
+  @@index([type])
+  @@index([createdAt])
+}

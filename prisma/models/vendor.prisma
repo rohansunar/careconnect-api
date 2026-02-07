@@ -11,7 +11,7 @@ enum OperatingDays {
 model Vendor {
   id                 String   @id @default(uuid())
   vendorNo           String   @unique
-  name               String?   
+  name               String?
   business_name      String?
   phone              String   @unique
   email              String?
@@ -32,4 +32,5 @@ model Vendor {
   monthlyBills       MonthlyBill[]
   riders             Rider[]
   ledgers            Ledger[]
+  payouts            VendorPayout[]
 }

@@ -1,0 +1,32 @@
+enum PayoutStatus {
+  INITIATED
+  PROCESSING
+  PAID
+  FAILED
+}
+
+model VendorPayout {
+  id             String      @id @default(cuid())
+  vendorId       String
+  amount         Decimal     @db.Decimal(12, 2)
+  status         PayoutStatus @default(INITIATED)
+  gatewayTxnId   String?
+  failureReason  String?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  /// Start date of the payout period (inclusive)
+  periodStart    DateTime
+
+  /// End date of the payout period (exclusive)
+  periodEnd      DateTime
+
+  /// Relation to Vendor (on delete -> CASCADE)
+  vendor         Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  /// Indexes for efficient queries
+  @@index([vendorId])
+  @@index([status])
+  @@index([createdAt])
+}

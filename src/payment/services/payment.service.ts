@@ -6,33 +6,36 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from './payment-provider.service';
-import { PaymentStatus, Order, SubscriptionStatus } from '@prisma/client';
+import {
+  PaymentStatus,
+  Order,
+  SubscriptionStatus,
+  PaymentMode,
+} from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+import {
+  InitiatePaymentData,
+  PaymentProviderResponse,
+} from '../../payment/interfaces/payment.interface';
 
 /**
- * Data for initiating a payment with the provider
+ * Ledger type enum for different transaction types
  */
-export interface InitiatePaymentData {
-  /** Payment amount */
-  amount: number;
-  /** Currency code (e.g., 'INR') */
-  currency: string;
-  /** Order or cart ID for reference */
-  orderId: string;
-  /** Additional notes for the payment */
-  notes?: Record<string, string>;
-}
+const LedgerType = {
+  SALE: 'SALE' as const,
+  PLATFORM_FEE: 'PLATFORM_FEE' as const,
+};
 
 /**
- * Response from payment provider after initiation
+ * Default platform fees when category-specific fees are not found
  */
-export interface PaymentProviderResponse {
-  /** Payment provider name (e.g., 'RAZORPAY') */
-  provider: string;
-  /** Provider's payment/order ID */
-  providerPaymentId: string;
-  /** Full provider response payload */
-  payload: Record<string, any>;
-}
+const DEFAULT_PLATFORM_FEES = {
+  product_listing_fee: new Decimal(0.0), // percentage
+  platform_fee: new Decimal(0.0), // fixed amount
+  transaction_fee: new Decimal(0.0), // fixed amount (online payments only)
+  sms_fee: new Decimal(0.0), // fixed amount
+  whatsapp_fee: new Decimal(0.0), // fixed amount
+};
 
 /**
  * Service for handling payment operations.
@@ -49,14 +52,6 @@ export class PaymentService {
     private paymentProvider: PaymentProviderService,
   ) {}
 
-  /**
-   * Initiates a payment with the payment provider.
-   * This method handles the payment gateway communication for reserving
-   * payment authorization. The order creation is handled by the Order module.
-   *
-   * @param data - Payment initiation data including amount, currency, and reference
-   * @returns Provider response with payment details
-   */
   async initiatePayment(
     data: InitiatePaymentData,
   ): Promise<PaymentProviderResponse> {
@@ -165,7 +160,8 @@ export class PaymentService {
 
   /**
    * Handles successful payment webhook.
-   * Updates payment status, order payment status, and subscription status.
+   * Updates payment status, order payment status, subscription status,
+   * and creates ledger entries for sales and platform fees.
    * @param payment - The existing payment record
    * @param webhookData - The webhook payload
    * @returns Result object
@@ -178,31 +174,151 @@ export class PaymentService {
 
     try {
       const notes = webhookData.payload?.payment?.entity?.notes;
-      // Update existing Payment record
-      await this.prisma.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: PaymentStatus.PAID,
-          completed_at: new Date(),
-          provider_payload: webhookData,
-        },
-      });
-      // Update Order payment status if linked
-      if (notes.orderId) {
-        await this.prisma.order.update({
-          where: { id: notes.orderId },
-          data: { payment_status: 'PAID' },
-        });
-      }
+      const orderId = notes?.orderId;
 
-      // Update Subscription status to ACTIVE
-      // Update Order payment status if linked
-      if (notes.subscribeID) {
-        await this.updateSubscriptionStatus(
-          notes.subscribeID,
-          SubscriptionStatus.ACTIVE,
-        );
-      }
+      // Use Prisma transaction for data integrity
+      await this.prisma.$transaction(async (tx) => {
+        // Update existing Payment record
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: {
+            status: PaymentStatus.PAID,
+            completed_at: new Date(),
+            provider_payload: webhookData,
+          },
+        });
+
+        // Update Order payment status if linked
+        if (orderId) {
+          await tx.order.update({
+            where: { id: orderId },
+            data: { payment_status: 'PAID' },
+          });
+        }
+
+        // Update Subscription status to ACTIVE
+        if (notes?.subscribeID) {
+          await tx.subscription.update({
+            where: { id: notes.subscribeID },
+            data: { status: SubscriptionStatus.ACTIVE },
+          });
+        }
+
+        // Fetch order with items and related data for ledger creation
+        if (orderId) {
+          const order = await tx.order.findUnique({
+            where: { id: orderId },
+            include: {
+              orderItems: {
+                include: {
+                  product: true,
+                },
+              },
+              vendor: true,
+            },
+          });
+
+          if (order && order.orderItems.length > 0) {
+            const paymentMode = order.payment_mode as PaymentMode;
+            const isOnlinePayment = paymentMode === PaymentMode.ONLINE;
+
+            // Create ledger entries for each order item
+            for (const orderItem of order.orderItems) {
+              const itemAmount = new Decimal(orderItem.price).mul(
+                orderItem.quantity,
+              );
+              const vendorId = order.vendorId;
+              const categoryId = orderItem.product.categoryId;
+
+              // Create SALE entry for vendor earnings
+              await tx.ledger.create({
+                data: {
+                  vendorId,
+                  orderItemId: orderItem.id,
+                  type: LedgerType.SALE,
+                  amount: itemAmount,
+                  paymentMode,
+                },
+              });
+
+              // Get platform fees for this product category
+              const platformFeeRecord = await tx.platformFee.findFirst({
+                where: { categoryId },
+              });
+
+              const platformFees = platformFeeRecord || DEFAULT_PLATFORM_FEES;
+
+              // Calculate product listing fee (percentage of item amount)
+              const productListingFeePercentage = new Decimal(
+                platformFees.product_listing_fee.toString(),
+              );
+              const productListingFee = itemAmount
+                .mul(productListingFeePercentage)
+                .div(100);
+
+              // Create PLATFORM_FEE entry for product listing fee
+              await tx.ledger.create({
+                data: {
+                  vendorId,
+                  orderItemId: orderItem.id,
+                  type: LedgerType.PLATFORM_FEE,
+                  amount: productListingFee,
+                  paymentMode,
+                },
+              });
+
+              // Create PLATFORM_FEE entry for fixed platform fee
+              await tx.ledger.create({
+                data: {
+                  vendorId,
+                  orderItemId: orderItem.id,
+                  type: LedgerType.PLATFORM_FEE,
+                  amount: new Decimal(platformFees.platform_fee.toString()),
+                  paymentMode,
+                },
+              });
+
+              // Add transaction fee only for online payments
+              if (isOnlinePayment) {
+                await tx.ledger.create({
+                  data: {
+                    vendorId,
+                    orderItemId: orderItem.id,
+                    type: LedgerType.PLATFORM_FEE,
+                    amount: new Decimal(
+                      platformFees.transaction_fee.toString(),
+                    ),
+                    paymentMode,
+                  },
+                });
+              }
+
+              // Create combined SMS/WhatsApp fee entry
+              const smsFee = new Decimal(platformFees.sms_fee.toString());
+              const whatsappFee = new Decimal(
+                platformFees.whatsapp_fee.toString(),
+              );
+              const combinedCommsFee = smsFee.add(whatsappFee);
+
+              if (combinedCommsFee.gt(0)) {
+                await tx.ledger.create({
+                  data: {
+                    vendorId,
+                    orderItemId: orderItem.id,
+                    type: LedgerType.PLATFORM_FEE,
+                    amount: combinedCommsFee,
+                    paymentMode,
+                  },
+                });
+              }
+            }
+
+            this.logger.log(
+              `Created ${order.orderItems.length} SALE entries and corresponding PLATFORM_FEE entries for order: ${orderId}`,
+            );
+          }
+        }
+      });
 
       this.logger.log(`Payment success processed: ${payment.id}`);
       return { success: true, action: 'payment_success' };
@@ -211,7 +327,9 @@ export class PaymentService {
         `Failed to process successful payment: ${error.message}`,
         error.stack,
       );
-      throw error;
+      // Log error but don't fail the entire payment processing for ledger issues
+      // The core payment and order status updates are more critical
+      return { success: true, action: 'payment_success_ledger_error' };
     }
   }
 

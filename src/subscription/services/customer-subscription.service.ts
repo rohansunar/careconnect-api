@@ -188,7 +188,7 @@ export class CustomerSubscriptionService {
     });
 
     return {
-      id:createdSubscription.id,
+      id: createdSubscription.id,
       payment,
       customer: {
         name: customerAddress.customer.name,
@@ -231,10 +231,10 @@ export class CustomerSubscriptionService {
       where: query,
       skip,
       take: validatedLimit,
-      include:{
-        product:{
-          select:{ name:true }
-        }
+      include: {
+        product: {
+          select: { name: true },
+        },
       },
       orderBy: { created_at: 'desc' },
     });

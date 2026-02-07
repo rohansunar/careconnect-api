@@ -4,7 +4,7 @@ import Razorpay from 'razorpay';
 import * as crypto from 'crypto';
 import {
   InitiatePaymentData,
-  ProviderResponse,
+  PaymentProviderResponse,
   RefundProviderResponse,
   WebhookVerificationData,
   InitiateRefundData,
@@ -42,7 +42,9 @@ export class PaymentProviderService {
    * @param data - Payment initiation data
    * @returns Provider response
    */
-  async initiatePayment(data: InitiatePaymentData): Promise<ProviderResponse> {
+  async initiatePayment(
+    data: InitiatePaymentData,
+  ): Promise<PaymentProviderResponse> {
     this.logger.log(
       `Initiating payment for order: ${data.orderId} with provider: ${this.provider}`,
     );
@@ -131,7 +133,7 @@ export class PaymentProviderService {
    */
   private async initiateRazorpayPayment(
     data: InitiatePaymentData,
-  ): Promise<ProviderResponse> {
+  ): Promise<PaymentProviderResponse> {
     try {
       const options = {
         amount: data.amount * 100,

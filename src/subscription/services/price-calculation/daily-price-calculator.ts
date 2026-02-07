@@ -24,8 +24,7 @@ export class DailyPriceCalculator implements PriceCalculator {
    */
   calculatePrice(quantity: number, price: number, startDate: Date): number {
     const endOfMonthDate = lastDayOfMonth(startDate);
-    const remainingDays =
-      differenceInCalendarDays(endOfMonthDate, startDate);
+    const remainingDays = differenceInCalendarDays(endOfMonthDate, startDate);
 
     if (remainingDays < 1) {
       return this.calculateNextMonth(price) * quantity;
