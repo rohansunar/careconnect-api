@@ -18,9 +18,12 @@ import { RiderOrderService } from './services/rider-order.service';
 import { OrderGenerationService } from './services/order-generation.service';
 import { OrderNumberService } from './services/order-number.service';
 import { OrderGenerationProcessor } from '../queue/processors/order-generation.processor';
+import { OnPaymentSucceededOrderHandler } from './services/handlers/on-payment-succeeded-order.handler';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
   imports: [
+    CqrsModule,
     PrismaModule,
     CartModule,
     PaymentModule,
@@ -44,6 +47,7 @@ import { OrderGenerationProcessor } from '../queue/processors/order-generation.p
     OrderGenerationService,
     OrderNumberService,
     OrderGenerationProcessor,
+    OnPaymentSucceededOrderHandler,
   ],
   exports: [
     OrderService,

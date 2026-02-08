@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { NotificationService } from './services/notification.service';
 import { PushNotificationService } from './services/push-notification.service';
 import { EmailService } from './services/email.service';
+import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-payment-succeeded-notification.handler';
+import { CqrsModule } from '@nestjs/cqrs';
 
 /**
  * NotificationModule coordinates all notification-related services.
@@ -13,8 +15,13 @@ import { EmailService } from './services/email.service';
  * - EmailService: Handles email sending with template support
  */
 @Module({
-  imports: [ConfigModule],
-  providers: [NotificationService, PushNotificationService, EmailService],
+  imports: [ConfigModule, CqrsModule],
+  providers: [
+    NotificationService,
+    PushNotificationService,
+    EmailService,
+    OnPaymentSucceededNotificationHandler,
+  ],
   exports: [NotificationService, PushNotificationService, EmailService],
 })
 export class NotificationModule {}

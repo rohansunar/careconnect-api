@@ -16,9 +16,12 @@ import { DeliveryFrequencyFactoryService } from './services/delivery-frequency/d
 import { PriceCalculatorFactoryService } from './services/price-calculation/price-calculator.factory';
 import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.repository';
 import { MonthEndAdjustmentService } from './services/month-end-adjustment.service';
+import { OnPaymentSucceededSubscriptionHandler } from './services/handlers/on-payment-success-subscription.handler';
+import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
   imports: [
+    CqrsModule,
     PrismaModule,
     ScheduleModule.forRoot(),
     NotificationModule,
@@ -37,6 +40,7 @@ import { MonthEndAdjustmentService } from './services/month-end-adjustment.servi
     PriceCalculatorFactoryService,
     JsonPaymentModeRepository,
     MonthEndAdjustmentService,
+    OnPaymentSucceededSubscriptionHandler,
   ],
   exports: [CustomerSubscriptionService, DeliveryFrequencyService],
 })

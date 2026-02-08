@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
-import { NotificationModule } from '../notification/notification.module';
 import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
 import { PaymentProviderService } from './services/payment-provider.service';
+import { CqrsModule } from '@nestjs/cqrs';
 
 /**
  * PaymentModule handles payment-related operations.
@@ -17,7 +17,7 @@ import { PaymentProviderService } from './services/payment-provider.service';
  * - PaymentProviderService: Payment gateway integration
  */
 @Module({
-  imports: [PrismaModule, NotificationModule],
+  imports: [CqrsModule, PrismaModule],
   controllers: [PaymentController],
   providers: [PaymentService, PaymentProviderService],
   exports: [PaymentService, PaymentProviderService],

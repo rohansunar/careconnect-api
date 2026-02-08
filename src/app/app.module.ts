@@ -21,6 +21,8 @@ import { NotificationModule } from '../notification/notification.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CqrsModule } from '@nestjs/cqrs';
+import { LedgerModule } from 'src/ledger/ledger.module';
 
 @Module({
   imports: [
@@ -28,7 +30,9 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    CqrsModule,
     PrismaModule,
+    LedgerModule,
     VendorModule,
     ProductModule,
     AuthModule,
