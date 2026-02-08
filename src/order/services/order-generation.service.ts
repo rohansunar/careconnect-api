@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionFrequency } from '../../subscription/interfaces/delivery-frequency.interface';
 import { PrismaService } from '../../common/database/prisma.service';
 import { NotificationService } from '../../notification/services/notification.service';
@@ -246,15 +246,15 @@ export class OrderGenerationService {
       data: {
         orderNo,
         customerId: subscription.customerAddress.customerId,
-        addressId: subscription.customerAddressId!,
-        vendorId: subscription.product.vendorId!,
+        addressId: subscription.customerAddressId,
+        vendorId: subscription.product.vendorId,
         total_amount: subscription.total_price,
         delivery_status: 'PENDING',
         payment_mode: paymentMode as any,
         subscriptionId: subscription.id,
         orderItems: {
           create: {
-            productId: subscription.productId!,
+            productId: subscription.productId,
             quantity: subscription.quantity,
             price: subscription.price_snapshot,
           },

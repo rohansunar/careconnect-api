@@ -79,8 +79,7 @@ export class MonthEndAdjustmentService {
     //  console.log("actualDeliveries", actualDeliveries)
 
     const adjustmentAmount =
-      (expectedDeliveries - actualDeliveries) *
-      (subscription as any).price_snapshot;
+      (expectedDeliveries - actualDeliveries) * subscription.price_snapshot;
 
     console.debug('adjustmentAmount', adjustmentAmount);
 
@@ -178,7 +177,7 @@ export class MonthEndAdjustmentService {
         },
       });
 
-      totalAmount += deliveries * (subscription as any).price_snapshot;
+      totalAmount += deliveries * subscription.price_snapshot;
     }
 
     if (totalAmount > 0) {

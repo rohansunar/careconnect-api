@@ -25,7 +25,6 @@ import { GetMyOrdersQueryDto } from '../dto/get-my-orders-query.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { PaymentStatus } from '@prisma/client';
 
 @ApiTags('Customer Orders')
 @Controller('customer/orders')

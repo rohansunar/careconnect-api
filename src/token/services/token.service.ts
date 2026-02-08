@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { RegisterTokenDto, DeviceType } from '../dto/register-token.dto';
+import { RegisterTokenDto } from '../dto/register-token.dto';
 
 /**
  * TokenService handles device token registration and management for push notifications.

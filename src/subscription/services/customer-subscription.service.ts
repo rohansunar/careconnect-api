@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { SubscriptionRepositoryService } from '../repositories/subscription.repository';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import type { User } from '../../common/interfaces/user.interface';
 import { DeliveryFrequencyService } from './delivery-frequency.service';
 import { PriceCalculationService } from './price-calculation.service';
@@ -252,64 +251,6 @@ export class CustomerSubscriptionService {
       totalPages: Math.ceil(total / validatedLimit),
     };
   }
-
-  /**
-   * Retrieves a single subscription by ID, ensuring it belongs to the customer.
-   * Performs ownership validation to prevent unauthorized access.
-   * @param id - The unique identifier of the subscription
-   * @param user - The authenticated customer user
-   * @returns The subscription with relations
-   * @throws NotFoundException if subscription is not found
-   * @throws ForbiddenException if user doesn't own the subscription
-   */
-  // async getMySubscription(id: string, user: User) {
-  //   const subscription = await this.validateSubscriptionOwnership(id, user);
-  //   return subscription;
-  // }
-
-  /**
-   * Updates a subscription, ensuring it belongs to the customer.
-   * Supports updating quantity, frequency, custom days, and start date.
-   * @param id - The unique identifier of the subscription
-   * @param dto - The subscription data transfer object
-   * @param user - The authenticated customer user
-   * @returns The updated subscription
-   * @throws NotFoundException if subscription is not found
-   * @throws ForbiddenException if user doesn't own the subscription
-   */
-  // async updateMySubscription(
-  //   id: string,
-  //   dto: UpdateSubscriptionDto,
-  //   user: User,
-  // ) {
-  //   const subscription = await this.validateSubscriptionOwnership(id, user);
-  //   const updateData: any = {};
-  //   if (dto.quantity !== undefined) {
-  //     updateData.quantity = dto.quantity;
-  //   }
-  //   if (dto.frequency !== undefined) {
-  //     this.deliveryFrequencyService.validateFrequency(
-  //       dto.frequency,
-  //       dto.custom_days,
-  //     );
-  //     updateData.frequency = dto.frequency;
-
-  //     const customDays = this.extractCustomDays(dto.frequency, dto.custom_days);
-  //     updateData.customDays = customDays;
-
-  //     const nextDeliveryDate =
-  //       this.deliveryFrequencyService.getNextDeliveryDate(
-  //         subscription.startDate,
-  //         dto.frequency,
-  //         customDays,
-  //       );
-  //     updateData.startDate = nextDeliveryDate;
-  //   }
-  //   if (dto.start_date !== undefined) {
-  //     updateData.startDate = new Date(dto.start_date);
-  //   }
-  //   return this.subscriptionRepository.update(id, updateData);
-  // }
 
   /**
    * Toggles the status of a subscription between ACTIVE and INACTIVE.

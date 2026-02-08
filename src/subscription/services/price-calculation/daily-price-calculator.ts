@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PriceCalculator } from '../../interfaces/price-calculation.interface';
-import {
-  differenceInCalendarDays,
-  lastDayOfMonth,
-  startOfMonth,
-  endOfMonth,
-} from 'date-fns';
+import { differenceInCalendarDays, lastDayOfMonth } from 'date-fns';
 import { getNextMonthDates } from './date-utils';
 
 /**

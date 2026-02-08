@@ -175,15 +175,6 @@ export class CustomerOrderService extends OrderService {
           phone: createdOrder.customer.phone,
         },
       };
-
-      // Send push notification for order creation (non-blocking)
-      // this.sendOrderCreatedNotification(order).catch((error) => {
-      //   this.logger.error(`Failed to send notification for order ${order.id}`, {
-      //     orderId: order.id,
-      //     timestamp: new Date().toISOString(),
-      //     error: error.message,
-      //   });
-      // });
     } catch (error) {
       this.logger.error(
         `Failed to create order for cart ${dto.cartId}: ${error.message}`,
@@ -418,8 +409,8 @@ export class CustomerOrderService extends OrderService {
   ) {
     // Determine if using old or new parameter style
     let filters: OrderFiltersDto | undefined;
-    let resolvedPage = page;
-    let resolvedLimit = limit;
+    const resolvedPage = page;
+    const resolvedLimit = limit;
 
     // Check if first parameter is OrderFiltersDto (new style)
     if (status && typeof status === 'object') {
@@ -430,7 +421,6 @@ export class CustomerOrderService extends OrderService {
     // Build the query
     const query = this.buildOrderQuery(user.id, filters);
     const include = this.buildIncludeQuery();
-    console.log('QUERY', JSON.stringify(query));
     const skip = (resolvedPage - 1) * resolvedLimit;
     const orders = await super.findAll(query, skip, resolvedLimit, include);
     const total = await this.prisma.order.count({ where: query });

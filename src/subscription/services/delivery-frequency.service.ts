@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DeliveryFrequencyFactoryService } from './delivery-frequency/delivery-frequency.factory';
 import {
   DayOfWeek,

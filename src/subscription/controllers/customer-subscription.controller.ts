@@ -6,7 +6,6 @@ import {
   Param,
   UseGuards,
   Query,
-  Put,
   Delete,
 } from '@nestjs/common';
 import {
@@ -131,74 +130,6 @@ export class CustomerSubscriptionController {
       limitNum,
     );
   }
-
-  /**
-   * Retrieves a single subscription by ID for the authenticated customer.
-   * @param id - The unique identifier of the subscription
-   * @param user - The authenticated customer user
-   * @returns The subscription
-   */
-  // @ApiOperation({
-  //   summary: 'Get my subscription by ID',
-  //   description:
-  //     'Retrieves a single subscription by its ID, ensuring it belongs to the authenticated customer.',
-  // })
-  // @ApiParam({
-  //   name: 'id',
-  //   description: 'Unique identifier of the subscription (UUID)',
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Subscription retrieved successfully.',
-  // })
-  // @ApiResponse({
-  //   status: 403,
-  //   description: 'Forbidden - subscription does not belong to customer.',
-  // })
-  // @ApiResponse({
-  //   status: 404,
-  //   description: 'Subscription not found.',
-  // })
-  // @Get(':id')
-  // async getMySubscription(@Param('id') id: string, @CurrentUser() user: User) {
-  //   return this.customerSubscriptionService.getMySubscription(id, user);
-  // }
-
-  /**
-   * Updates a subscription for the authenticated customer.
-   * @param id - The unique identifier of the subscription
-   * @param dto - The subscription data
-   * @param user - The authenticated customer user
-   * @returns The updated subscription
-   */
-  // @ApiOperation({
-  //   summary: 'Update my subscription',
-  //   description:
-  //     'Updates a subscription that belongs to the authenticated customer.',
-  // })
-  // @ApiParam({
-  //   name: 'id',
-  //   description: 'Unique identifier of the subscription (UUID)',
-  // })
-  // @ApiBody({
-  //   type: UpdateSubscriptionDto,
-  // })
-  // @ApiResponse({
-  //   status: 200,
-  //   description: 'Subscription updated successfully.',
-  // })
-  // @ApiResponse({
-  //   status: 403,
-  //   description: 'Forbidden - subscription does not belong to customer.',
-  // })
-  // @Put(':id')
-  // async updateMySubscription(
-  //   @Param('id') id: string,
-  //   @Body() dto: UpdateSubscriptionDto,
-  //   @CurrentUser() user: User,
-  // ) {
-  //   return this.customerSubscriptionService.updateMySubscription(id, dto, user);
-  // }
 
   /**
    * Toggles the status of a subscription for the authenticated customer.

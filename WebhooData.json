@@ -1,0 +1,104 @@
+{
+    "event": "order.paid",
+    "entity": "event",
+    "payload": {
+        "order": {
+            "entity": {
+                "id": "order_SD9s73wIcZo1Dx",
+                "notes": {
+                    "orderId": "7eb9d263-beff-4df7-bdb7-e7d1228d6e89"
+                },
+                "amount": 40000,
+                "entity": "order",
+                "status": "paid",
+                "receipt": "7eb9d263-beff-4df7-bdb7-e7d1228d6e89",
+                "attempts": 1,
+                "checkout": null,
+                "currency": "INR",
+                "offer_id": null,
+                "amount_due": 0,
+                "created_at": 1770446012,
+                "amount_paid": 40000,
+                "description": null
+            }
+        },
+        "payment": {
+            "entity": {
+                "id": "pay_SD9sI5T9C3eNCn",
+                "fee": 944,
+                "tax": 144,
+                "upi": {
+                    "vpa": "success@razorpay",
+                    "flow": "intent"
+                },
+                "vpa": "success@razorpay",
+                "bank": null,
+                "email": "priya.sharma@example.com",
+                "notes": {
+                    "orderId": "7eb9d263-beff-4df7-bdb7-e7d1228d6e89"
+                },
+                "amount": 40000,
+                "entity": "payment",
+                "method": "upi",
+                "reward": null,
+                "status": "captured",
+                "wallet": null,
+                "card_id": null,
+                "contact": "+919832012345",
+                "captured": true,
+                "currency": "INR",
+                "order_id": "order_SD9s73wIcZo1Dx",
+                "created_at": 1770446023,
+                "error_code": null,
+                "error_step": null,
+                "invoice_id": null,
+                "description": "One time Product Purchase",
+                "error_reason": null,
+                "error_source": null,
+                "acquirer_data": {
+                    "rrn": "634733532994",
+                    "upi_transaction_id": "041B53262E27CB0545F0DE23635E2F39"
+                },
+                "international": false,
+                "refund_status": null,
+                "amount_refunded": 0,
+                "error_description": null
+            }
+        }
+    },
+    "contains": [
+        "payment",
+        "order"
+    ],
+    "account_id": "acc_S6BufGXzXWRUoI",
+    "created_at": 1770446025
+}
+
+
+
+@/src/payment/services/payment.service.ts - Update the handleSuccessfulPayment function to send notifications after successful payment transactions. Implement the following notification system:
+
+VENDOR NOTIFICATIONS: Send both email and push notification to the vendor upon successful payment completion
+ADMIN NOTIFICATIONS: Send only email notification to admin upon successful payment completion
+EMAIL TEMPLATES: Store all email template files in src/email-templates/ directory with separate templates for vendor and admin notifications
+
+REQUIREMENTS:
+
+ARCHITECTURE & CODE QUALITY: Apply SOLID principles throughout implementation ensuring single responsibility for each class and function, open/closed principle for extensibility without modification, proper dependency injection, and interface-based design. Follow KISS principle keeping functions focused and simple. Eliminate all code duplication by extracting shared logic into reusable utilities. Implement proper encapsulation making internal implementation details private. Ensure production-grade code quality with comprehensive type safety.
+
+BACKWARD COMPATIBILITY: Maintain all existing functionality exactly as-is without modification, deletion, or addition to existing features. Only extend the function with new notification delivery logic.
+
+FILE STRUCTURE & ORGANIZATION: Create email template files at src/email-templates/vendor-payment-success.html and src/email-templates/admin-payment-success.html. Create notification service at src/notification/services/notification.service.ts if not exists. Create email service at src/notification/services/email.service.ts if not exists. Create push notification service at src/notification/services/push-notification.service.ts if not exists. Keep all notification-related code within src/notification/ directory.
+
+ERROR HANDLING & RELIABILITY: Implement robust error handling for all notification delivery operations with graceful fallbacks and retry mechanisms.
+Add comprehensive logging for notification sending attempts, successes, and failures. Implement monitoring hooks for tracking notification delivery metrics.
+Ensure zero build errors and zero runtime errors after implementation.
+
+CLEANUP & MAINTENANCE: Remove all unused variables, functions, imports, dead code, and unnecessary dependencies.
+Clean up any temporary files or test artifacts. Ensure codebase remains lean and maintainable.
+
+DOCUMENTATION: Add comprehensive inline documentation explaining what each function does, why it exists, and how it works.
+Document all configuration requirements and environment variables needed for notification services.
+ Update README with notification system architecture if applicable.
+
+DELIVERABLES: Production-ready TypeScript code following best practices, notification services with proper error handling, email templates for vendor and admin, comprehensive documentation, and working notification delivery system upon successful payment completion.

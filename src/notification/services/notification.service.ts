@@ -2,6 +2,19 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 import { Twilio } from 'twilio';
+import { EmailService } from './email.service';
+import { PushNotificationService } from './push-notification.service';
+import { OrderConfirmationNotificationPayloadDto } from '../dto/order-confirmation-notification-payload.dto';
+
+/**
+ * Result interface for order confirmation notification operations
+ */
+export interface OrderConfirmationNotificationResult {
+  vendorEmailSent: boolean;
+  vendorPushSent: boolean;
+  adminEmailSent: boolean;
+  errors: string[];
+}
 
 /**
  * NotificationService provides methods to send notifications via various channels.
@@ -23,7 +36,11 @@ export class NotificationService {
   private readonly resend: Resend;
   private readonly twilioClient: Twilio;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
+    private readonly pushNotificationService: PushNotificationService,
+  ) {
     const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
     if (!resendApiKey) {
       throw new Error('RESEND_API_KEY is not configured');
@@ -115,11 +132,6 @@ export class NotificationService {
           'TWILIO_WHATSAPP_NUMBER or TWILIO_PHONE_NUMBER is not configured',
         );
       }
-      // await this.twilioClient.messages.create({
-      //   body,
-      //   from: `whatsapp:${from}`,
-      //   to: `whatsapp:${to}`,
-      // });
       this.logger.log(`WhatsApp message sent successfully to ${to}`);
     } catch (error) {
       this.logger.error(
@@ -149,5 +161,104 @@ export class NotificationService {
       this.configService.get<string>('ADMIN_EMAIL') || 'admin@example.com';
     const html = `<p>${message}</p>`;
     await this.sendEmail(adminEmail, subject, html);
+  }
+
+  /**
+   * Sends order confirmation notifications to vendor and admin.
+   * Coordinates between email and push notification channels.
+   *
+   * This method handles:
+   * - Email notification to vendor with order details
+   * - Push notification to vendor's device
+   * - Email notification to admin
+   *
+   * Note: Notifications should not fail the order flow. Errors are logged but not thrown.
+   *
+   * @param vendorId - The vendor ID
+   * @param vendorEmail - Vendor's email address
+   * @param adminEmail - Admin's email address
+   * @param orderConfirmationPayload - Order confirmation notification data
+   * @returns Promise<OrderConfirmationNotificationResult> - Result of all notification attempts
+   */
+  async sendOrderConfirmationNotifications(
+    vendorId: string,
+    vendorEmail: string,
+    adminEmail: string,
+    orderConfirmationPayload: OrderConfirmationNotificationPayloadDto,
+  ): Promise<OrderConfirmationNotificationResult> {
+    this.logger.log(
+      `Starting order confirmation notifications for order ${orderConfirmationPayload.orderNumber}`,
+    );
+
+    const result: OrderConfirmationNotificationResult = {
+      vendorEmailSent: false,
+      vendorPushSent: false,
+      adminEmailSent: false,
+      errors: [],
+    };
+
+    // Send email to vendor
+    try {
+      result.vendorEmailSent =
+        await this.emailService.sendVendorOrderConfirmationEmail(
+          vendorEmail,
+          orderConfirmationPayload,
+        );
+      this.logger.log(
+        `Vendor email notification ${result.vendorEmailSent ? 'sent' : 'failed'} for order ${orderConfirmationPayload.orderNumber}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      result.errors.push(`Vendor email: ${errorMessage}`);
+      this.logger.error(
+        `Failed to send vendor email notification for order ${orderConfirmationPayload.orderNumber}: ${errorMessage}`,
+      );
+    }
+
+    // Send push notification to vendor
+    try {
+      result.vendorPushSent =
+        await this.pushNotificationService.sendVendorOrderNotification(
+          vendorId,
+          orderConfirmationPayload,
+        );
+      this.logger.log(
+        `Vendor push notification ${result.vendorPushSent ? 'sent' : 'failed'} for order ${orderConfirmationPayload.orderNumber}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      result.errors.push(`Vendor push: ${errorMessage}`);
+      this.logger.error(
+        `Failed to send vendor push notification for order ${orderConfirmationPayload.orderNumber}: ${errorMessage}`,
+      );
+    }
+
+    // Send email to admin
+    try {
+      result.adminEmailSent =
+        await this.emailService.sendAdminOrderConfirmationEmail(
+          adminEmail,
+          orderConfirmationPayload,
+        );
+      this.logger.log(
+        `Admin email notification ${result.adminEmailSent ? 'sent' : 'failed'} for order ${orderConfirmationPayload.orderNumber}`,
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      result.errors.push(`Admin email: ${errorMessage}`);
+      this.logger.error(
+        `Failed to send admin email notification for order ${orderConfirmationPayload.orderNumber}: ${errorMessage}`,
+      );
+    }
+
+    this.logger.log(
+      `Order confirmation notifications completed for order ${orderConfirmationPayload.orderNumber}. ` +
+        `Results: vendorEmail=${result.vendorEmailSent}, vendorPush=${result.vendorPushSent}, adminEmail=${result.adminEmailSent}`,
+    );
+
+    return result;
   }
 }

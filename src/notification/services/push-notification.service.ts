@@ -6,6 +6,7 @@ import { NotificationPayload } from '../dto/notification-payload.dto';
 import { FcmSendResult } from '../dto/fcm-send-result.dto';
 import { UserType } from '../dto/user-type.enum';
 import { OrderNotificationPayloadDto } from '../dto/order-notification-payload.dto';
+import { OrderConfirmationNotificationPayloadDto } from '../dto/order-confirmation-notification-payload.dto';
 import { PrismaService } from '../../common/database/prisma.service';
 
 /**
@@ -571,6 +572,91 @@ export class PushNotificationService implements OnModuleInit {
         `Failed to send vendor notification for order ${orderPayload.orderNumber}: ${errorMessage}`,
       );
       return 0;
+    }
+  }
+
+  /**
+   * Sends a single-attempt push notification to vendor for order confirmation.
+   * This method sends notifications without retry logic for immediate delivery.
+   * Does not include payment-related information in the notification.
+   *
+   * @param vendorId - The vendor ID
+   * @param payload - Order confirmation notification data
+   * @returns Promise<boolean> - True if at least one notification was sent successfully
+   */
+  async sendVendorOrderNotification(
+    vendorId: string,
+    payload: OrderConfirmationNotificationPayloadDto,
+  ): Promise<boolean> {
+    const title = 'New Order Received';
+    const body = `You have received a new order #${payload.orderNumber} for ${payload.formattedAmount}`;
+
+    const notificationPayload: NotificationPayload = {
+      title,
+      body,
+      data: {
+        orderId: payload.orderId,
+        orderNumber: payload.orderNumber,
+        notificationType: payload.notificationType,
+      },
+      sound: 'default',
+    };
+
+    try {
+      // Fetch device tokens for the vendor
+      const tokens = await this.getActiveTokens(vendorId, UserType.VENDOR);
+
+      if (tokens.length === 0) {
+        this.logger.warn(`No active tokens found for vendor ${vendorId}`);
+        return false;
+      }
+
+      // Send notification without retry logic (single attempt only)
+      let successCount = 0;
+      for (
+        let i = 0;
+        i < tokens.length;
+        i += PushNotificationService.FCM_BATCH_SIZE
+      ) {
+        const batch = tokens.slice(
+          i,
+          i + PushNotificationService.FCM_BATCH_SIZE,
+        );
+
+        try {
+          const results = await this.sendToFCM(batch, notificationPayload);
+
+          // Deactivate invalid tokens
+          const invalidTokens = await this.identifyInvalidTokens(
+            batch,
+            results,
+          );
+          if (invalidTokens.length > 0) {
+            await this.deactivateTokens(invalidTokens);
+          }
+
+          successCount += results.filter((r) => r.success).length;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.error(
+            `Batch send failed for vendor ${vendorId}: ${errorMessage}`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Vendor order notification sent for order ${payload.orderNumber} to vendor ${vendorId}: ${successCount}/${tokens.length} success`,
+      );
+
+      return successCount > 0;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send vendor order notification for order ${payload.orderNumber}: ${errorMessage}`,
+      );
+      return false;
     }
   }
 }
