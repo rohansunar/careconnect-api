@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from './payment-provider.service';
+import { WebhookIdempotencyService } from './webhook-idempotency.service';
 import { PaymentStatus, SubscriptionStatus } from '@prisma/client';
 
 import {
@@ -28,6 +29,7 @@ export class PaymentService {
     private prisma: PrismaService,
     private paymentProvider: PaymentProviderService,
     private readonly eventBus: EventBus,
+    private readonly idempotencyService: WebhookIdempotencyService,
   ) {}
 
   async initiatePayment(
@@ -85,13 +87,25 @@ export class PaymentService {
 
   /**
    * Handles webhook updates for payment status from the provider.
+   * Implements idempotency to prevent duplicate processing.
    * @param webhookData - The webhook payload from payment provider
    * @param signature - Optional webhook signature for verification
    * @returns Updated payment or status result
+   * @throws ConflictException - If the event has already been processed
    */
   async handleWebhook(webhookData: Record<string, any>, signature?: string) {
     this.logger.log(`Processing webhook for payment`);
     try {
+      const isFirstTime = await this.idempotencyService.ensureNotProcessed(
+        webhookData.payload.order.entity.id,
+        webhookData.event,
+        webhookData,
+      );
+
+      if (!isFirstTime) {
+        return { success: true };
+      } // ACK duplicate safely
+
       // Verify webhook with provider
       const verifiedData = await this.paymentProvider.verifyWebhook(
         webhookData,

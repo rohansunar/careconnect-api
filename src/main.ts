@@ -8,6 +8,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as fs from 'fs';
 import multipart from '@fastify/multipart';
+import fastifyCsrf from '@fastify/csrf-protection';
 
 async function bootstrap() {
   const adapter = new FastifyAdapter({
@@ -31,6 +32,12 @@ async function bootstrap() {
       files: 10, // max 10 files
     },
   });
+  /*
+   * Cross-site request forgery (CSRF or XSRF) is a type of
+   * attack where unauthorized commands are sent from a trusted user to a web application.
+   */
+
+  await app.register(fastifyCsrf);
 
   // Global validation pipe
   // Endpoint validation configuration

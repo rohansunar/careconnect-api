@@ -1,0 +1,24 @@
+/**
+ * Prisma model for tracking payment webhook events to ensure idempotent processing.
+ * This prevents duplicate processing of webhook events from payment providers.
+ */
+
+model PaymentWebhookEvent {
+  /// Unique identifier for the webhook event record
+  id String @id @default(uuid())
+
+  /// The unique event ID from the payment provider (e.g., Razorpay event ID)
+  /// This is used as the idempotency key to prevent duplicate processing
+  eventId String @unique
+
+  /// The type of webhook event (e.g., "payment.captured", "payment.failed")
+  eventType String
+
+  /// The full webhook payload stored as JSON for audit and debugging purposes
+  payload Json
+
+  /// Timestamp when the webhook event was first received and recorded
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, eventType])
+}
