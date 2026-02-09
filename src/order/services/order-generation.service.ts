@@ -4,7 +4,7 @@ import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionFrequency } from '../../subscription/interfaces/delivery-frequency.interface';
 import { PrismaService } from '../../common/database/prisma.service';
-import { NotificationService } from '../../notification/services/notification.service';
+import { EmailChannelService } from '../../notification/services/channels/email-channel.service';
 import { DeliveryFrequencyService } from '../../subscription/services/delivery-frequency.service';
 import { OrderNumberService } from './order-number.service';
 
@@ -59,10 +59,10 @@ export class OrderGenerationService {
   constructor(
     private prisma: PrismaService,
     @InjectQueue('order-generation') private orderQueue: Queue,
-    private notificationService: NotificationService,
+    private emailChannel: EmailChannelService,
     private deliveryFrequencyService: DeliveryFrequencyService,
     private orderNumberService: OrderNumberService,
-  ) {}
+  ) { }
 
   /**
    * Cron job that runs every 10 seconds to enqueue daily order generation jobs for active subscriptions.
@@ -101,9 +101,11 @@ export class OrderGenerationService {
     // If no subscriptions found, log and notify admin, then return
     if (subscriptions.length === 0) {
       this.logger.log('No subscriptions found for order generation.');
-      await this.notificationService.notifyAdmin(
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      await this.emailChannel.sendEmail(
+        adminEmail,
         'No Subscriptions Found',
-        'No active subscriptions found for daily order generation.',
+        '<p>No active subscriptions found for daily order generation.</p>',
       );
       return;
     }
@@ -189,9 +191,11 @@ export class OrderGenerationService {
       this.logger.warn(
         `Vendor is inactive or product/vendor not found, skipping order for subscription ${subscription.id}`,
       );
-      await this.notificationService.notifyAdmin(
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      await this.emailChannel.sendEmail(
+        adminEmail,
         'Vendor Inactive',
-        `Order skipped for subscription ${subscription.id} due to inactive vendor.`,
+        `<p>Order skipped for subscription ${subscription.id} due to inactive vendor.</p>`,
       );
       return;
     }
@@ -302,9 +306,11 @@ export class OrderGenerationService {
 
     // If rescheduled due to unavailability, notify admin
     if (notifyRescheduled) {
-      await this.notificationService.notifyAdmin(
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      await this.emailChannel.sendEmail(
+        adminEmail,
         'Order Rescheduled',
-        `Subscription ${subscription.id} rescheduled due to vendor unavailability.`,
+        `<p>Subscription ${subscription.id} rescheduled due to vendor unavailability.</p>`,
       );
     }
   }

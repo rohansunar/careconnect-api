@@ -26,9 +26,7 @@ import {
 } from '@prisma/client';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
-import { NotificationService } from '../../notification/services/notification.service';
-import { PushNotificationService } from '../../notification/services/push-notification.service';
-import { OrderNotificationPayloadDto } from '../../notification/dto/order-notification-payload.dto';
+import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import { Decimal } from '@prisma/client/runtime/library';
 
 /**
@@ -70,8 +68,7 @@ export class CustomerOrderService extends OrderService {
     cartService: CartService,
     orderNumberService: OrderNumberService,
     private paymentService: PaymentService,
-    private notificationService: NotificationService,
-    private pushNotificationService: PushNotificationService,
+    private orderNotificationOrchestrator: OrderNotificationOrchestrator,
   ) {
     super(prisma, cartService, orderNumberService);
   }
@@ -218,48 +215,11 @@ export class CustomerOrderService extends OrderService {
   }
 
   /**
-   * Sends push notification when an order is created.
-   * Notifies both the customer and vendor about the new order.
-   * @param order - The created order with relations
+   * Note: Order creation notifications are now handled automatically
+   * by the OnPaymentSucceededNotificationHandler after successful payment.
+   * This ensures notifications are only sent for paid orders.
    */
-  private async sendOrderCreatedNotification(
-    order: any | Order,
-  ): Promise<void> {
-    try {
-      // Build order notification payload
-      const orderPayload = new OrderNotificationPayloadDto();
-      orderPayload.orderId = order.id;
-      orderPayload.orderNumber = order.orderNo;
-      orderPayload.totalAmount = Number(order.total_amount);
-      orderPayload.currency = this.CURRENCY;
-      orderPayload.paymentMode = order.payment_mode;
 
-      // Send notification to customer
-      if (order.customer?.id) {
-        await this.pushNotificationService.sendOrderCreatedNotification(
-          order.customer.id,
-          orderPayload,
-        );
-      }
-
-      // Send notification to vendor
-      if (order.vendor?.id) {
-        await this.pushNotificationService.sendOrderToVendorNotification(
-          order.vendor.id,
-          orderPayload,
-        );
-      }
-
-      this.logger.log(
-        `Order created notifications sent for order ${order.orderNo}`,
-      );
-    } catch (error) {
-      // Log error but don't fail the order creation
-      this.logger.error(
-        `Failed to send order created notifications for order ${order.orderNo}: ${error.message}`,
-      );
-    }
-  }
 
   private buildIncludeQuery() {
     return {
@@ -571,39 +531,16 @@ export class CustomerOrderService extends OrderService {
    */
   private async sendOrderCancellationNotification(order: OrderWithRelations) {
     try {
-      // Send notification to customer
-      if (order.customer?.phone) {
-        const message = `🚫 Order Cancelled
-                            Order ID: ${order.orderNo}
-                            Reason: ${order.cancelReason}
-                            Amount: ₹${order.total_amount}
-
-                            Your order has been successfully cancelled.`;
-
-        await this.notificationService.sendWhatsApp(
-          order.customer.phone,
-          message,
-        );
-      }
-
-      // Send notification to vendor
-      if (order.vendor?.phone) {
-        const message = `🚫 Order Cancelled
-          Order ID: ${order.orderNo}
-          Customer: ${order.customer?.name || 'N/A'}
-          Amount: ₹${order.total_amount}
-          Reason: ${order.cancelReason}
-
-          Please update your inventory accordingly.`;
-
-        await this.notificationService.sendWhatsApp(
-          order.vendor.phone,
-          message,
-        );
-      }
+      // Use orchestrator to send cancellation notifications
+      await this.orderNotificationOrchestrator.sendOrderCancellationNotifications(order.id);
+      this.logger.log(
+        `Cancellation notifications sent for order ${order.orderNo}`,
+      );
     } catch (error) {
       // Log error but don't fail the cancellation
-      console.error('Failed to send cancellation notifications:', error);
+      this.logger.error(
+        `Failed to send cancellation notifications for order ${order.orderNo}: ${error.message}`,
+      );
     }
   }
 }

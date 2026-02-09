@@ -1,13 +1,13 @@
 import { Button, Heading, Section, Text } from '@react-email/components';
 import React from 'react';
-import type { BaseEmailProps, DetailsTableRow } from '../types';
+import type { BaseEmailProps, DetailsTableRow } from '../../types';
 import {
   DetailsTable,
   EmailFooter,
   EmailHeader,
   EmailLayout,
   InfoBox,
-} from '../components';
+} from '../../components';
 
 /**
  * Props for AdminOrderConfirmationTemplate
@@ -35,7 +35,7 @@ export interface AdminOrderConfirmationTemplateProps extends BaseEmailProps {
 export const AdminOrderConfirmationTemplate: React.FC<
   AdminOrderConfirmationTemplateProps
 > = ({
-  recipientName = 'Admin',
+
   orderId,
   orderNumber,
   formattedAmount,
@@ -50,89 +50,88 @@ export const AdminOrderConfirmationTemplate: React.FC<
   deliveryAddress,
   adminDashboardUrl,
 }) => {
-  const orderRows: DetailsTableRow[] = [
-    { label: 'Order ID', value: orderId },
-    { label: 'Order Number', value: orderNumber },
-    {
-      label: 'Total Amount',
-      value: `${formattedAmount} ${currency}`,
-      isBold: true,
-    },
-    { label: 'Items Count', value: `${itemCount} item(s)` },
-    { label: 'Payment Mode', value: paymentMode },
-    { label: 'Vendor', value: vendorName },
-    { label: 'Order Date', value: orderDate },
-  ];
+    const orderRows: DetailsTableRow[] = [
+      { label: 'Order ID', value: orderId },
+      { label: 'Order Number', value: orderNumber },
+      {
+        label: 'Total Amount',
+        value: `${formattedAmount} ${currency}`,
+        isBold: true,
+      },
+      { label: 'Items Count', value: `${itemCount} item(s)` },
+      { label: 'Payment Mode', value: paymentMode },
+      { label: 'Vendor', value: vendorName },
+      { label: 'Order Date', value: orderDate },
+    ];
 
-  if (estimatedDeliveryTime) {
-    orderRows.push({
-      label: 'Estimated Delivery',
-      value: estimatedDeliveryTime,
-    });
-  }
+    if (estimatedDeliveryTime) {
+      orderRows.push({
+        label: 'Estimated Delivery',
+        value: estimatedDeliveryTime,
+      });
+    }
 
-  return (
-    <EmailLayout
-      recipientName={recipientName}
-      previewText={`New order received: ${orderNumber}`}
-    >
-      <EmailHeader
-        title="New Order Received"
-        subtitle="📢 New Order Confirmation"
-        gradientFrom="#3b82f6"
-        gradientTo="#1d4ed8"
-      />
-
-      <Section style={contentSection}>
-        <Text style={paragraph}>
-          A new order has been placed in the system. Please review the details
-          below.
-        </Text>
-
-        <Heading style={sectionHeading}>Order Details</Heading>
-        <DetailsTable rows={orderRows} />
-
-        {customerName && (
-          <Section style={infoSection}>
-            <Heading style={infoSectionHeading}>Customer Information</Heading>
-            <Text style={infoItem}>
-              <span style={infoLabel}>Customer Name:</span> {customerName}
-            </Text>
-            {customerEmail && (
-              <Text style={infoItem}>
-                <span style={infoLabel}>Customer Email:</span> {customerEmail}
-              </Text>
-            )}
-          </Section>
-        )}
-
-        {deliveryAddress && (
-          <Section style={infoSection}>
-            <Heading style={infoSectionHeading}>Delivery Address</Heading>
-            <Text style={addressText}>{deliveryAddress}</Text>
-          </Section>
-        )}
-
-        <InfoBox
-          title="📋 Admin Actions"
-          content="• Review order details in the admin dashboard<br>• Monitor order fulfillment status<br>• Coordinate with vendor if needed"
-          variant="info"
+    return (
+      <EmailLayout
+        previewText={`New order received: ${orderNumber}`}
+      >
+        <EmailHeader
+          title="New Order Received"
+          subtitle="📢 New Order Confirmation"
+          gradientFrom="#3b82f6"
+          gradientTo="#1d4ed8"
         />
 
-        <Section style={buttonSection}>
-          <Button href={adminDashboardUrl} style={button}>
-            Open Admin Dashboard
-          </Button>
-        </Section>
-      </Section>
+        <Section style={contentSection}>
+          <Text style={paragraph}>
+            A new order has been placed in the system. Please review the details
+            below.
+          </Text>
 
-      <EmailFooter
-        companyName="Water Delivery System - Admin Panel"
-        supportEmail="admin@waterdelivery.com"
-      />
-    </EmailLayout>
-  );
-};
+          <Heading style={sectionHeading}>Order Details</Heading>
+          <DetailsTable rows={orderRows} />
+
+          {customerName && (
+            <Section style={infoSection}>
+              <Heading style={infoSectionHeading}>Customer Information</Heading>
+              <Text style={infoItem}>
+                <span style={infoLabel}>Customer Name:</span> {customerName}
+              </Text>
+              {customerEmail && (
+                <Text style={infoItem}>
+                  <span style={infoLabel}>Customer Email:</span> {customerEmail}
+                </Text>
+              )}
+            </Section>
+          )}
+
+          {deliveryAddress && (
+            <Section style={infoSection}>
+              <Heading style={infoSectionHeading}>Delivery Address</Heading>
+              <Text style={addressText}>{deliveryAddress}</Text>
+            </Section>
+          )}
+
+          <InfoBox
+            title="📋 Admin Actions"
+            content="• Review order details in the admin dashboard<br>• Monitor order fulfillment status<br>• Coordinate with vendor if needed"
+            variant="info"
+          />
+
+          <Section style={buttonSection}>
+            <Button href={adminDashboardUrl} style={button}>
+              Open Admin Dashboard
+            </Button>
+          </Section>
+        </Section>
+
+        <EmailFooter
+          companyName="Water Delivery System - Admin Panel"
+          supportEmail="admin@waterdelivery.com"
+        />
+      </EmailLayout>
+    );
+  };
 
 /**
  * Content section styles

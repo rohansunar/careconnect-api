@@ -1,13 +1,13 @@
 import { Button, Heading, Section, Text } from '@react-email/components';
 import React from 'react';
-import type { BaseEmailProps, DetailsTableRow } from '../types';
+import type { BaseEmailProps, DetailsTableRow } from '../../types';
 import {
   DetailsTable,
   EmailFooter,
   EmailHeader,
   EmailLayout,
   InfoBox,
-} from '../components';
+} from '../../components';
 
 /**
  * Props for VendorOrderConfirmationTemplate
@@ -35,7 +35,7 @@ export interface VendorOrderConfirmationTemplateProps extends BaseEmailProps {
 export const VendorOrderConfirmationTemplate: React.FC<
   VendorOrderConfirmationTemplateProps
 > = ({
-  recipientName,
+
   vendorName,
   orderId,
   orderNumber,
@@ -50,88 +50,87 @@ export const VendorOrderConfirmationTemplate: React.FC<
   deliveryAddress,
   dashboardUrl,
 }) => {
-  const orderRows: DetailsTableRow[] = [
-    { label: 'Order ID', value: orderId },
-    { label: 'Order Number', value: orderNumber },
-    {
-      label: 'Total Amount',
-      value: `${formattedAmount} ${currency}`,
-      isBold: true,
-    },
-    { label: 'Items in Order', value: `${itemCount} item(s)` },
-    { label: 'Payment Mode', value: paymentMode },
-    { label: 'Order Date', value: orderDate },
-  ];
+    const orderRows: DetailsTableRow[] = [
+      { label: 'Order ID', value: orderId },
+      { label: 'Order Number', value: orderNumber },
+      {
+        label: 'Total Amount',
+        value: `${formattedAmount} ${currency}`,
+        isBold: true,
+      },
+      { label: 'Items in Order', value: `${itemCount} item(s)` },
+      { label: 'Payment Mode', value: paymentMode },
+      { label: 'Order Date', value: orderDate },
+    ];
 
-  if (estimatedDeliveryTime) {
-    orderRows.push({
-      label: 'Estimated Delivery',
-      value: estimatedDeliveryTime,
-    });
-  }
+    if (estimatedDeliveryTime) {
+      orderRows.push({
+        label: 'Estimated Delivery',
+        value: estimatedDeliveryTime,
+      });
+    }
 
-  return (
-    <EmailLayout
-      recipientName={recipientName || vendorName}
-      previewText={`New order received: ${orderNumber}`}
-    >
-      <EmailHeader
-        title="New Order Received!"
-        gradientFrom="#22c55e"
-        gradientTo="#16a34a"
-      />
-
-      <Section style={contentSection}>
-        <Text style={greeting}>Hello {vendorName},</Text>
-        <Text style={paragraph}>
-          Great news! You have received a new order. Please review the order
-          details and prepare for fulfillment.
-        </Text>
-
-        <Heading style={sectionHeading}>Order Details</Heading>
-        <DetailsTable rows={orderRows} />
-
-        {customerName && (
-          <Section style={infoSection}>
-            <Heading style={infoSectionHeading}>Customer Information</Heading>
-            <Text style={infoItem}>
-              <span style={infoLabel}>Customer Name:</span> {customerName}
-            </Text>
-            {customerEmail && (
-              <Text style={infoItem}>
-                <span style={infoLabel}>Customer Email:</span> {customerEmail}
-              </Text>
-            )}
-          </Section>
-        )}
-
-        {deliveryAddress && (
-          <Section style={infoSection}>
-            <Heading style={infoSectionHeading}>Delivery Address</Heading>
-            <Text style={addressText}>{deliveryAddress}</Text>
-          </Section>
-        )}
-
-        <InfoBox
-          title="📋 Next Steps"
-          content="• Review order details in your dashboard<br>• Prepare the items for fulfillment<br>• Update order status as needed"
-          variant="success"
+    return (
+      <EmailLayout
+        previewText={`New order received: ${orderNumber}`}
+      >
+        <EmailHeader
+          title="New Order Received!"
+          gradientFrom="#22c55e"
+          gradientTo="#16a34a"
         />
 
-        <Section style={buttonSection}>
-          <Button href={dashboardUrl} style={button}>
-            View Order Details
-          </Button>
-        </Section>
-      </Section>
+        <Section style={contentSection}>
+          <Text style={greeting}>Hello {vendorName},</Text>
+          <Text style={paragraph}>
+            Great news! You have received a new order. Please review the order
+            details and prepare for fulfillment.
+          </Text>
 
-      <EmailFooter
-        companyName="Water Delivery System"
-        supportEmail="support@waterdelivery.com"
-      />
-    </EmailLayout>
-  );
-};
+          <Heading style={sectionHeading}>Order Details</Heading>
+          <DetailsTable rows={orderRows} />
+
+          {customerName && (
+            <Section style={infoSection}>
+              <Heading style={infoSectionHeading}>Customer Information</Heading>
+              <Text style={infoItem}>
+                <span style={infoLabel}>Customer Name:</span> {customerName}
+              </Text>
+              {customerEmail && (
+                <Text style={infoItem}>
+                  <span style={infoLabel}>Customer Email:</span> {customerEmail}
+                </Text>
+              )}
+            </Section>
+          )}
+
+          {deliveryAddress && (
+            <Section style={infoSection}>
+              <Heading style={infoSectionHeading}>Delivery Address</Heading>
+              <Text style={addressText}>{deliveryAddress}</Text>
+            </Section>
+          )}
+
+          <InfoBox
+            title="📋 Next Steps"
+            content="• Review order details in your dashboard<br>• Prepare the items for fulfillment<br>• Update order status as needed"
+            variant="success"
+          />
+
+          <Section style={buttonSection}>
+            <Button href={dashboardUrl} style={button}>
+              View Order Details
+            </Button>
+          </Section>
+        </Section>
+
+        <EmailFooter
+          companyName="Water Delivery System"
+          supportEmail="support@waterdelivery.com"
+        />
+      </EmailLayout>
+    );
+  };
 
 /**
  * Content section styles

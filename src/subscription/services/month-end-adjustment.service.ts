@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../../common/database/prisma.service';
-import { NotificationService } from '../../notification/services/notification.service';
+import { EmailChannelService } from '../../notification/services/channels/email-channel.service';
 
 @Injectable()
 export class MonthEndAdjustmentService {
@@ -9,8 +9,8 @@ export class MonthEndAdjustmentService {
 
   constructor(
     private prisma: PrismaService,
-    private notificationService: NotificationService,
-  ) {}
+    private emailChannel: EmailChannelService,
+  ) { }
 
   @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'order-generator-cron',
@@ -105,9 +105,11 @@ export class MonthEndAdjustmentService {
       });
 
       // Notify admin
-      await this.notificationService.notifyAdmin(
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      await this.emailChannel.sendEmail(
+        adminEmail,
         'Subscription Adjustment',
-        `Adjustment of ${adjustmentAmount} for subscription ${subscription.id} in ${month.toISOString().slice(0, 7)}`,
+        `<p>Adjustment of ${adjustmentAmount} for subscription ${subscription.id} in ${month.toISOString().slice(0, 7)}</p>`,
       );
 
       this.logger.log(

@@ -1,10 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { NotificationService } from '../../notification/services/notification.service';
 
 @Injectable()
 export class RiderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Creates a new rider with the provided data.

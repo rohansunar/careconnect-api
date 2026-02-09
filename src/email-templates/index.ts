@@ -18,6 +18,5 @@ export {
   VendorOrderConfirmationTemplate,
 } from './templates';
 
-export type { AdminOrderConfirmationTemplateProps } from './templates/admin-order-confirmation';
-
-export type { VendorOrderConfirmationTemplateProps } from './templates/vendor-order-confirmation';
+export type { AdminOrderConfirmationTemplateProps } from './templates/orders/admin-order-confirmation';
+export type { VendorOrderConfirmationTemplateProps } from './templates/orders/vendor-order-confirmation';
