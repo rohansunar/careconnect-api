@@ -1,5 +1,10 @@
 import { Logger } from '@nestjs/common';
-import { LedgerType, PaymentMode, PlatformFeeType, Prisma } from '@prisma/client';
+import {
+  LedgerType,
+  PaymentMode,
+  PlatformFeeType,
+  Prisma,
+} from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class LedgerFactory {
@@ -46,10 +51,10 @@ export class LedgerFactory {
   }
 
   async createRefundReversal(params: {
-  vendorId: string;
-  orderItemId: string;
-  originalSaleAmount: Decimal;
-  paymentMode: PaymentMode;
+    vendorId: string;
+    orderItemId: string;
+    originalSaleAmount: Decimal;
+    paymentMode: PaymentMode;
   }) {
     // Reverse SALE
     await this.tx.ledger.create({
@@ -83,5 +88,4 @@ export class LedgerFactory {
       });
     }
   }
-
 }

@@ -1,6 +1,6 @@
 /**
  * Centralized notification system configuration
- * 
+ *
  * This file contains all configurable parameters for the notification system including:
  * - Retry attempts and delays for each channel
  * - Rate limiting configuration

@@ -220,7 +220,6 @@ export class CustomerOrderService extends OrderService {
    * This ensures notifications are only sent for paid orders.
    */
 
-
   private buildIncludeQuery() {
     return {
       orderItems: {
@@ -532,7 +531,9 @@ export class CustomerOrderService extends OrderService {
   private async sendOrderCancellationNotification(order: OrderWithRelations) {
     try {
       // Use orchestrator to send cancellation notifications
-      await this.orderNotificationOrchestrator.sendOrderCancellationNotifications(order.id);
+      await this.orderNotificationOrchestrator.sendOrderCancellationNotifications(
+        order.id,
+      );
       this.logger.log(
         `Cancellation notifications sent for order ${order.orderNo}`,
       );

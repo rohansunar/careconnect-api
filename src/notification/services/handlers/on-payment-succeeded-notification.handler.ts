@@ -5,10 +5,10 @@ import { OrderNotificationOrchestrator } from '../orchestrators/order-notificati
 
 /**
  * OnPaymentSucceededNotificationHandler handles notification sending when payment succeeds
- * 
+ *
  * This handler listens to PaymentSucceededEvent and coordinates sending notifications
  * for successful order payments using the OrderNotificationOrchestrator.
- * 
+ *
  * Refactored to use the new orchestrator-based architecture:
  * - Simplified logic (orchestrator handles all complexity)
  * - Better error handling
@@ -23,7 +23,7 @@ export class OnPaymentSucceededNotificationHandler {
 
   constructor(
     private readonly orderOrchestrator: OrderNotificationOrchestrator,
-  ) { }
+  ) {}
 
   async handle(event: PaymentSucceededEvent) {
     try {
@@ -40,17 +40,18 @@ export class OnPaymentSucceededNotificationHandler {
       );
 
       // Use orchestrator to send all notifications (customer, vendor, admin)
-      const result = await this.orderOrchestrator.sendOrderCreationNotifications(
-        event.orderId,
-      );
+      const result =
+        await this.orderOrchestrator.sendOrderCreationNotifications(
+          event.orderId,
+        );
 
       // Log results
       this.logger.log(
         `Order confirmation notifications completed for order ${event.orderId}: ` +
-        `customer=${result.customerEmailSent}, ` +
-        `vendor=${result.vendorEmailSent}, ` +
-        `vendorPush=${result.vendorPushSent}, ` +
-        `admin=${result.adminEmailSent}`,
+          `customer=${result.customerEmailSent}, ` +
+          `vendor=${result.vendorEmailSent}, ` +
+          `vendorPush=${result.vendorPushSent}, ` +
+          `admin=${result.adminEmailSent}`,
       );
 
       // Log any errors (but don't fail the payment flow)

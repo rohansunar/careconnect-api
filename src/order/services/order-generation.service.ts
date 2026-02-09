@@ -62,7 +62,7 @@ export class OrderGenerationService {
     private emailChannel: EmailChannelService,
     private deliveryFrequencyService: DeliveryFrequencyService,
     private orderNumberService: OrderNumberService,
-  ) { }
+  ) {}
 
   /**
    * Cron job that runs every 10 seconds to enqueue daily order generation jobs for active subscriptions.

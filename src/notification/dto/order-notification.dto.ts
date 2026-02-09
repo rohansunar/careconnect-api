@@ -1,22 +1,29 @@
-import { IsString, IsNumber, IsArray, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsArray,
+  IsOptional,
+  IsEnum,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 /**
  * Product item in an order
  */
 export class OrderProductDto {
-    @IsString()
-    name: string;
+  @IsString()
+  name: string;
 
-    @IsNumber()
-    quantity: number;
+  @IsNumber()
+  quantity: number;
 
-    @IsNumber()
-    price: number;
+  @IsNumber()
+  price: number;
 
-    @IsString()
-    @IsOptional()
-    unit?: string;
+  @IsString()
+  @IsOptional()
+  unit?: string;
 }
 
 /**
@@ -24,65 +31,65 @@ export class OrderProductDto {
  * Used when sending notifications to customer, vendor, and admin about new orders
  */
 export class OrderCreationNotificationDto {
-    @IsString()
-    orderId: string;
+  @IsString()
+  orderId: string;
 
-    @IsString()
-    orderNumber: string;
+  @IsString()
+  orderNumber: string;
 
-    @IsString()
-    customerName: string;
+  @IsString()
+  customerName: string;
 
-    @IsString()
-    customerEmail: string;
+  @IsString()
+  customerEmail: string;
 
-    @IsString()
-    @IsOptional()
-    customerPhone?: string;
+  @IsString()
+  @IsOptional()
+  customerPhone?: string;
 
-    @IsString()
-    vendorName: string;
+  @IsString()
+  vendorName: string;
 
-    @IsString()
-    vendorEmail: string;
+  @IsString()
+  vendorEmail: string;
 
-    @IsString()
-    vendorId: string;
+  @IsString()
+  vendorId: string;
 
-    @IsString()
-    @IsOptional()
-    adminEmail?: string;
+  @IsString()
+  @IsOptional()
+  adminEmail?: string;
 
-    @IsNumber()
-    totalAmount: number;
+  @IsNumber()
+  totalAmount: number;
 
-    @IsString()
-    currency: string;
+  @IsString()
+  currency: string;
 
-    @IsString()
-    formattedAmount: string;
+  @IsString()
+  formattedAmount: string;
 
-    @IsString()
-    paymentMode: string;
+  @IsString()
+  paymentMode: string;
 
-    @IsString()
-    deliveryAddress: string;
+  @IsString()
+  deliveryAddress: string;
 
-    @IsString()
-    @IsOptional()
-    estimatedDeliveryTime?: string;
+  @IsString()
+  @IsOptional()
+  estimatedDeliveryTime?: string;
 
-    @IsString()
-    orderDate: string;
+  @IsString()
+  orderDate: string;
 
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => OrderProductDto)
-    products: OrderProductDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OrderProductDto)
+  products: OrderProductDto[];
 
-    @IsNumber()
-    @IsOptional()
-    itemCount?: number;
+  @IsNumber()
+  @IsOptional()
+  itemCount?: number;
 }
 
 /**
@@ -90,60 +97,60 @@ export class OrderCreationNotificationDto {
  * Used when sending notifications about cancelled orders
  */
 export class OrderCancellationNotificationDto {
-    @IsString()
-    orderId: string;
+  @IsString()
+  orderId: string;
 
-    @IsString()
-    orderNumber: string;
+  @IsString()
+  orderNumber: string;
 
-    @IsString()
-    customerName: string;
+  @IsString()
+  customerName: string;
 
-    @IsString()
-    customerEmail: string;
+  @IsString()
+  customerEmail: string;
 
-    @IsString()
-    @IsOptional()
-    vendorEmail?: string;
+  @IsString()
+  @IsOptional()
+  vendorEmail?: string;
 
-    @IsString()
-    @IsOptional()
-    vendorId?: string;
+  @IsString()
+  @IsOptional()
+  vendorId?: string;
 
-    @IsString()
-    cancellationReason: string;
+  @IsString()
+  cancellationReason: string;
 
-    @IsNumber()
-    @IsOptional()
-    refundAmount?: number;
+  @IsNumber()
+  @IsOptional()
+  refundAmount?: number;
 
-    @IsString()
-    @IsOptional()
-    refundTimeline?: string;
+  @IsString()
+  @IsOptional()
+  refundTimeline?: string;
 
-    @IsString()
-    orderDate: string;
+  @IsString()
+  orderDate: string;
 
-    @IsString()
-    cancellationDate: string;
+  @IsString()
+  cancellationDate: string;
 
-    @IsString()
-    formattedCancellationDate: string;
+  @IsString()
+  formattedCancellationDate: string;
 
-    @IsNumber()
-    totalAmount: number;
+  @IsNumber()
+  totalAmount: number;
 
-    @IsString()
-    formattedAmount: string;
+  @IsString()
+  formattedAmount: string;
 }
 
 /**
  * Order status enum for delivery notifications
  */
 export enum OrderDeliveryStatus {
-    ASSIGNED = 'ASSIGNED',
-    OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
-    DELIVERED = 'DELIVERED',
+  ASSIGNED = 'ASSIGNED',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
 }
 
 /**
@@ -151,43 +158,43 @@ export enum OrderDeliveryStatus {
  * Used for rider assignment, out for delivery, and delivered notifications
  */
 export class DeliveryStatusNotificationDto {
-    @IsString()
-    orderId: string;
+  @IsString()
+  orderId: string;
 
-    @IsString()
-    orderNumber: string;
+  @IsString()
+  orderNumber: string;
 
-    @IsString()
-    customerId: string;
+  @IsString()
+  customerId: string;
 
-    @IsEnum(OrderDeliveryStatus)
-    status: OrderDeliveryStatus;
+  @IsEnum(OrderDeliveryStatus)
+  status: OrderDeliveryStatus;
 
-    @IsString()
-    @IsOptional()
-    riderName?: string;
+  @IsString()
+  @IsOptional()
+  riderName?: string;
 
-    @IsString()
-    @IsOptional()
-    riderPhone?: string;
+  @IsString()
+  @IsOptional()
+  riderPhone?: string;
 
-    @IsString()
-    @IsOptional()
-    riderId?: string;
+  @IsString()
+  @IsOptional()
+  riderId?: string;
 
-    @IsString()
-    @IsOptional()
-    estimatedDeliveryTime?: string;
+  @IsString()
+  @IsOptional()
+  estimatedDeliveryTime?: string;
 
-    @IsString()
-    @IsOptional()
-    deliveryAddress?: string;
+  @IsString()
+  @IsOptional()
+  deliveryAddress?: string;
 
-    @IsNumber()
-    @IsOptional()
-    totalAmount?: number;
+  @IsNumber()
+  @IsOptional()
+  totalAmount?: number;
 
-    @IsString()
-    @IsOptional()
-    formattedAmount?: string;
+  @IsString()
+  @IsOptional()
+  formattedAmount?: string;
 }

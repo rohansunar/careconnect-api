@@ -3,7 +3,7 @@ import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
 export class RiderService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Creates a new rider with the provided data.

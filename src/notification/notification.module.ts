@@ -21,12 +21,12 @@ import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-pa
 
 /**
  * NotificationModule
- * 
+ *
  * Modern notification system with clean architecture:
  * - Channel Services: Handle specific communication channels (email, SMS, WhatsApp, push)
  * - Orchestrators: Coordinate multi-channel notifications for business flows
  * - Event Handlers: React to domain events and trigger notifications
- * 
+ *
  * All legacy services have been removed for a lean, maintainable codebase.
  */
 @Module({
@@ -57,4 +57,4 @@ import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-pa
     SubscriptionNotificationOrchestrator,
   ],
 })
-export class NotificationModule { }
+export class NotificationModule {}

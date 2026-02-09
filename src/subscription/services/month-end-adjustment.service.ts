@@ -10,7 +10,7 @@ export class MonthEndAdjustmentService {
   constructor(
     private prisma: PrismaService,
     private emailChannel: EmailChannelService,
-  ) { }
+  ) {}
 
   @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'order-generator-cron',

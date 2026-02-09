@@ -33,7 +33,7 @@ model Ledger {
   /// Relation to OrderItem (on delete -> CASCADE)
   orderItem    OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
-  sourceEventId   String   // paymentId / refundId // ✅ Schema-level Idempotency (Best Practice)
+  // sourceEventId   String   // paymentId / refundId // ✅ Schema-level Idempotency (Best Practice)
 
 
   /// Indexes for efficient queries

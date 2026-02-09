@@ -11,9 +11,7 @@ import { LedgerFactory } from './ledger.factory';
 export class OnPaymentSucceededLedgerHandler {
   private readonly logger = new Logger(OnPaymentSucceededLedgerHandler.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async handle(event: PaymentSucceededEvent): Promise<void> {
     if (!event.orderId) return;
@@ -37,16 +35,15 @@ export class OnPaymentSucceededLedgerHandler {
         try {
           const itemAmount = new Decimal(item.price).mul(item.quantity);
 
-          let fees =
-            (await tx.platformFee.findFirst({
-              where: { categoryId: item.product.categoryId },
-            })) ?? {
-              product_listing_fee: new Decimal(0),
-              transaction_fee: new Decimal(0),
-              sms_fee: new Decimal(0),
-              whatsapp_fee: new Decimal(0),
-              gst: new Decimal(0),
-            };
+          let fees = (await tx.platformFee.findFirst({
+            where: { categoryId: item.product.categoryId },
+          })) ?? {
+            product_listing_fee: new Decimal(0),
+            transaction_fee: new Decimal(0),
+            sms_fee: new Decimal(0),
+            whatsapp_fee: new Decimal(0),
+            gst: new Decimal(0),
+          };
 
           // SALE (positive)
           await ledgerFactory.createSaleEntry({
@@ -57,9 +54,7 @@ export class OnPaymentSucceededLedgerHandler {
           });
 
           // LISTING FEE (%)
-          const listingFee = itemAmount
-            .mul(fees.product_listing_fee)
-            .div(100);
+          const listingFee = itemAmount.mul(fees.product_listing_fee).div(100);
 
           await ledgerFactory.createPlatformFeeEntry({
             vendorId: order.vendorId,
@@ -73,9 +68,7 @@ export class OnPaymentSucceededLedgerHandler {
           let paymentGatewayFee = new Decimal(0);
           // PAYMENT GATEWAY (online only)
           if (isOnline) {
-            paymentGatewayFee = itemAmount
-            .mul(fees.transaction_fee)
-            .div(100);
+            paymentGatewayFee = itemAmount.mul(fees.transaction_fee).div(100);
             await ledgerFactory.createPlatformFeeEntry({
               vendorId: order.vendorId,
               orderItemId: item.id,
@@ -105,9 +98,7 @@ export class OnPaymentSucceededLedgerHandler {
 
           // 4️⃣ GST (% of payment gateway fee)
           if (isOnline && paymentGatewayFee.gt(0)) {
-            const gstAmount = paymentGatewayFee
-              .mul(fees.gst)
-              .div(100);
+            const gstAmount = paymentGatewayFee.mul(fees.gst).div(100);
 
             await ledgerFactory.createPlatformFeeEntry({
               vendorId: order.vendorId,
