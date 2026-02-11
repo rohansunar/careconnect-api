@@ -65,19 +65,12 @@ export class VendorService {
   async updateAvailability(
     vendorId: string,
     data: {
-      is_active?: boolean;
       is_available_today?: boolean;
     },
   ) {
-    const vendor = await this.prisma.vendor.update({
-      where: { id: vendorId },
-      data,
-      include: {
-        address: true,
-      },
+    return await this.prisma.vendor.update({
+      where: { id: vendorId }, data
     });
-
-    return vendor;
   }
 
   /**
