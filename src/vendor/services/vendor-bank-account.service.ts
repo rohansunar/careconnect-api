@@ -20,7 +20,7 @@ export class VendorBankAccountService {
    * @returns Array of bank account response DTOs
    * @throws {NotFoundException} If vendor is not found
    */
-  async getBankAccounts(vendorId: string): Promise<BankAccountResponseDto[]> {
+  async getBankAccounts(vendorId: string): Promise<BankAccountResponseDto | []> {
     // Validate that vendor exists
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
@@ -31,25 +31,31 @@ export class VendorBankAccountService {
     }
 
     // Get all bank accounts for this vendor
-    const bankAccounts = await this.prisma.bankAccount.findMany({
+    const bankAccounts = await this.prisma.bankAccount.findFirst({
       where: { vendorId },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Map to response DTO
-    return bankAccounts.map((account: BankAccountInterface) => ({
-      id: account.id,
-      vendorId: account.vendorId,
-      accountNumber: account.accountNumber,
-      ifscCode: account.ifscCode,
-      bankName: account.bankName,
-      accountHolderName: account.accountHolderName,
-      upiId: account.upiId,
-      isDefault: account.isDefault,
-      isVerified: account.isVerified,
-      createdAt: account.createdAt,
-      updatedAt: account.updatedAt,
-    }));
+    if(!bankAccounts){
+      return []
+    }
+
+    // Transform raw Prisma object to DTO
+    const responseDto: BankAccountResponseDto = {
+      id: bankAccounts.id,
+      vendorId: bankAccounts.vendorId,
+      accountNumber: bankAccounts.accountNumber,
+      ifscCode: bankAccounts.ifscCode,
+      bankName: bankAccounts.bankName,
+      accountHolderName: bankAccounts.accountHolderName,
+      upiId: bankAccounts.upiId || '',
+      isDefault: bankAccounts.isDefault,
+      isVerified: bankAccounts.isVerified,
+      createdAt: bankAccounts.createdAt,
+      updatedAt: bankAccounts.updatedAt,
+    };
+
+    return responseDto;
   }
 
   /**
