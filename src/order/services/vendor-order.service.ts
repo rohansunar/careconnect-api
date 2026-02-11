@@ -14,6 +14,37 @@ export class VendorOrderService extends OrderService {
   ) {
     super(prisma, cartService, orderNumberService);
   }
+
+   private buildIncludeQuery() {
+    return {
+      orderItems: {
+        select: {
+          id: true,
+          price: true,
+          quantity: true,
+          product: { select: { name: true } },
+        },
+      },
+      address: {
+        select: {
+          address: true,
+          pincode: true,
+          location: {
+            select: {
+              name: true,
+              state: true,
+              country: true,
+            },
+          },
+        },
+      },
+      payment: {
+        select: {
+          status: true,
+        },
+      },
+    };
+  }
   /**
    * Retrieves paginated orders for the authenticated vendor.
    * @param user - The authenticated vendor user
@@ -23,7 +54,8 @@ export class VendorOrderService extends OrderService {
    */
   async getMyOrders(user: User, page: number = 1, limit: number = 10) {
     const query = { vendorId: user.id };
-    const orders = await super.findAll(query, 0, undefined, { address: true });
+    const include = this.buildIncludeQuery();
+    const orders = await super.findAll(query, page, limit, include);
     const total = await this.prisma.order.count({ where: query });
     return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
   }
