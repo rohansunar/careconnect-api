@@ -102,7 +102,7 @@ export class VendorBankAccountService {
         bankName: createBankAccountDto.bankName,
         accountHolderName: createBankAccountDto.accountHolderName,
         upiId: createBankAccountDto.upiId,
-        isDefault: createBankAccountDto.isDefault || false,
+        isDefault: createBankAccountDto.isDefault || true,
         isVerified: false, // New accounts start as unverified
       },
     });
