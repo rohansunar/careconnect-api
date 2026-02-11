@@ -20,9 +20,6 @@ export class ProductService {
     await this.validateVendor(vendorId);
     const products = await this.prisma.product.findMany({
       where: { vendorId: vendorId },
-      include: {
-        vendor: true,
-      },
     });
 
     return products;

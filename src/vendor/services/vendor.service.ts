@@ -17,9 +17,6 @@ export class VendorService {
   async getProfile(vendorId: string) {
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
-      include: {
-        address: true,
-      },
     });
 
     if (!vendor) {
