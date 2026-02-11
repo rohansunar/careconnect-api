@@ -30,9 +30,6 @@ export class CreateBankAccountDto {
   @Length(11, 11, {
     message: 'IFSC code must be exactly 11 characters',
   })
-  @Matches(/^[A-Z]{4}0[A-Z0-9]{6}$/, {
-    message: 'IFSC code must be in valid format (e.g., SBIN0001234)',
-  })
   ifscCode: string;
 
   /**
@@ -57,9 +54,6 @@ export class CreateBankAccountDto {
    */
   @IsOptional()
   @IsString()
-  @Matches(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+$/, {
-    message: 'UPI ID must be in valid format (e.g., username@bank)',
-  })
   upiId?: string;
 
   /**
