@@ -1,13 +1,19 @@
-import { IsOptional, IsString, IsEmail, IsArray, IsEnum } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsArray,
+  IsEnum,
+} from 'class-validator';
 
 export enum DayOfWeek {
-  MONDAY = "MONDAY",
-  TUESDAY = "TUESDAY",
-  WEDNESDAY = "WEDNESDAY",
-  THURSDAY = "THURSDAY",
-  FRIDAY = "FRIDAY",
-  SATURDAY = "SATURDAY",
-  SUNDAY = "SUNDAY",
+  MONDAY = 'MONDAY',
+  TUESDAY = 'TUESDAY',
+  WEDNESDAY = 'WEDNESDAY',
+  THURSDAY = 'THURSDAY',
+  FRIDAY = 'FRIDAY',
+  SATURDAY = 'SATURDAY',
+  SUNDAY = 'SUNDAY',
 }
 
 export class UpdateProfileDto {
@@ -25,14 +31,14 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsString()
-  closingTime?:string
+  closingTime?: string;
 
   @IsOptional()
   @IsString()
-  openingTime?:string
+  openingTime?: string;
 
   @IsOptional()
   @IsArray()
   @IsEnum(DayOfWeek, { each: true })
-  operatingDays:string[]
+  operatingDays: string[];
 }

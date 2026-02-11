@@ -69,7 +69,8 @@ export class VendorService {
     },
   ) {
     return await this.prisma.vendor.update({
-      where: { id: vendorId }, data
+      where: { id: vendorId },
+      data,
     });
   }
 

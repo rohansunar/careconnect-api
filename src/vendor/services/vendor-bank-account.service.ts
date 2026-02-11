@@ -20,7 +20,9 @@ export class VendorBankAccountService {
    * @returns Array of bank account response DTOs
    * @throws {NotFoundException} If vendor is not found
    */
-  async getBankAccounts(vendorId: string): Promise<BankAccountResponseDto | []> {
+  async getBankAccounts(
+    vendorId: string,
+  ): Promise<BankAccountResponseDto | []> {
     // Validate that vendor exists
     const vendor = await this.prisma.vendor.findUnique({
       where: { id: vendorId },
@@ -36,8 +38,8 @@ export class VendorBankAccountService {
       orderBy: { createdAt: 'desc' },
     });
 
-    if(!bankAccounts){
-      return []
+    if (!bankAccounts) {
+      return [];
     }
 
     // Transform raw Prisma object to DTO
@@ -69,57 +71,49 @@ export class VendorBankAccountService {
   async createBankAccount(
     vendorId: string,
     createBankAccountDto: CreateBankAccountDto,
-  ): Promise<BankAccountResponseDto> {
+  ): Promise<{ success: boolean }> {
     // Validate that vendor exists
-    const vendor = await this.prisma.vendor.findUnique({
-      where: { id: vendorId },
-    });
+    try {
+      const vendor = await this.prisma.vendor.findUnique({
+        where: { id: vendorId },
+      });
 
-    if (!vendor) {
-      throw new NotFoundException('Vendor not found');
-    }
+      if (!vendor) {
+        throw new NotFoundException('Vendor not found');
+      }
 
-    // Handle default account logic
-    if (createBankAccountDto.isDefault) {
-      // If this is set as default, unset default from other accounts
-      await this.prisma.bankAccount.updateMany({
-        where: {
-          vendorId,
-          isDefault: true,
-        },
+      // Handle default account logic
+      if (createBankAccountDto.isDefault) {
+        // If this is set as default, unset default from other accounts
+        await this.prisma.bankAccount.updateMany({
+          where: {
+            vendorId,
+            isDefault: true,
+          },
+          data: {
+            isDefault: false,
+          },
+        });
+      }
+
+      // Create the new bank account
+      await this.prisma.bankAccount.create({
         data: {
-          isDefault: false,
+          vendorId,
+          accountNumber: createBankAccountDto.accountNumber,
+          ifscCode: createBankAccountDto.ifscCode,
+          bankName: createBankAccountDto.bankName,
+          accountHolderName: createBankAccountDto.accountHolderName,
+          upiId: createBankAccountDto.upiId,
+          isDefault: createBankAccountDto.isDefault || true,
+          isVerified: false, // New accounts start as unverified
         },
       });
+
+      return { success: true };
+    } catch (error) {
+      throw new BadRequestException('Something with Server.Please try Later');
     }
-
-    // Create the new bank account
-    const bankAccount = await this.prisma.bankAccount.create({
-      data: {
-        vendorId,
-        accountNumber: createBankAccountDto.accountNumber,
-        ifscCode: createBankAccountDto.ifscCode,
-        bankName: createBankAccountDto.bankName,
-        accountHolderName: createBankAccountDto.accountHolderName,
-        upiId: createBankAccountDto.upiId,
-        isDefault: createBankAccountDto.isDefault || true,
-        isVerified: false, // New accounts start as unverified
-      },
-    });
-
-    return {
-      id: bankAccount.id,
-      vendorId: bankAccount.vendorId,
-      accountNumber: bankAccount.accountNumber,
-      ifscCode: bankAccount.ifscCode,
-      bankName: bankAccount.bankName,
-      accountHolderName: bankAccount.accountHolderName,
-      upiId: bankAccount.upiId || '',
-      isDefault: bankAccount.isDefault,
-      isVerified: bankAccount.isVerified,
-      createdAt: bankAccount.createdAt,
-      updatedAt: bankAccount.updatedAt,
-    };
   }
 
   /**

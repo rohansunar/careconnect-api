@@ -67,26 +67,26 @@ export class DashboardService {
       const orders = await this.prisma.order.findMany({
         where: {
           vendorId,
-          OR:[{
-          AND: [
-            { payment_mode: { in: [PaymentMode.ONLINE] } },
+          OR: [
             {
-              payment_status: {
-                in: [PaymentStatus.PAID],
-              },
+              AND: [
+                { payment_mode: { in: [PaymentMode.ONLINE] } },
+                {
+                  payment_status: {
+                    in: [PaymentStatus.PAID],
+                  },
+                },
+                {
+                  delivery_status: {
+                    in: [OrderStatus.PENDING, OrderStatus.CANCELLED],
+                  },
+                },
+              ],
             },
             {
-              delivery_status: {
-                in: [OrderStatus.PENDING, OrderStatus.CANCELLED],
-              },
+              AND: [{ payment_mode: { in: [PaymentMode.COD] } }],
             },
           ],
-        },
-      {
-      AND: [
-        { payment_mode: { in: [PaymentMode.COD] } },
-      ]
-      }],
           created_at: {
             gte: todayStart,
             lt: tomorrowStart,
