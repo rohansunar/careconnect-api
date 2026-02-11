@@ -27,9 +27,6 @@ export class CreateBankAccountDto {
    */
   @IsString()
   @IsNotEmpty()
-  @Length(11, 11, {
-    message: 'IFSC code must be exactly 11 characters',
-  })
   ifscCode: string;
 
   /**
