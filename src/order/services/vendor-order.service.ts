@@ -1142,18 +1142,13 @@ export class VendorOrderService extends OrderService {
     // Store rider info before clearing
     const revertedRider = order.rider;
 
-    // Determine the previous status (CONFIRMED or PENDING)
-    const previousStatus = order.delivery_status;
-    const newStatus =
-      previousStatus === 'OUT_FOR_DELIVERY' ? 'CONFIRMED' : previousStatus;
-
     // Update order within transaction
     try {
       await this.prisma.order.update({
         where: { id: orderId },
         data: {
           rider_id: null,
-          delivery_status: newStatus as any,
+          delivery_status: OrderStatus.PENDING,
         },
       });
     } catch (error) {
