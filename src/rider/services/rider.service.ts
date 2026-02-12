@@ -15,16 +15,21 @@ export class RiderService {
     data: {
       name: string;
       phone: string;
-      email?: string;
-      address?: string;
-      vendorId?: string;
     },
-    isAdmin: boolean = false,
+    user:{ id: string; role: string },
   ) {
     // Check if phone number already exists
     const existingRider = await this.prisma.rider.findUnique({
       where: { phone: data.phone },
     });
+
+    let isAdmin = true
+    let vendorId = ""
+    
+    if (user.role === 'vendor') {
+      isAdmin = false;
+      vendorId = user.id 
+    }
 
     if (existingRider) {
       throw new BadRequestException(
@@ -38,29 +43,18 @@ export class RiderService {
     }
 
     // Enforce 10-rider limit per vendor for non-admin creations
-    if (!isAdmin && data.vendorId) {
+    if (!isAdmin && vendorId) {
       const riderCount = await this.prisma.rider.count({
-        where: { vendorId: data.vendorId },
+        where: { vendorId },
       });
       if (riderCount >= 10) {
         throw new BadRequestException('Vendor cannot have more than 10 riders');
       }
     }
 
-    const rider = await this.prisma.rider.create({
-      data,
-      select: {
-        id: true,
-        name: true,
-        phone: true,
-        email: true,
-        address: true,
-        vendorId: true,
-        created_at: true,
-      },
-    });
+    await this.prisma.rider.create({ data:{...data, vendorId}});
 
-    return rider;
+    return {success:true};
   }
 
   /**
@@ -76,9 +70,6 @@ export class RiderService {
           id: true,
           name: true,
           phone: true,
-          email: true,
-          address: true,
-          created_at: true,
         },
       });
     } else if (user.role === 'admin') {

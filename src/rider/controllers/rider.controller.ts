@@ -11,26 +11,6 @@ import { CreateRiderDto } from '../dto/create-rider.dto';
 @Roles('vendor')
 export class RiderController {
   constructor(private readonly riderService: RiderService) {}
-
-  /**
-   * Business logic rationale: Allow vendors to onboard new riders with a limit of 10 per vendor.
-   * Security consideration: Vendor authentication ensures only authenticated vendors can create riders.
-   * Design decision: Endpoint for creating a new rider linked to the vendor.
-   */
-  @ApiOperation({
-    summary: 'Create a new rider',
-    description:
-      'Allow vendors to onboard new riders, limited to 10 per vendor.',
-  })
-  @ApiResponse({ status: 201, description: 'Rider created successfully.' })
-  @ApiResponse({ status: 400, description: 'Bad request.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @Post()
-  async createRider(@Body() dto: CreateRiderDto, @CurrentUser() user: User) {
-    const riderData = { ...dto, vendorId: user.id };
-    return this.riderService.createRider(riderData, false);
-  }
-
   /**
    * Business logic rationale: Allow admins to create riders for any vendor.
    * Security consideration: Admin authentication and role check.
@@ -44,10 +24,12 @@ export class RiderController {
   @ApiResponse({ status: 400, description: 'Bad request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
-  @Post('admin')
-  @Roles('admin')
-  async createRiderAdmin(@Body() dto: CreateRiderDto) {
-    return this.riderService.createRider(dto, true);
+  @Post()
+  @Roles('admin','vendor')
+  async createRiderAdmin(
+  @CurrentUser() user: User,
+  @Body() dto: CreateRiderDto) {
+    return this.riderService.createRider(dto, user);
   }
 
   /**
@@ -63,7 +45,7 @@ export class RiderController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
-  @Roles('admin')
+  @Roles('admin','vendor')
   async getRiders(@CurrentUser() user: User) {
     return this.riderService.getRiders(user);
   }
