@@ -66,6 +66,7 @@ export class VendorOrderService extends OrderService {
           product: { select: { name: true, categoryId: true } },
         },
       },
+      rider: { select: { name: true } },
       address: {
         select: {
           address: true,

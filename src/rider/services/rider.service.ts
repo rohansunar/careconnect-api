@@ -16,19 +16,19 @@ export class RiderService {
       name: string;
       phone: string;
     },
-    user:{ id: string; role: string },
+    user: { id: string; role: string },
   ) {
     // Check if phone number already exists
     const existingRider = await this.prisma.rider.findUnique({
       where: { phone: data.phone },
     });
 
-    let isAdmin = true
-    let vendorId = ""
-    
+    let isAdmin = true;
+    let vendorId = '';
+
     if (user.role === 'vendor') {
       isAdmin = false;
-      vendorId = user.id 
+      vendorId = user.id;
     }
 
     if (existingRider) {
@@ -52,9 +52,9 @@ export class RiderService {
       }
     }
 
-    await this.prisma.rider.create({ data:{...data, vendorId}});
+    await this.prisma.rider.create({ data: { ...data, vendorId } });
 
-    return {success:true};
+    return { success: true };
   }
 
   /**

@@ -25,10 +25,11 @@ export class RiderController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Post()
-  @Roles('admin','vendor')
+  @Roles('admin', 'vendor')
   async createRiderAdmin(
-  @CurrentUser() user: User,
-  @Body() dto: CreateRiderDto) {
+    @CurrentUser() user: User,
+    @Body() dto: CreateRiderDto,
+  ) {
     return this.riderService.createRider(dto, user);
   }
 
@@ -45,7 +46,7 @@ export class RiderController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Get()
-  @Roles('admin','vendor')
+  @Roles('admin', 'vendor')
   async getRiders(@CurrentUser() user: User) {
     return this.riderService.getRiders(user);
   }
