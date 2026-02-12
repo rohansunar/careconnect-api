@@ -5,6 +5,7 @@ import {
   PushChannelService,
   PushNotificationPayload,
 } from '../channels/push-channel.service';
+import { WhatsAppChannelService } from '../channels/whatsapp-channel.service';
 import { renderToHtml } from '../../../email-templates/utils/renderTemplate';
 import {
   CustomerOrderConfirmationTemplate,
@@ -45,6 +46,7 @@ export class OrderNotificationOrchestrator {
     private readonly prisma: PrismaService,
     private readonly emailChannel: EmailChannelService,
     private readonly pushChannel: PushChannelService,
+    private readonly whatsappChannel: WhatsAppChannelService,
   ) {}
 
   /**
@@ -1032,6 +1034,150 @@ export class OrderNotificationOrchestrator {
       this.logger.error(`Failed to send delivered notification: ${errorMsg}`, {
         correlationId,
       });
+      return false;
+    }
+  }
+
+  /**
+   * Sends bulk push notifications to a rider when multiple orders are assigned.
+   *
+   * @param orderIds - Array of assigned order IDs
+   * @param riderId - The rider ID to notify
+   * @returns True if at least one push notification was sent successfully
+   */
+  async sendBulkOrderAssignmentNotification(
+    orderIds: string[],
+    riderId: string,
+  ): Promise<boolean> {
+    const correlationId = `bulk-assign-${orderIds.length}-${Date.now()}`;
+
+    try {
+      // Fetch all orders for building notification content
+      const orders = await this.prisma.order.findMany({
+        where: { id: { in: orderIds } },
+        select: { id: true, orderNo: true, total_amount: true },
+      });
+
+      if (orders.length === 0) {
+        this.logger.warn(`No orders found for bulk assignment notification`, {
+          correlationId,
+        });
+        return false;
+      }
+
+      const orderCount = orders.length;
+      const totalAmount = orders.reduce(
+        (sum, order) => sum + Number(order.total_amount),
+        0,
+      );
+      const formattedAmount = this.formatCurrency(totalAmount);
+
+      const payload: PushNotificationPayload = {
+        title: `New Delivery Assignments! 🚴`,
+        body: `You've been assigned ${orderCount} order(s) worth ${formattedAmount}`,
+        data: {
+          orderIds: orderIds.join(','),
+          orderCount: orderCount.toString(),
+          notificationType: NotificationType.ORDER_ASSIGNED_RIDER,
+          screen: 'RiderDeliveryDetails',
+        },
+        sound: 'default',
+      };
+
+      const successCount = await this.sendPushToUser(
+        riderId,
+        UserType.RIDER,
+        payload,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Bulk assignment push notification sent to rider ${riderId}: ${successCount} devices`,
+        { correlationId, successCount, orderCount },
+      );
+
+      return successCount > 0;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send bulk assignment notification: ${errorMsg}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends WhatsApp message to rider about new order assignments.
+   *
+   * @param orderIds - Array of assigned order IDs
+   * @param rider - The rider record with contact info
+   * @param correlationId - Correlation ID for tracing
+   * @returns True if WhatsApp message was sent successfully
+   */
+  async sendRiderAssignmentWhatsApp(
+    orderIds: string[],
+    rider: { id: string; name: string; phone: string },
+    correlationId: string,
+  ): Promise<boolean> {
+    try {
+      // Fetch order details for the message
+      const orders = await this.prisma.order.findMany({
+        where: { id: { in: orderIds } },
+        select: {
+          id: true,
+          orderNo: true,
+          total_amount: true,
+          address: {
+            select: {
+              address: true,
+              pincode: true,
+            },
+          },
+        },
+      });
+
+      if (orders.length === 0) {
+        this.logger.warn(`No orders found for WhatsApp notification`, {
+          correlationId,
+        });
+        return false;
+      }
+
+      const totalAmount = orders.reduce(
+        (sum, order) => sum + Number(order.total_amount),
+        0,
+      );
+      const formattedAmount = this.formatCurrency(totalAmount);
+
+      // Build order list for message
+      const orderList = orders
+        .slice(0, 5) // Limit to first 5 orders in message
+        .map((order) => `• Order #${order.orderNo} - ${order.address?.address || 'N/A'}`)
+        .join('\n');
+
+      const moreOrders = orders.length > 5 ? `\n...and ${orders.length - 5} more orders` : '';
+
+      const message = `Hi ${rider.name}! 👋\n\nYou have been assigned ${orders.length} new delivery order(s):\n\n${orderList}${moreOrders}\n\nTotal Value: ${formattedAmount}\n\nPlease check your app for pickup details.\n\n- Water Delivery Team`;
+      
+      const result = await this.whatsappChannel.sendWhatsApp(
+        rider.phone,
+        message,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Rider assignment WhatsApp sent to ${rider.phone}: ${result.success}`,
+        { correlationId, messageId: result.messageId, success: result.success },
+      );
+
+      return result.success;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send rider assignment WhatsApp: ${errorMsg}`,
+        { correlationId },
+      );
       return false;
     }
   }

@@ -163,8 +163,8 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
-    // Store previous assigned_rider_phone for notification check
-    const previousAssignedRiderPhone = order.assigned_rider_phone;
+    // Store previous rider_id for notification check
+    const previousRiderId = order.rider_id;
 
     // Validate related entities if provided
     if (dto.customer_id) {

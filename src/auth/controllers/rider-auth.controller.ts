@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { RiderAuthService } from '../services/rider-auth.service';
 import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
+import { Public } from '../decorators/public.decorator';
 
 /**
  * RiderAuthController handles authentication endpoints for riders.
@@ -22,7 +23,8 @@ import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 @Controller('auth/rider')
 export class RiderAuthController {
   constructor(private readonly riderAuthService: RiderAuthService) {}
-
+  
+  @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -79,6 +81,7 @@ export class RiderAuthController {
     return this.riderAuthService.requestOtp(dto.phone);
   }
 
+  @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({

@@ -1,6 +1,5 @@
 enum OrderStatus {
   PENDING
-  PAID
   CONFIRMED
   OUT_FOR_DELIVERY
   DELIVERED
@@ -12,6 +11,17 @@ enum PaymentMode {
   COD
   MONTHLY
   SUBSCRIPTION
+}
+
+/**
+ * CancellationOrigin enum for tracking who cancelled an order
+ * Used in Order model to record cancellation source
+ */
+enum CancellationOrigin {
+  CUSTOMER
+  VENDOR
+  RIDER
+  ADMIN
 }
 
 model Order {
@@ -27,7 +37,8 @@ model Order {
   cart                  Cart? @relation("orders", fields: [cartId], references: [id])
   total_amount          Decimal  @db.Decimal(10, 2)
   payment_status        String   @db.VarChar(32) @default("PENDING")
-  assigned_rider_phone  String?
+  rider_id              String?
+  rider                 Rider?   @relation("orderAssignments", fields: [rider_id], references: [id])
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
   payment_mode          PaymentMode
@@ -38,9 +49,12 @@ model Order {
   otp_generated_at      DateTime?
   cancelledAt           DateTime?
   cancelReason          String?
+  cancellation_origin   CancellationOrigin? // Who cancelled the order: CUSTOMER, VENDOR, RIDER, ADMIN
   paymentId             String?
   payment               Payment? @relation("orderPayment", fields: [paymentId], references: [id])
 
   orderItems  OrderItem[]
   @@index([orderNo])
+  @@index([rider_id])
+  @@index([vendorId, delivery_status])
 }

@@ -8,4 +8,9 @@ model Rider {
   vendor     Vendor?  @relation(fields: [vendorId], references: [id])
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
+
+  // Order assignment relation - rider can have multiple assigned orders
+  orders Order[] @relation("orderAssignments")
+
+  @@index([vendorId])
 }

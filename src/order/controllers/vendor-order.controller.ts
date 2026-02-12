@@ -6,6 +6,8 @@ import {
   Body,
   Param,
   Query,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +20,7 @@ import {
 import { VendorOrderService } from '../services/vendor-order.service';
 import { VerifyDeliveryOtpDto } from '../dto/verify-delivery-otp.dto';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
+import { AssignOrdersDto } from '../dto/assign-orders.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -282,5 +285,121 @@ export class VendorOrderController {
     @CurrentUser() user: User,
   ) {
     return this.vendorOrderService.cancelOrder(id, dto.cancelReason, user);
+  }
+
+  /**
+   * Assigns one or more orders to a rider for delivery.
+   * Supports both single and bulk order assignment.
+   * Sends push notification and WhatsApp message to the assigned rider.
+   *
+   * @param dto - The assignment data containing order IDs and rider ID
+   * @param user - The authenticated vendor user
+   * @returns BulkAssignmentResponseDto with assignment results
+   */
+  @Post('assign')
+  @ApiOperation({
+    summary: 'Assign orders to a rider',
+    description:
+      'Assigns single or multiple orders to a rider for delivery. ' +
+      'All orders will be assigned to the specified rider. ' +
+      'Push notification and WhatsApp message will be sent to the rider. ' +
+      'Returns 207 (Multi-Status) for partial success in bulk operations.',
+  })
+  @ApiBody({
+    type: AssignOrdersDto,
+    description: 'Order assignment request data',
+    examples: {
+      singleOrder: {
+        value: {
+          orderIds: ['550e8400-e29b-41d4-a716-446655440001'],
+          riderId: '550e8400-e29b-41d4-a716-446655440000',
+        },
+        description: 'Assign a single order to a rider',
+      },
+      bulkAssignment: {
+        value: {
+          orderIds: [
+            '550e8400-e29b-41d4-a716-446655440001',
+            '550e8400-e29b-41d4-a716-446655440002',
+            '550e8400-e29b-41d4-a716-446655440003',
+          ],
+          riderId: '550e8400-e29b-41d4-a716-446655440000',
+        },
+        description: 'Assign multiple orders to a rider',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All orders assigned successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'Successfully assigned 3 orders to rider' },
+        assignedOrders: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              orderId: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+              orderNo: { type: 'string', example: 'ORD-001' },
+            },
+          },
+        },
+        failedOrders: { type: 'array', items: { type: 'object' } },
+        totalOrders: { type: 'number', example: 3 },
+        assignedCount: { type: 'number', example: 3 },
+        failedCount: { type: 'number', example: 0 },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 207,
+    description: 'Partial success - some orders failed to assign',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: false },
+        message: { type: 'string', example: 'Some orders could not be assigned' },
+        assignedOrders: { type: 'array' },
+        failedOrders: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              orderId: { type: 'string' },
+              reason: { type: 'string' },
+            },
+          },
+        },
+        totalOrders: { type: 'number' },
+        assignedCount: { type: 'number' },
+        failedCount: { type: 'number' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid input format or validation errors',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Not Found - rider not found',
+  })
+  @ApiResponse({
+    status: 422,
+    description: 'Unprocessable Entity - orders not in assignable state',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - database operation failed',
+  })
+  @HttpCode(HttpStatus.OK)
+  async assignOrders(
+    @Body() dto: AssignOrdersDto,
+    @CurrentUser() user: User,
+  ): Promise<{success:boolean}> {
+    return this.vendorOrderService.assignOrders(dto, user);
   }
 }

@@ -6,6 +6,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ConflictException,
+  UnprocessableEntityException,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { PrismaService } from '../../common/database/prisma.service';
@@ -13,6 +14,8 @@ import { CartService } from '../../cart/services/cart.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentMode } from '@prisma/client';
+import { AssignOrdersDto } from '../dto/assign-orders.dto';
+import { OrderStatus,CancellationOrigin } from '@prisma/client';
 
 /**
  * Platform fee calculation result
@@ -32,6 +35,14 @@ const UUID_REGEX =
  * OTP expiration time in milliseconds (24 hours)
  */
 const OTP_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Order statuses that are valid for assignment to a rider
+ */
+const ASSIGNABLE_ORDER_STATUSES: OrderStatus[] = [
+  OrderStatus.PENDING,
+  OrderStatus.CONFIRMED,
+];
 
 @Injectable()
 export class VendorOrderService extends OrderService {
@@ -560,8 +571,6 @@ export class VendorOrderService extends OrderService {
       throw new ConflictException('Order has already been cancelled');
     }
 
-    // Prepare the prefixed cancellation reason
-    const prefixedCancelReason = `Vendor-Cancellation: ${trimmedReason}`;
     const now = new Date();
     let refundAmount: number | undefined;
 
@@ -572,9 +581,10 @@ export class VendorOrderService extends OrderService {
         await tx.order.update({
           where: { id: orderId },
           data: {
+            cancellation_origin:CancellationOrigin.VENDOR,
             delivery_status: 'CANCELLED',
             cancelledAt: now,
-            cancelReason: prefixedCancelReason,
+            cancelReason: trimmedReason,
           },
         });
 
@@ -722,6 +732,285 @@ export class VendorOrderService extends OrderService {
         // Don't throw - refund should still proceed even if fee reversal fails
         // Fee reversal can be handled manually if needed
       }
+    }
+  }
+
+  /**
+   * Assigns one or more orders to a rider for delivery.
+   *
+   * Business Logic:
+   * - Supports both single and bulk order assignment
+   * - Validates all orders belong to the requesting vendor
+   * - Validates all orders are in an assignable state (PENDING, CONFIRMED)
+   * - Validates the rider exists
+   * - Updates all orders atomically within a single transaction
+   * - Sends push and WhatsApp notifications to the assigned rider
+   *
+   * @param dto - The assignment data containing order IDs and rider ID
+   * @param user - The authenticated vendor user
+   * @returns BulkAssignmentResponseDto with assignment results
+   * @throws BadRequestException - For invalid input format
+   * @throws NotFoundException - If orders or rider not found
+   * @throws ForbiddenException - If orders don't belong to vendor
+   * @throws UnprocessableEntityException - If orders are not in assignable state
+   * @throws InternalServerErrorException - If database operation fails
+   */
+  async assignOrders(
+    dto: AssignOrdersDto,
+    user: User,
+  ): Promise<{success:boolean}> {
+    const correlationId = `assign-orders-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+    this.logger.log(
+      `Starting bulk order assignment: ${dto.orderIds.length} orders to rider ${dto.riderId}`,
+      { correlationId, orderCount: dto.orderIds.length, riderId: dto.riderId, vendorId: user.id },
+    );
+
+    // Validate rider exists
+    const rider = await this.validateRiderExists(dto.riderId);
+
+    // Validate all orders exist, belong to vendor, and are assignable
+    const validationResult = await this.validateOrdersForAssignment(
+      dto.orderIds,
+      user.id,
+      correlationId,
+    );
+
+    // If any orders failed validation, return partial success
+    if (validationResult.failedOrders.length > 0) {
+      this.logger.warn(
+        `Order assignment failed for some orders`,
+        { correlationId, failedOrders: validationResult.failedOrders },
+      );
+    }
+
+    if(validationResult.validOrderIds.length <= 0){
+      return { success: true };
+    }
+
+    try {
+        // Update all orders in a single transaction
+       await this.prisma.order.updateMany({
+          where: {
+            id: { in: validationResult.validOrderIds },
+          },
+          data: {
+            rider_id: dto.riderId,
+            delivery_status: 'OUT_FOR_DELIVERY' as const,
+          },
+      });
+
+      this.logger.log(
+        `Successfully assigned ${dto.orderIds.length} orders to rider ${dto.riderId}`,
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to assign orders to rider ${dto.riderId}: ${errorMessage}`,
+        { correlationId, error: errorMessage },
+      );
+      throw new InternalServerErrorException(
+        'Failed to assign orders. Please try again.',
+      );
+    }
+
+    // Send notifications asynchronously (outside transaction)
+    this.sendAssignmentNotifications(
+      dto.orderIds,
+      dto.riderId,
+      rider,
+      correlationId,
+    );
+
+    return { success: true };
+  }
+
+  /**
+   * Validates that the rider exists.
+   *
+   * @param riderId - The rider ID to validate
+   * @returns The rider record if found
+   * @throws NotFoundException - If rider not found
+   */
+  private async validateRiderExists(riderId: string) {
+    const rider = await this.prisma.rider.findUnique({
+      where: { id: riderId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        vendorId: true,
+      },
+    });
+
+    if (!rider) {
+      this.logger.warn(`Rider not found: ${riderId}`);
+      throw new NotFoundException(`Rider with ID ${riderId} not found`);
+    }
+
+    return rider;
+  }
+
+  /**
+   * Validates orders for assignment.
+   * Checks that:
+   * - All orders exist
+   * - All orders belong to the vendor
+   * - All orders are in an assignable state
+   *
+   * @param orderIds - Array of order IDs to validate
+   * @param vendorId - The vendor ID to check ownership
+   * @param correlationId - Correlation ID for logging
+   * @returns Validation result with success and failure arrays
+   */
+  private async validateOrdersForAssignment(
+    orderIds: string[],
+    vendorId: string,
+    correlationId: string,
+  ): Promise<{
+    validOrderIds: string[];
+    failedOrders: Array<{ orderId: string; reason: string }>;
+  }> {
+    const failedOrders: Array<{ orderId: string; reason: string }> = [];
+
+    // Fetch all orders in a single query
+    const orders = await this.prisma.order.findMany({
+      where: { id: { in: orderIds } },
+      select: {
+        id: true,
+        orderNo: true,
+        vendorId: true,
+        delivery_status: true,
+        rider_id: true,
+      },
+    });
+
+    // Create a map for quick lookup
+    const orderMap = new Map(orders.map((o) => [o.id, o]));
+
+    // Check each order ID
+    for (const orderId of orderIds) {
+      const order = orderMap.get(orderId);
+
+      // Check if order exists
+      if (!order) {
+        failedOrders.push({
+          orderId,
+          reason: 'Order not found',
+        });
+        this.logger.warn(`Order not found: ${orderId}`, { correlationId });
+        continue;
+      }
+
+      // Check if order belongs to vendor
+      if (order.vendorId !== vendorId) {
+        failedOrders.push({
+          orderId: order.id,
+          reason: 'Order does not belong to this vendor',
+        });
+        this.logger.warn(
+          `Order ${orderId} does not belong to vendor ${vendorId}`,
+          { correlationId, orderVendorId: order.vendorId },
+        );
+        continue;
+      }
+
+      // Check if order is already assigned to another rider
+      if (order.rider_id !== null) {
+        failedOrders.push({
+          orderId: order.id,
+          reason: `Order is already assigned to another rider`,
+        });
+        this.logger.warn(
+          `Order ${orderId} is already assigned to rider ${order.rider_id}`,
+          { correlationId },
+        );
+        continue;
+      }
+
+      // Check if order is in an assignable state
+      if (!ASSIGNABLE_ORDER_STATUSES.includes(order.delivery_status)) {
+        const reason = this.getOrderNotAssignableReason(order.delivery_status);
+        failedOrders.push({
+          orderId: order.id,
+          reason,
+        });
+        this.logger.warn(
+          `Order ${orderId} is not in assignable state: ${order.delivery_status}`,
+          { correlationId },
+        );
+      }
+    }
+
+    const validOrderIds = orderIds.filter(
+      (id) => !failedOrders.some((f) => f.orderId === id),
+    );
+
+    return { validOrderIds, failedOrders };
+  }
+
+  /**
+   * Gets a human-readable reason for why an order is not assignable.
+   *
+   * @param status - The current order status
+   * @returns Human-readable reason
+   */
+  private getOrderNotAssignableReason(status: OrderStatus): string {
+    switch (status) {
+      case 'OUT_FOR_DELIVERY':
+        return 'Order is already out for delivery';
+      case 'DELIVERED':
+        return 'Order has already been delivered';
+      case 'CANCELLED':
+        return 'Order has been cancelled';
+      default:
+        return `Order is not in an assignable state: ${status}`;
+    }
+  }
+
+  /**
+   * Sends notifications to the rider about new order assignments.
+   * Sends both push notification and WhatsApp message.
+   *
+   * @param orderIds - Array of assigned order IDs
+   * @param riderId - The rider ID
+   * @param rider - The rider record with contact info
+   * @param correlationId - Correlation ID for logging
+   */
+  private async sendAssignmentNotifications(
+    orderIds: string[],
+    riderId: string,
+    rider: { id: string; name: string; phone: string },
+    correlationId: string,
+  ): Promise<void> {
+    try {
+      // Send push notification
+      await this.notificationOrchestrator
+        .sendBulkOrderAssignmentNotification(orderIds, riderId)
+        .catch((error) => {
+          this.logger.error(
+            `Failed to send push notification to rider ${riderId}: ${error.message}`,
+            { correlationId },
+          );
+        });
+
+      // Send WhatsApp notification
+      if (rider.phone) {
+        await this.notificationOrchestrator
+          .sendRiderAssignmentWhatsApp(orderIds, rider, correlationId)
+          .catch((error) => {
+            this.logger.error(
+              `Failed to send WhatsApp to rider ${riderId}: ${error.message}`,
+              { correlationId },
+            );
+          });
+      }
+    } catch (error) {
+      // Log but don't throw - notifications should not affect the assignment result
+      this.logger.error(
+        `Unexpected error sending notifications to rider ${riderId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
     }
   }
 }
