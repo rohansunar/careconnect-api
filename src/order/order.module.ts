@@ -6,6 +6,7 @@ import { PaymentModule } from '../payment/payment.module';
 import { NotificationModule } from '../notification/notification.module';
 import { QueueModule } from '../queue/queue.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
+import { OtpModule } from '../otp/otp.module';
 import { OrderService } from './services/order.service';
 import { CustomerOrderController } from './controllers/customer-order.controller';
 import { VendorOrderController } from './controllers/vendor-order.controller';
@@ -31,6 +32,7 @@ import { CqrsModule } from '@nestjs/cqrs';
     ScheduleModule.forRoot(),
     QueueModule,
     SubscriptionModule,
+    OtpModule,
   ],
   controllers: [
     CustomerOrderController,

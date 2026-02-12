@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, Param, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { VendorOrderService } from '../services/vendor-order.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
+import { VerifyDeliveryOtpDto } from '../dto/verify-delivery-otp.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -121,5 +122,90 @@ export class VendorOrderController {
     @CurrentUser() user: User,
   ) {
     return this.vendorOrderService.updateMyOrder(id, dto, user);
+  }
+
+  /**
+   * Marks an order as OUT_FOR_DELIVERY and generates a 4-digit OTP.
+   * @param id - The unique identifier of the order
+   * @param user - The authenticated vendor user
+   * @returns The updated order with delivery OTP
+   */
+  @Post(':id/out-for-delivery')
+  @ApiOperation({
+    summary: 'Mark order as out for delivery',
+    description:
+      'Updates the order status to OUT_FOR_DELIVERY and generates a 4-digit OTP for delivery verification.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order marked as out for delivery successfully.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - order is already out for delivery or delivered.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+  })
+  async markOutForDelivery(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.vendorOrderService.markOutForDelivery(id, user);
+  }
+
+  /**
+   * Verifies delivery OTP and marks the order as delivered.
+   * For COD orders, payment status is also updated to PAID.
+   * @param id - The unique identifier of the order
+   * @param dto - The OTP verification data
+   * @param user - The authenticated vendor user
+   * @returns Verification result with updated order
+   */
+  @Post(':id/verify-delivery-otp')
+  @ApiOperation({
+    summary: 'Verify delivery OTP',
+    description:
+      'Verifies the 4-digit OTP for an order marked as out for delivery. Updates delivery_status to DELIVERED and payment_status to PAID for COD orders.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID)',
+  })
+  @ApiBody({
+    type: VerifyDeliveryOtpDto,
+    description: 'OTP verification data',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OTP verified successfully and order marked as delivered.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid OTP, order already delivered, or order not ready for delivery verification.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+  })
+  async verifyDeliveryOtp(
+    @Param('id') id: string,
+    @Body() dto: VerifyDeliveryOtpDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.vendorOrderService.verifyDeliveryOtp(id, dto.otp, user);
   }
 }

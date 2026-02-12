@@ -1,6 +1,5 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import type { User } from '../../common/interfaces/user.interface';
@@ -8,11 +7,10 @@ import type { User } from '../../common/interfaces/user.interface';
 @Injectable()
 export class VendorOrderService extends OrderService {
   constructor(
-    prisma: PrismaService,
-    cartService: CartService,
-    orderNumberService: OrderNumberService,
+    protected prisma: PrismaService,
+    protected cartService: CartService,
   ) {
-    super(prisma, cartService, orderNumberService);
+    super(prisma, cartService, {} as any);
   }
 
    private buildIncludeQuery() {
@@ -87,5 +85,85 @@ export class VendorOrderService extends OrderService {
       throw new ForbiddenException('Access denied');
     }
     return super.update(id, dto);
+  }
+
+  /**
+   * Marks an order as OUT_FOR_DELIVERY and generates a 4-digit OTP.
+   * @param orderId - The unique identifier of the order
+   * @param user - The authenticated vendor user
+   * @returns The updated order with delivery OTP
+   */
+  async markOutForDelivery(orderId: string, user: User) {
+    const order = await super.findOne(orderId);
+    if (order.vendorId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+    if (order.delivery_status === 'OUT_FOR_DELIVERY' || order.delivery_status === 'DELIVERED') {
+      throw new BadRequestException('Order is already out for delivery or delivered');
+    }
+    
+    // Generate 4-digit numeric OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        delivery_status: 'OUT_FOR_DELIVERY',
+        delivery_otp: otp,
+        otp_generated_at: new Date(),
+      }
+    });
+
+    return { success: true, otp };
+  }
+
+  /**
+   * Verifies delivery OTP and updates order status to DELIVERED.
+   * If payment mode is COD, also updates payment_status to PAID.
+   * @param orderId - The unique identifier of the order
+   * @param otp - The 4-digit OTP code
+   * @param user - The authenticated vendor user
+   * @returns The updated order with verification status
+   */
+  async verifyDeliveryOtp(orderId: string, otp: string, user: User) {
+    const order = await super.findOne(orderId);
+    
+    // Verify order belongs to vendor
+    if (order.vendorId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    // Check order status
+    if (order.delivery_status === 'PENDING') {
+      throw new BadRequestException('Order has not been marked for delivery yet');
+    }
+
+    if (order.delivery_status === 'DELIVERED') {
+      throw new BadRequestException('Order has already been delivered');
+    }
+
+    // Verify OTP
+    if (order.delivery_otp !== otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    // Prepare update data
+    const updateData: Record<string, unknown> = {
+      delivery_status: 'DELIVERED',
+      delivery_otp: null,
+      otp_verified: true,
+    };
+
+    // For COD orders, mark payment as PAID upon delivery
+    if (order.payment_mode === 'COD') {
+      updateData.payment_status = 'PAID';
+    }
+
+    await this.prisma.order.update({
+      where: { id: orderId },
+      data: updateData,
+    });
+
+    return { success: true };
   }
 }
