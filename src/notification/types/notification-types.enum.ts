@@ -70,6 +70,9 @@ export enum NotificationType {
   /** Push notification to rider when order is assigned */
   ORDER_ASSIGNED_RIDER = 'ORDER_ASSIGNED_RIDER',
 
+  /** Push notification to rider when their assignment is reverted */
+  ORDER_ASSIGNMENT_REVERTED_RIDER = 'ORDER_ASSIGNMENT_REVERTED_RIDER',
+
   // ========================================
   // Subscription Notifications
   // ========================================

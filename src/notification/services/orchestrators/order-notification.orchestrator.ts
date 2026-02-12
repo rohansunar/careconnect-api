@@ -364,7 +364,9 @@ export class OrderNotificationOrchestrator {
         currency,
       );
       const refundAmount =
-        order.payment_mode === 'ONLINE' ? Number(order.total_amount) : undefined;
+        order.payment_mode === 'ONLINE'
+          ? Number(order.total_amount)
+          : undefined;
 
       // Send customer email
       if (order.customer?.email) {
@@ -1153,13 +1155,17 @@ export class OrderNotificationOrchestrator {
       // Build order list for message
       const orderList = orders
         .slice(0, 5) // Limit to first 5 orders in message
-        .map((order) => `• Order #${order.orderNo} - ${order.address?.address || 'N/A'}`)
+        .map(
+          (order) =>
+            `• Order #${order.orderNo} - ${order.address?.address || 'N/A'}`,
+        )
         .join('\n');
 
-      const moreOrders = orders.length > 5 ? `\n...and ${orders.length - 5} more orders` : '';
+      const moreOrders =
+        orders.length > 5 ? `\n...and ${orders.length - 5} more orders` : '';
 
       const message = `Hi ${rider.name}! 👋\n\nYou have been assigned ${orders.length} new delivery order(s):\n\n${orderList}${moreOrders}\n\nTotal Value: ${formattedAmount}\n\nPlease check your app for pickup details.\n\n- Water Delivery Team`;
-      
+
       const result = await this.whatsappChannel.sendWhatsApp(
         rider.phone,
         message,
@@ -1178,6 +1184,123 @@ export class OrderNotificationOrchestrator {
         `Failed to send rider assignment WhatsApp: ${errorMsg}`,
         { correlationId },
       );
+      return false;
+    }
+  }
+
+  /**
+   * Sends push notification to rider when their assignment is reverted.
+   *
+   * @param orderId - The order ID
+   * @param riderId - The rider ID
+   * @returns True if push notification was sent successfully
+   */
+  async sendRiderAssignmentRevertedNotification(
+    orderId: string,
+    riderId: string,
+  ): Promise<boolean> {
+    const correlationId = `rider-revert-${orderId}-${Date.now()}`;
+
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new Error(`Order not found: ${orderId}`);
+      }
+
+      const payload: PushNotificationPayload = {
+        title: 'Delivery Assignment Cancelled 🚴',
+        body: `Your assignment for order #${order.orderNo} has been cancelled by the vendor.`,
+        data: {
+          orderId: order.id,
+          orderNumber: order.orderNo,
+          notificationType: NotificationType.ORDER_ASSIGNMENT_REVERTED_RIDER,
+          screen: 'RiderDashboard',
+        },
+        sound: 'default',
+      };
+
+      const successCount = await this.sendPushToUser(
+        riderId,
+        UserType.RIDER,
+        payload,
+        correlationId,
+      );
+
+      return successCount > 0;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send rider revert notification: ${errorMsg}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends WhatsApp message to rider when their assignment is reverted.
+   *
+   * @param orderId - The order ID
+   * @param rider - The rider record with contact info
+   * @param reason - The reason for revert
+   * @param correlationId - Correlation ID for tracing
+   * @returns True if WhatsApp message was sent successfully
+   */
+  async sendRiderRevertedWhatsApp(
+    orderId: string,
+    rider: { id: string; name: string; phone: string },
+    correlationId: string,
+  ): Promise<boolean> {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+          id: true,
+          orderNo: true,
+          total_amount: true,
+          address: {
+            select: {
+              address: true,
+              pincode: true,
+            },
+          },
+        },
+      });
+
+      if (!order) {
+        this.logger.warn(
+          `Order not found for WhatsApp notification: ${orderId}`,
+          {
+            correlationId,
+          },
+        );
+        return false;
+      }
+
+      const formattedAmount = this.formatCurrency(Number(order.total_amount));
+
+      const message = `Hi ${rider.name}! 👋\n\nYour delivery assignment for order #${order.orderNo} has been cancelled by the vendor.\n\nOrder Details:\n• Order #: ${order.orderNo}\n• Value: ${formattedAmount}\n• Delivery Address: ${order.address?.address || 'N/A'} - ${order.address?.pincode || ''}`;
+
+      const result = await this.whatsappChannel.sendWhatsApp(
+        rider.phone,
+        message,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Rider revert WhatsApp sent to ${rider.phone}: ${result.success}`,
+        { correlationId, messageId: result.messageId, success: result.success },
+      );
+
+      return result.success;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to send rider revert WhatsApp: ${errorMsg}`, {
+        correlationId,
+      });
       return false;
     }
   }

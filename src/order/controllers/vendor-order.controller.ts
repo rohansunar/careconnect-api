@@ -239,7 +239,10 @@ export class VendorOrderController {
     description: 'Cancellation request data',
     examples: {
       example: {
-        value: { cancelReason: 'Customer requested cancellation due to change of plans' },
+        value: {
+          cancelReason:
+            'Customer requested cancellation due to change of plans',
+        },
         description: 'Vendor provides reason for cancellation',
       },
     },
@@ -261,7 +264,8 @@ export class VendorOrderController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - invalid order ID format or missing cancellation reason.',
+    description:
+      'Bad Request - invalid order ID format or missing cancellation reason.',
   })
   @ApiResponse({
     status: 403,
@@ -336,13 +340,19 @@ export class VendorOrderController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Successfully assigned 3 orders to rider' },
+        message: {
+          type: 'string',
+          example: 'Successfully assigned 3 orders to rider',
+        },
         assignedOrders: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
-              orderId: { type: 'string', example: '550e8400-e29b-41d4-a716-446655440001' },
+              orderId: {
+                type: 'string',
+                example: '550e8400-e29b-41d4-a716-446655440001',
+              },
               orderNo: { type: 'string', example: 'ORD-001' },
             },
           },
@@ -361,7 +371,10 @@ export class VendorOrderController {
       type: 'object',
       properties: {
         success: { type: 'boolean', example: false },
-        message: { type: 'string', example: 'Some orders could not be assigned' },
+        message: {
+          type: 'string',
+          example: 'Some orders could not be assigned',
+        },
         assignedOrders: { type: 'array' },
         failedOrders: {
           type: 'array',
@@ -399,7 +412,89 @@ export class VendorOrderController {
   async assignOrders(
     @Body() dto: AssignOrdersDto,
     @CurrentUser() user: User,
-  ): Promise<{success:boolean}> {
+  ): Promise<{ success: boolean }> {
     return this.vendorOrderService.assignOrders(dto, user);
+  }
+
+  /**
+   * Reverts rider assignment from an order.
+   * Clears the assigned rider and resets delivery status.
+   * Sends push notification and WhatsApp message to the affected rider.
+   *
+   * @param id - The unique identifier of the order (UUID format)
+   * @param user - The authenticated vendor user
+   * @returns Revert result with success status
+   */
+  @Post(':id/revert-assignment')
+  @ApiOperation({
+    summary: 'Revert rider assignment from order',
+    description:
+      'Removes the assigned rider from an order that has not been delivered. ' +
+      'The order status will be reset to CONFIRMED/PENDING. ' +
+      'Push notification and WhatsApp message will be sent to the affected rider.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID format)',
+  })
+  @ApiBody({
+    description: 'Rider assignment revert request data',
+    examples: {
+      example: {
+        value: { reason: 'Rider reported vehicle breakdown' },
+        description: 'Vendor provides reason for reverting rider assignment',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Rider assignment reverted successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+          description: 'Indicates successful revert',
+        },
+        message: {
+          type: 'string',
+          example:
+            'Rider assignment reverted successfully. The order is now available for reassignment.',
+          description: 'Human-readable success message',
+        },
+      },
+      example: {
+        success: true,
+        message:
+          'Rider assignment reverted successfully. The order is now available for reassignment.',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid order ID format or no rider assigned',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - order has already been delivered',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - database operation failed',
+  })
+  async revertRiderAssignment(
+    @Param('id') id: string,
+    @CurrentUser() user: User,
+  ) {
+    return this.vendorOrderService.revertRiderAssignment(id, user);
   }
 }

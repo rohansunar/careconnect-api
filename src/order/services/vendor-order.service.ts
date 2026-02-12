@@ -13,9 +13,9 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import type { User } from '../../common/interfaces/user.interface';
-import { PaymentMode } from '@prisma/client';
+import { PaymentMode, PaymentStatus } from '@prisma/client';
 import { AssignOrdersDto } from '../dto/assign-orders.dto';
-import { OrderStatus,CancellationOrigin } from '@prisma/client';
+import { OrderStatus, CancellationOrigin } from '@prisma/client';
 
 /**
  * Platform fee calculation result
@@ -529,7 +529,6 @@ export class VendorOrderService extends OrderService {
           payment: true,
         },
       });
-      console.log("Order", order)
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
@@ -581,7 +580,7 @@ export class VendorOrderService extends OrderService {
         await tx.order.update({
           where: { id: orderId },
           data: {
-            cancellation_origin:CancellationOrigin.VENDOR,
+            cancellation_origin: CancellationOrigin.VENDOR,
             delivery_status: 'CANCELLED',
             cancelledAt: now,
             cancelReason: trimmedReason,
@@ -627,9 +626,7 @@ export class VendorOrderService extends OrderService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(
-        `Failed to cancel order ${orderId}: ${errorMessage}`,
-      );
+      this.logger.error(`Failed to cancel order ${orderId}: ${errorMessage}`);
       throw new InternalServerErrorException(
         'Failed to process order cancellation. Please try again.',
       );
@@ -758,12 +755,17 @@ export class VendorOrderService extends OrderService {
   async assignOrders(
     dto: AssignOrdersDto,
     user: User,
-  ): Promise<{success:boolean}> {
+  ): Promise<{ success: boolean }> {
     const correlationId = `assign-orders-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
     this.logger.log(
       `Starting bulk order assignment: ${dto.orderIds.length} orders to rider ${dto.riderId}`,
-      { correlationId, orderCount: dto.orderIds.length, riderId: dto.riderId, vendorId: user.id },
+      {
+        correlationId,
+        orderCount: dto.orderIds.length,
+        riderId: dto.riderId,
+        vendorId: user.id,
+      },
     );
 
     // Validate rider exists
@@ -778,33 +780,34 @@ export class VendorOrderService extends OrderService {
 
     // If any orders failed validation, return partial success
     if (validationResult.failedOrders.length > 0) {
-      this.logger.warn(
-        `Order assignment failed for some orders`,
-        { correlationId, failedOrders: validationResult.failedOrders },
-      );
+      this.logger.warn(`Order assignment failed for some orders`, {
+        correlationId,
+        failedOrders: validationResult.failedOrders,
+      });
     }
 
-    if(validationResult.validOrderIds.length <= 0){
+    if (validationResult.validOrderIds.length <= 0) {
       return { success: true };
     }
 
     try {
-        // Update all orders in a single transaction
-       await this.prisma.order.updateMany({
-          where: {
-            id: { in: validationResult.validOrderIds },
-          },
-          data: {
-            rider_id: dto.riderId,
-            delivery_status: 'OUT_FOR_DELIVERY' as const,
-          },
+      // Update all orders in a single transaction
+      await this.prisma.order.updateMany({
+        where: {
+          id: { in: validationResult.validOrderIds },
+        },
+        data: {
+          rider_id: dto.riderId,
+          delivery_status: 'OUT_FOR_DELIVERY' as const,
+        },
       });
 
       this.logger.log(
         `Successfully assigned ${dto.orderIds.length} orders to rider ${dto.riderId}`,
       );
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
         `Failed to assign orders to rider ${dto.riderId}: ${errorMessage}`,
         { correlationId, error: errorMessage },
@@ -882,6 +885,8 @@ export class VendorOrderService extends OrderService {
         vendorId: true,
         delivery_status: true,
         rider_id: true,
+        payment_mode: true,
+        payment_status: true,
       },
     });
 
@@ -939,6 +944,34 @@ export class VendorOrderService extends OrderService {
           `Order ${orderId} is not in assignable state: ${order.delivery_status}`,
           { correlationId },
         );
+        continue;
+      }
+
+      // Validate payment status for ONLINE orders with PENDING delivery status
+      // Allow assignment only if payment_status is "PENDING" or "FAILED"
+      if (
+        order.payment_mode === PaymentMode.ONLINE &&
+        order.delivery_status === 'PENDING'
+      ) {
+        const isPaymentValid =
+          order.payment_status === PaymentStatus.PENDING ||
+          order.payment_status === PaymentStatus.FAILED;
+
+        if (!isPaymentValid) {
+          failedOrders.push({
+            orderId: order.id,
+            reason: 'Order payment status does not allow assignment',
+          });
+          this.logger.warn(
+            `Order ${orderId} has invalid payment status for assignment: ${order.payment_status}`,
+            {
+              correlationId,
+              paymentMode: order.payment_mode,
+              deliveryStatus: order.delivery_status,
+            },
+          );
+          continue;
+        }
       }
     }
 
@@ -1009,6 +1042,190 @@ export class VendorOrderService extends OrderService {
       // Log but don't throw - notifications should not affect the assignment result
       this.logger.error(
         `Unexpected error sending notifications to rider ${riderId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+    }
+  }
+
+  /**
+   * Reverts rider assignment from an order.
+   *
+   * Business Logic:
+   * - Only orders with an assigned rider can be reverted
+   * - Order must not be already delivered
+   * - Clears rider_id and resets delivery status to CONFIRMED/PENDING
+   * - Sends push notification and WhatsApp message to the affected rider
+   *
+   * @param orderId - The unique identifier of the order (UUID format)
+   * @param dto - The revert request containing reason
+   * @param user - The authenticated vendor user
+   * @returns Revert result with success status
+   * @throws BadRequestException - For invalid UUID format or no rider assigned
+   * @throws ForbiddenException - If vendor doesn't own the order
+   * @throws NotFoundException - If order not found
+   * @throws ConflictException - If order is already delivered
+   * @throws InternalServerErrorException - If database operation fails
+   */
+  async revertRiderAssignment(
+    orderId: string,
+    user: User,
+  ): Promise<{ success: boolean }> {
+    const correlationId = `revert-rider-${orderId}-${Date.now()}`;
+
+    if (!this.isValidUuid(orderId)) {
+      throw new BadRequestException(
+        'Invalid order ID format. Expected UUID format (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+      );
+    }
+
+    // Fetch order with rider info
+    let order;
+    try {
+      order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          rider: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to fetch order ${orderId} for rider revert: ${errorMessage}`,
+        { correlationId },
+      );
+      throw new NotFoundException('Order not found');
+    }
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Verify order belongs to vendor
+    if (order.vendorId !== user.id) {
+      this.logger.warn(
+        `Vendor ${user.id} attempted to revert rider on order ${orderId} owned by vendor ${order.vendorId}`,
+        { correlationId },
+      );
+      throw new ForbiddenException(
+        'You do not have permission to revert rider assignment for this order',
+      );
+    }
+
+    // Check if order is already delivered
+    if (order.delivery_status === 'DELIVERED') {
+      this.logger.warn(
+        `Rider revert rejected - order ${orderId} is already delivered`,
+        { correlationId },
+      );
+      throw new ConflictException(
+        'Cannot revert rider assignment for an order that has already been delivered',
+      );
+    }
+
+    // Verify rider is assigned
+    if (!order.rider_id) {
+      throw new BadRequestException(
+        'No rider is currently assigned to this order',
+      );
+    }
+
+    // Store rider info before clearing
+    const revertedRider = order.rider;
+
+    // Determine the previous status (CONFIRMED or PENDING)
+    const previousStatus = order.delivery_status;
+    const newStatus =
+      previousStatus === 'OUT_FOR_DELIVERY' ? 'CONFIRMED' : previousStatus;
+
+    // Update order within transaction
+    try {
+      await this.prisma.order.update({
+        where: { id: orderId },
+        data: {
+          rider_id: null,
+          delivery_status: newStatus as any,
+        },
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to revert rider assignment for order ${orderId}: ${errorMessage}`,
+        { correlationId },
+      );
+      throw new InternalServerErrorException(
+        'Failed to revert rider assignment. Please try again.',
+      );
+    }
+
+    // Log successful revert
+    this.logger.log(
+      `Rider assignment reverted for order ${orderId} (${order.orderNo}) by vendor ${user.id}.`,
+      { correlationId },
+    );
+
+    // Send notifications asynchronously (outside transaction)
+    this.sendRiderRevertNotifications(orderId, revertedRider, correlationId);
+
+    return { success: true };
+  }
+
+  /**
+   * Sends notifications to the rider about their assignment being reverted.
+   * Sends both push notification and WhatsApp message.
+   *
+   * @param orderId - The order ID
+   * @param orderNo - The order number for display
+   * @param rider - The rider record with contact info
+   * @param reason - The reason for revert
+   * @param correlationId - Correlation ID for logging
+   */
+  private async sendRiderRevertNotifications(
+    orderId: string,
+    rider: { id: string; name: string; phone: string } | null,
+    correlationId: string,
+  ): Promise<void> {
+    if (!rider) {
+      this.logger.warn(
+        `No rider found to send revert notifications for order ${orderId}`,
+        { correlationId },
+      );
+      return;
+    }
+
+    try {
+      // Send push notification
+      await this.notificationOrchestrator
+        .sendRiderAssignmentRevertedNotification(orderId, rider.id)
+        .catch((error) => {
+          this.logger.error(
+            `Failed to send revert push notification to rider ${rider.id}: ${error.message}`,
+            { correlationId },
+          );
+        });
+
+      // Send WhatsApp notification
+      if (rider.phone) {
+        await this.notificationOrchestrator
+          .sendRiderRevertedWhatsApp(orderId, rider, correlationId)
+          .catch((error) => {
+            this.logger.error(
+              `Failed to send revert WhatsApp to rider ${rider.id}: ${error.message}`,
+              { correlationId },
+            );
+          });
+      }
+    } catch (error) {
+      // Log but don't throw - notifications should not affect the revert result
+      this.logger.error(
+        `Unexpected error sending revert notifications to rider ${rider.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
         { correlationId },
       );
     }

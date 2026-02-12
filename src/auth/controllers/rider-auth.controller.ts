@@ -23,7 +23,7 @@ import { Public } from '../decorators/public.decorator';
 @Controller('auth/rider')
 export class RiderAuthController {
   constructor(private readonly riderAuthService: RiderAuthService) {}
-  
+
   @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
