@@ -1,4 +1,12 @@
-import { Controller, Get, Patch, Post, Body, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Body,
+  Param,
+  Query,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -150,16 +158,14 @@ export class VendorOrderController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - order is already out for delivery or delivered.',
+    description:
+      'Bad Request - order is already out for delivery or delivered.',
   })
   @ApiResponse({
     status: 404,
     description: 'Order not found.',
   })
-  async markOutForDelivery(
-    @Param('id') id: string,
-    @CurrentUser() user: User,
-  ) {
+  async markOutForDelivery(@Param('id') id: string, @CurrentUser() user: User) {
     return this.vendorOrderService.markOutForDelivery(id, user);
   }
 
@@ -193,7 +199,8 @@ export class VendorOrderController {
     examples: {
       example: {
         value: { otp: '1234' },
-        description: 'The 4-digit OTP received from mark-out-for-delivery endpoint',
+        description:
+          'The 4-digit OTP received from mark-out-for-delivery endpoint',
       },
     },
   })
@@ -203,14 +210,19 @@ export class VendorOrderController {
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true, description: 'Indicates successful OTP verification' },
+        success: {
+          type: 'boolean',
+          example: true,
+          description: 'Indicates successful OTP verification',
+        },
       },
       example: { success: true },
     },
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad Request - invalid OTP, order already delivered, order not ready for delivery verification, OTP expired, or invalid input format.',
+    description:
+      'Bad Request - invalid OTP, order already delivered, order not ready for delivery verification, OTP expired, or invalid input format.',
   })
   @ApiResponse({
     status: 403,

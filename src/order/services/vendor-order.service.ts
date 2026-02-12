@@ -1,4 +1,11 @@
-import { Injectable, ForbiddenException, BadRequestException, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { OrderService } from './order.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
@@ -17,7 +24,8 @@ export interface PlatformFeeResult {
 /**
  * Regular expression for validating UUID format
  */
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * OTP expiration time in milliseconds (24 hours)
@@ -94,7 +102,9 @@ export class VendorOrderService extends OrderService {
     if (!otpGeneratedAt) {
       return true;
     }
-    const expirationTime = new Date(otpGeneratedAt.getTime() + OTP_EXPIRATION_MS);
+    const expirationTime = new Date(
+      otpGeneratedAt.getTime() + OTP_EXPIRATION_MS,
+    );
     return new Date() > expirationTime;
   }
 
@@ -152,7 +162,10 @@ export class VendorOrderService extends OrderService {
    * @throws NotFoundException - If order not found
    * @throws InternalServerErrorException - If database operation fails
    */
-  async markOutForDelivery(orderId: string, user: User): Promise<{ success: true; orderId: string; deliveryStatus: string }> {
+  async markOutForDelivery(
+    orderId: string,
+    user: User,
+  ): Promise<{ success: true }> {
     // Validate orderId is provided
     if (!orderId) {
       throw new BadRequestException('Order ID is required');
@@ -168,14 +181,19 @@ export class VendorOrderService extends OrderService {
     try {
       order = await super.findOne(orderId);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to fetch order ${orderId} for user ${user.id}: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to fetch order ${orderId} for user ${user.id}: ${errorMessage}`,
+      );
       throw new NotFoundException('Order not found');
     }
 
     // Verify order belongs to vendor
     if (order.vendorId !== user.id) {
-      this.logger.warn(`Vendor ${user.id} attempted to access order ${orderId} owned by vendor ${order.vendorId}`);
+      this.logger.warn(
+        `Vendor ${user.id} attempted to access order ${orderId} owned by vendor ${order.vendorId}`,
+      );
       throw new ForbiddenException('Access denied');
     }
 
@@ -199,28 +217,32 @@ export class VendorOrderService extends OrderService {
           delivery_status: 'OUT_FOR_DELIVERY',
           delivery_otp: otp,
           otp_generated_at: new Date(),
-        }
+        },
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to update order ${orderId} for out-for-delivery: ${errorMessage}`);
-      throw new InternalServerErrorException('Failed to mark order as out for delivery');
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      throw new InternalServerErrorException(
+        'Failed to mark order as out for delivery',
+      );
     }
 
     // Log successful operation
-    this.logger.log(`Order ${orderId} marked as out for delivery by vendor ${user.id}`);
+    this.logger.log(
+      `Order ${orderId} marked as out for delivery by vendor ${user.id}`,
+    );
 
     // Send notifications asynchronously (outside transaction)
-    this.notificationOrchestrator.sendOrderOutForDeliveryNotification(orderId).catch((error) => {
-      this.logger.error(
-        `Failed to send out-for-delivery notifications for order ${orderId}: ${error.message}`,
-      );
-    });
+    this.notificationOrchestrator
+      .sendOrderOutForDeliveryNotification(orderId)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send out-for-delivery notifications for order ${orderId}: ${error.message}`,
+        );
+      });
 
     return {
       success: true,
-      orderId,
-      deliveryStatus: 'OUT_FOR_DELIVERY',
     };
   }
 
@@ -228,7 +250,7 @@ export class VendorOrderService extends OrderService {
    * Verifies delivery OTP and updates order status to DELIVERED.
    * Creates platform listing fee ledger entries only for COD orders.
    * Sends notifications upon successful delivery.
-   * 
+   *
    * @param orderId - The unique identifier of the order
    * @param otp - The 4-digit OTP code
    * @param user - The authenticated vendor user
@@ -237,7 +259,11 @@ export class VendorOrderService extends OrderService {
    * @throws ForbiddenException - If vendor doesn't own the order
    * @throws NotFoundException - If order not found
    */
-  async verifyDeliveryOtp(orderId: string, otp: string, user: User): Promise<{ success: true }> {
+  async verifyDeliveryOtp(
+    orderId: string,
+    otp: string,
+    user: User,
+  ): Promise<{ success: true }> {
     // Validate orderId format
     if (!this.isValidUuid(orderId)) {
       throw new BadRequestException('Invalid order ID format');
@@ -266,11 +292,11 @@ export class VendorOrderService extends OrderService {
             },
           },
         });
-        
+
         if (!order) {
           throw new NotFoundException('Order not found');
         }
-        
+
         // Verify order belongs to vendor
         if (order.vendorId !== user.id) {
           throw new ForbiddenException('Access denied');
@@ -278,7 +304,9 @@ export class VendorOrderService extends OrderService {
 
         // Check order status
         if (order.delivery_status === 'PENDING') {
-          throw new BadRequestException('Order has not been marked for delivery yet');
+          throw new BadRequestException(
+            'Order has not been marked for delivery yet',
+          );
         }
 
         if (order.delivery_status === 'DELIVERED') {
@@ -335,17 +363,22 @@ export class VendorOrderService extends OrderService {
       }
 
       // Log unexpected errors and throw generic error
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to verify delivery OTP for order ${orderId}: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to verify delivery OTP for order ${orderId}: ${errorMessage}`,
+      );
       throw new InternalServerErrorException('Failed to verify delivery OTP');
     }
 
     // Send notifications asynchronously (outside transaction)
-    this.notificationOrchestrator.sendOrderDeliveredNotifications(orderId).catch((error) => {
-      this.logger.error(
-        `Failed to send delivery notifications for order ${orderId}: ${error.message}`,
-      );
-    });
+    this.notificationOrchestrator
+      .sendOrderDeliveredNotifications(orderId)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send delivery notifications for order ${orderId}: ${error.message}`,
+        );
+      });
 
     return { success: true };
   }
@@ -353,7 +386,7 @@ export class VendorOrderService extends OrderService {
   /**
    * Creates platform listing fee ledger entries within a transaction.
    * Fee calculation: item_price × quantity × (platform_fee_percentage / 100)
-   * 
+   *
    * @param tx - Prisma transaction client
    * @param orderId - The order ID
    * @param vendorId - The vendor ID
@@ -361,7 +394,10 @@ export class VendorOrderService extends OrderService {
    * @param orderItems - The order items with product and category info
    */
   private async createPlatformListingFeeEntriesTransaction(
-    tx: Omit<PrismaService, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>,
+    tx: Omit<
+      PrismaService,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
+    >,
     orderId: string,
     vendorId: string,
     paymentMode: PaymentMode,
@@ -374,7 +410,7 @@ export class VendorOrderService extends OrderService {
       };
     }>,
   ): Promise<void> {
-    const defaultPlatformFeePercentage = 10.0; // Default 10%
+    const defaultPlatformFeePercentage = 0; // Default 0%
 
     for (const orderItem of orderItems) {
       try {
@@ -392,7 +428,7 @@ export class VendorOrderService extends OrderService {
         const itemPrice = Number(orderItem.price);
         const quantity = orderItem.quantity;
         const listingFee = Number(
-          (itemPrice * quantity * feePercentage / 100).toFixed(2),
+          ((itemPrice * quantity * feePercentage) / 100).toFixed(2),
         );
 
         // Skip if fee is zero or negative
@@ -419,99 +455,16 @@ export class VendorOrderService extends OrderService {
           `Created ledger entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
         );
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(
           `Failed to create ledger entry for order item ${orderItem.id}: ${errorMessage}`,
         );
         // Re-throw to rollback transaction
-        throw new InternalServerErrorException(`Failed to create ledger entry: ${errorMessage}`);
+        throw new InternalServerErrorException(
+          `Failed to create ledger entry: ${errorMessage}`,
+        );
       }
     }
-  }
-
-  /**
-   * Calculates platform listing fees for order items and creates ledger entries.
-   * Fee calculation: item_price × quantity × (platform_fee_percentage / 100)
-   * 
-   * @param orderId - The order ID
-   * @param vendorId - The vendor ID
-   * @param paymentMode - The order payment mode
-   * @param orderItems - The order items with product and category info
-   * @returns Array of platform fee results
-   * @deprecated Use createPlatformListingFeeEntriesTransaction instead (within transaction context)
-   */
-   private async createPlatformListingFeeEntries(
-    orderId: string,
-    vendorId: string,
-    paymentMode: PaymentMode,
-    orderItems: Array<{
-      id: string;
-      price: any;
-      quantity: number;
-      product: {
-        categoryId: string;
-      };
-    }>,
-  ): Promise<PlatformFeeResult[]> {
-    const results: PlatformFeeResult[] = [];
-    const defaultPlatformFeePercentage = 10.0; // Default 10%
-
-    for (const orderItem of orderItems) {
-      try {
-        // Get platform fee percentage from category's platform fee settings
-        const platformFeeSetting = await this.prisma.platformFee.findFirst({
-          where: { categoryId: orderItem.product.categoryId },
-        });
-
-        // Use category-specific fee or default
-        const feePercentage = platformFeeSetting
-          ? Number(platformFeeSetting.product_listing_fee)
-          : defaultPlatformFeePercentage;
-
-        // Calculate listing fee: price × quantity × (percentage / 100)
-        const itemPrice = Number(orderItem.price);
-        const quantity = orderItem.quantity;
-        const listingFee = Number(
-          (itemPrice * quantity * feePercentage / 100).toFixed(2),
-        );
-
-        // Skip if fee is zero or negative
-        if (listingFee <= 0) {
-          this.logger.debug(
-            `Skipping ledger entry for order item ${orderItem.id}: fee is ${listingFee}`,
-          );
-          continue;
-        }
-
-        // Create ledger entry
-        await this.prisma.ledger.create({
-          data: {
-            vendorId,
-            orderItemId: orderItem.id,
-            type: 'PLATFORM_FEE',
-            feeType: 'LISTING_FEE',
-            amount: listingFee,
-            paymentMode,
-          },
-        });
-
-        results.push({
-          orderItemId: orderItem.id,
-          listingFee,
-        });
-
-        this.logger.log(
-          `Created ledger entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
-        );
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(
-          `Failed to create ledger entry for order item ${orderItem.id}: ${errorMessage}`,
-        );
-        // Continue with other items even if one fails
-      }
-    }
-
-    return results;
   }
 }

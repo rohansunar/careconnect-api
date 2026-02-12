@@ -617,9 +617,12 @@ export class OrderNotificationOrchestrator {
           const errorMsg =
             error instanceof Error ? error.message : 'Unknown error';
           result.errors.push(`Customer email error: ${errorMsg}`);
-          this.logger.error(`Failed to send customer delivery email: ${errorMsg}`, {
-            correlationId,
-          });
+          this.logger.error(
+            `Failed to send customer delivery email: ${errorMsg}`,
+            {
+              correlationId,
+            },
+          );
         }
       }
 
@@ -695,9 +698,12 @@ export class OrderNotificationOrchestrator {
           const errorMsg =
             error instanceof Error ? error.message : 'Unknown error';
           result.errors.push(`Vendor email error: ${errorMsg}`);
-          this.logger.error(`Failed to send vendor delivery email: ${errorMsg}`, {
-            correlationId,
-          });
+          this.logger.error(
+            `Failed to send vendor delivery email: ${errorMsg}`,
+            {
+              correlationId,
+            },
+          );
         }
       }
 
