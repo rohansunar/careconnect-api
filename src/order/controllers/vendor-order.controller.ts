@@ -166,40 +166,63 @@ export class VendorOrderController {
   /**
    * Verifies delivery OTP and marks the order as delivered.
    * For COD orders, payment status is also updated to PAID.
-   * @param id - The unique identifier of the order
+   * Creates platform listing fee ledger entries for COD orders only.
+   * Sends notifications upon successful delivery.
+   *
+   * @param id - The unique identifier of the order (UUID format)
    * @param dto - The OTP verification data
    * @param user - The authenticated vendor user
-   * @returns Verification result with updated order
+   * @returns Verification result with success status
    */
   @Post(':id/verify-delivery-otp')
   @ApiOperation({
     summary: 'Verify delivery OTP',
     description:
-      'Verifies the 4-digit OTP for an order marked as out for delivery. Updates delivery_status to DELIVERED and payment_status to PAID for COD orders.',
+      'Verifies the 4-digit OTP for an order marked as out for delivery. ' +
+      'Updates delivery_status to DELIVERED and payment_status to PAID for COD orders. ' +
+      'Creates platform listing fee ledger entries only for COD orders. ' +
+      'Sends multi-channel notifications upon successful delivery.',
   })
   @ApiParam({
     name: 'id',
-    description: 'Unique identifier of the order (UUID)',
+    description: 'Unique identifier of the order (UUID format)',
   })
   @ApiBody({
     type: VerifyDeliveryOtpDto,
     description: 'OTP verification data',
+    examples: {
+      example: {
+        value: { otp: '1234' },
+        description: 'The 4-digit OTP received from mark-out-for-delivery endpoint',
+      },
+    },
   })
   @ApiResponse({
     status: 200,
-    description: 'OTP verified successfully and order marked as delivered.',
+    description: 'OTP verified successfully, order marked as delivered.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean', example: true, description: 'Indicates successful OTP verification' },
+      },
+      example: { success: true },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid OTP, order already delivered, order not ready for delivery verification, OTP expired, or invalid input format.',
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - order does not belong to vendor.',
   })
   @ApiResponse({
-    status: 400,
-    description: 'Bad Request - invalid OTP, order already delivered, or order not ready for delivery verification.',
-  })
-  @ApiResponse({
     status: 404,
     description: 'Order not found.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - database operation failed.',
   })
   async verifyDeliveryOtp(
     @Param('id') id: string,

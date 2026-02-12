@@ -12,6 +12,9 @@ import {
   AdminOrderConfirmationTemplate,
   CustomerOrderCancellationTemplate,
   VendorOrderCancellationTemplate,
+  CustomerOrderDeliveredTemplate,
+  VendorOrderDeliveredTemplate,
+  AdminOrderDeliveredTemplate,
 } from '../../../email-templates/templates/orders';
 import { NotificationType } from '../../types/notification-types.enum';
 import { UserType } from '../../dto/user-type.enum';
@@ -493,6 +496,302 @@ export class OrderNotificationOrchestrator {
         `Order cancellation notifications failed: ${errorMsg}`,
         { correlationId },
       );
+      result.errors.push(`Critical error: ${errorMsg}`);
+      return result;
+    }
+  }
+
+  /**
+   * Sends all notifications when an order is delivered (OTP verified)
+   *
+   * Coordinates:
+   * - Customer: Delivery confirmation email + push notification
+   * - Vendor: Delivery confirmation email + push notification
+   * - Admin: Delivery notification email only
+   *
+   * @param orderId - Order ID
+   * @returns Summary of notification results
+   */
+  async sendOrderDeliveredNotifications(orderId: string): Promise<{
+    customerEmailSent: boolean;
+    customerPushSent: boolean;
+    vendorEmailSent: boolean;
+    vendorPushSent: boolean;
+    adminEmailSent: boolean;
+    errors: string[];
+  }> {
+    const correlationId = `order-delivered-${orderId}-${Date.now()}`;
+    this.logger.log(
+      `Starting order delivery notifications for order: ${orderId}`,
+      { correlationId },
+    );
+
+    const result = {
+      customerEmailSent: false,
+      customerPushSent: false,
+      vendorEmailSent: false,
+      vendorPushSent: false,
+      adminEmailSent: false,
+      errors: [] as string[],
+    };
+
+    try {
+      // Fetch order with all required relations
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+          vendor: true,
+          address: {
+            include: {
+              location: true,
+            },
+          },
+          orderItems: {
+            include: {
+              product: true,
+            },
+          },
+          payment: true,
+        },
+      });
+
+      if (!order) {
+        throw new Error(`Order not found: ${orderId}`);
+      }
+
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      const currency = 'INR';
+      const formattedAmount = this.formatCurrency(
+        Number(order.total_amount),
+        currency,
+      );
+
+      // Build delivery address
+      const deliveryAddress = this.buildDeliveryAddress(order.address);
+
+      // Build product list
+      const products = order.orderItems.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: Number(item.price),
+      }));
+
+      const deliveryDate = new Date().toLocaleDateString('en-IN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Send customer email
+      if (order.customer?.email) {
+        try {
+          const html = await renderToHtml(
+            React.createElement(CustomerOrderDeliveredTemplate, {
+              customerName: order.customer.name,
+              orderId: order.id,
+              orderNumber: order.orderNo,
+              formattedAmount,
+              currency,
+              itemCount: order.orderItems.length,
+              paymentMode: order.payment_mode,
+              deliveryDate,
+              deliveryAddress,
+              products,
+              feedbackUrl: process.env.CUSTOMER_FEEDBACK_URL || '',
+            }),
+          );
+
+          const emailResult = await this.emailChannel.sendEmail(
+            order.customer.email,
+            `Order Delivered - ${order.orderNo}`,
+            html,
+            correlationId,
+          );
+
+          result.customerEmailSent = emailResult.success;
+          if (!emailResult.success) {
+            result.errors.push(`Customer email failed: ${emailResult.error}`);
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Customer email error: ${errorMsg}`);
+          this.logger.error(`Failed to send customer delivery email: ${errorMsg}`, {
+            correlationId,
+          });
+        }
+      }
+
+      // Send customer push notification
+      if (order.customerId) {
+        try {
+          const payload: PushNotificationPayload = {
+            title: 'Order Delivered ✅',
+            body: `Your order #${order.orderNo} has been delivered. Enjoy!`,
+            data: {
+              orderId: order.id,
+              orderNumber: order.orderNo,
+              notificationType: NotificationType.ORDER_DELIVERED_CUSTOMER,
+              screen: 'OrderDetails',
+            },
+            sound: 'default',
+          };
+
+          const successCount = await this.sendPushToUser(
+            order.customerId,
+            UserType.CUSTOMER,
+            payload,
+            correlationId,
+          );
+
+          result.customerPushSent = successCount > 0;
+          if (successCount === 0) {
+            result.errors.push('Customer push notification failed');
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Customer push error: ${errorMsg}`);
+          this.logger.error(
+            `Failed to send customer delivery push: ${errorMsg}`,
+            { correlationId },
+          );
+        }
+      }
+
+      // Send vendor email
+      if (order.vendor?.email) {
+        try {
+          const html = await renderToHtml(
+            React.createElement(VendorOrderDeliveredTemplate, {
+              vendorName: order.vendor.name || 'Vendor',
+              orderId: order.id,
+              orderNumber: order.orderNo,
+              formattedAmount,
+              currency,
+              itemCount: order.orderItems.length,
+              paymentMode: order.payment_mode,
+              deliveryDate,
+              customerName: order.customer?.name,
+              customerEmail: order.customer?.email || undefined,
+              products,
+              dashboardUrl: process.env.VENDOR_DASHBOARD_URL || '',
+            }),
+          );
+
+          const emailResult = await this.emailChannel.sendEmail(
+            order.vendor.email,
+            `Order Delivered - ${order.orderNo}`,
+            html,
+            correlationId,
+          );
+
+          result.vendorEmailSent = emailResult.success;
+          if (!emailResult.success) {
+            result.errors.push(`Vendor email failed: ${emailResult.error}`);
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Vendor email error: ${errorMsg}`);
+          this.logger.error(`Failed to send vendor delivery email: ${errorMsg}`, {
+            correlationId,
+          });
+        }
+      }
+
+      // Send vendor push notification
+      if (order.vendorId) {
+        try {
+          const payload: PushNotificationPayload = {
+            title: 'Order Delivered 🎉',
+            body: `Order #${order.orderNo} has been successfully delivered`,
+            data: {
+              orderId: order.id,
+              orderNumber: order.orderNo,
+              notificationType: NotificationType.ORDER_DELIVERED_VENDOR_PUSH,
+              screen: 'OrderDetails',
+            },
+            sound: 'default',
+          };
+
+          const successCount = await this.sendPushToUser(
+            order.vendorId,
+            UserType.VENDOR,
+            payload,
+            correlationId,
+          );
+
+          result.vendorPushSent = successCount > 0;
+          if (successCount === 0) {
+            result.errors.push('Vendor push notification failed');
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Vendor push error: ${errorMsg}`);
+          this.logger.error(
+            `Failed to send vendor delivery push: ${errorMsg}`,
+            { correlationId },
+          );
+        }
+      }
+
+      // Send admin email
+      try {
+        const html = await renderToHtml(
+          React.createElement(AdminOrderDeliveredTemplate, {
+            orderId: order.id,
+            orderNumber: order.orderNo,
+            formattedAmount,
+            currency,
+            itemCount: order.orderItems.length,
+            paymentMode: order.payment_mode,
+            deliveryDate,
+            customerName: order.customer?.name,
+            customerEmail: order.customer?.email || undefined,
+            vendorName: order.vendor?.name || 'Vendor',
+            vendorEmail: order.vendor?.email || undefined,
+            products,
+            adminDashboardUrl: process.env.ADMIN_DASHBOARD_URL || '',
+          }),
+        );
+
+        const emailResult = await this.emailChannel.sendEmail(
+          adminEmail,
+          `Order Delivered - ${order.orderNo}`,
+          html,
+          correlationId,
+        );
+
+        result.adminEmailSent = emailResult.success;
+        if (!emailResult.success) {
+          result.errors.push(`Admin email failed: ${emailResult.error}`);
+        }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
+        result.errors.push(`Admin email error: ${errorMsg}`);
+        this.logger.error(`Failed to send admin delivery email: ${errorMsg}`, {
+          correlationId,
+        });
+      }
+
+      this.logger.log(
+        `Order delivery notifications completed for ${order.orderNo}: ` +
+          `customerEmail=${result.customerEmailSent}, customerPush=${result.customerPushSent}, ` +
+          `vendorEmail=${result.vendorEmailSent}, vendorPush=${result.vendorPushSent}, ` +
+          `admin=${result.adminEmailSent}`,
+        { correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Order delivery notifications failed: ${errorMsg}`, {
+        correlationId,
+      });
       result.errors.push(`Critical error: ${errorMsg}`);
       return result;
     }

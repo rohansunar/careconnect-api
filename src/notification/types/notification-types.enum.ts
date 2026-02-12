@@ -24,12 +24,28 @@ export enum NotificationType {
   /** Push notification to customer when order is delivered */
   ORDER_DELIVERED_CUSTOMER = 'ORDER_DELIVERED_CUSTOMER',
 
+  /** Email sent to customer when order is delivered */
+  ORDER_DELIVERED_CUSTOMER_EMAIL = 'ORDER_DELIVERED_CUSTOMER_EMAIL',
+
   // ========================================
   // Order Notifications - Vendor
   // ========================================
 
   /** Email sent to vendor when new order is received */
   ORDER_CREATED_VENDOR = 'ORDER_CREATED_VENDOR',
+
+  /** Email sent to vendor when order is delivered */
+  ORDER_DELIVERED_VENDOR_EMAIL = 'ORDER_DELIVERED_VENDOR_EMAIL',
+
+  /** Push notification to vendor when order is delivered */
+  ORDER_DELIVERED_VENDOR_PUSH = 'ORDER_DELIVERED_VENDOR_PUSH',
+
+  // ========================================
+  // Order Notifications - Admin
+  // ========================================
+
+  /** Email sent to admin when order is delivered */
+  ORDER_DELIVERED_ADMIN_EMAIL = 'ORDER_DELIVERED_ADMIN_EMAIL',
 
   /** Push notification to vendor when new order is received */
   ORDER_CREATED_VENDOR_PUSH = 'ORDER_CREATED_VENDOR_PUSH',
