@@ -16,8 +16,8 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { VendorOrderService } from '../services/vendor-order.service';
-import { UpdateOrderDto } from '../dto/update-order.dto';
 import { VerifyDeliveryOtpDto } from '../dto/verify-delivery-otp.dto';
+import { CancelOrderDto } from '../dto/cancel-order.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -96,42 +96,6 @@ export class VendorOrderController {
   async getMyOrder(@Param('id') id: string, @CurrentUser() user: User) {
     return this.vendorOrderService.getMyOrder(id, user);
   }
-
-  /**
-   * Updates an order for the authenticated vendor.
-   * @param id - The unique identifier of the order
-   * @param dto - The update data
-   * @param user - The authenticated vendor user
-   * @returns The updated order
-   */
-  @ApiOperation({
-    summary: 'Update my order',
-    description: 'Updates an order that belongs to the authenticated vendor.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique identifier of the order (UUID)',
-  })
-  @ApiBody({
-    type: UpdateOrderDto,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Order updated successfully.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - order does not belong to vendor.',
-  })
-  @Patch(':id')
-  async updateMyOrder(
-    @Param('id') id: string,
-    @Body() dto: UpdateOrderDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.vendorOrderService.updateMyOrder(id, dto, user);
-  }
-
   /**
    * Marks an order as OUT_FOR_DELIVERY and generates a 4-digit OTP.
    * @param id - The unique identifier of the order
@@ -242,5 +206,81 @@ export class VendorOrderController {
     @CurrentUser() user: User,
   ) {
     return this.vendorOrderService.verifyDeliveryOtp(id, dto.otp, user);
+  }
+
+  /**
+   * Cancels an order initiated by the vendor.
+   * Only orders that have not been delivered can be cancelled.
+   * For ONLINE payments, creates refund and fee reversal ledger entries.
+   * Sends notifications to customer, vendor, and admin.
+   *
+   * @param id - The unique identifier of the order (UUID format)
+   * @param dto - The cancellation data containing reason
+   * @param user - The authenticated vendor user
+   * @returns Cancellation result with order details
+   */
+  @Post(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel order',
+    description:
+      'Cancels an order that has not yet been delivered. ' +
+      'For online payments, initiates refund processing and fee reversal. ' +
+      'Sends notifications to customer, vendor, and admin.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier of the order (UUID format)',
+  })
+  @ApiBody({
+    type: CancelOrderDto,
+    description: 'Cancellation request data',
+    examples: {
+      example: {
+        value: { cancelReason: 'Customer requested cancellation due to change of plans' },
+        description: 'Vendor provides reason for cancellation',
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Order Cancellation.',
+    schema: {
+      type: 'object',
+      properties: {
+        success: {
+          type: 'boolean',
+          example: true,
+          description: 'Indicates successful Order Cancellation.',
+        },
+      },
+      example: { success: true },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - invalid order ID format or missing cancellation reason.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - order does not belong to vendor.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Order not found.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - order has already been delivered or cancelled.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Internal Server Error - database operation failed.',
+  })
+  async cancelOrder(
+    @Param('id') id: string,
+    @Body() dto: CancelOrderDto,
+    @CurrentUser() user: User,
+  ) {
+    return this.vendorOrderService.cancelOrder(id, dto.cancelReason, user);
   }
 }

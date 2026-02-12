@@ -5,6 +5,7 @@ import {
   Logger,
   NotFoundException,
   InternalServerErrorException,
+  ConflictException,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { PrismaService } from '../../common/database/prisma.service';
@@ -135,21 +136,6 @@ export class VendorOrderService extends OrderService {
       throw new ForbiddenException('Access denied');
     }
     return order;
-  }
-
-  /**
-   * Updates an order, ensuring it belongs to the vendor.
-   * @param id - The unique identifier of the order
-   * @param dto - The update data
-   * @param user - The authenticated vendor user
-   * @returns The updated order with relations
-   */
-  async updateMyOrder(id: string, dto: any, user: User) {
-    const order = await super.findOne(id);
-    if (order.vendorId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
-    return super.update(id, dto);
   }
 
   /**
@@ -464,6 +450,277 @@ export class VendorOrderService extends OrderService {
         throw new InternalServerErrorException(
           `Failed to create ledger entry: ${errorMessage}`,
         );
+      }
+    }
+  }
+
+  /**
+   * Cancels an order initiated by the vendor.
+   *
+   * Business Logic:
+   * - Only orders not yet delivered can be cancelled
+   * - Creates refund ledger entries for ONLINE payment mode
+   * - Creates fee reversal entries for platform fees
+   * - Sends notifications to customer, vendor, and admin
+   *
+   * @param orderId - The unique identifier of the order (UUID format)
+   * @param cancelReason - The vendor's reason for cancellation
+   * @param user - The authenticated vendor user
+   * @returns Cancellation result with order details
+   * @throws BadRequestException - For invalid input format
+   * @throws ForbiddenException - If vendor doesn't own the order
+   * @throws NotFoundException - If order not found
+   * @throws ConflictException - If order is already delivered or cancelled
+   * @throws InternalServerErrorException - If database operation fails
+   */
+  async cancelOrder(
+    orderId: string,
+    cancelReason: string,
+    user: User,
+  ): Promise<{
+    success: boolean;
+  }> {
+    // Validate orderId format
+    if (!orderId) {
+      throw new BadRequestException('Order ID is required');
+    }
+
+    if (!this.isValidUuid(orderId)) {
+      throw new BadRequestException(
+        'Invalid order ID format. Expected UUID format (e.g., 550e8400-e29b-41d4-a716-446655440000)',
+      );
+    }
+
+    const trimmedReason = cancelReason.trim();
+    if (trimmedReason.length > 500) {
+      throw new BadRequestException(
+        'Cancellation reason must not exceed 500 characters',
+      );
+    }
+
+    // Fetch order with all required relations
+    let order;
+    try {
+      order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          customer: true,
+          vendor: true,
+          orderItems: {
+            include: {
+              product: {
+                include: {
+                  categories: true,
+                },
+              },
+            },
+          },
+          payment: true,
+        },
+      });
+      console.log("Order", order)
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to fetch order ${orderId} for cancellation: ${errorMessage}`,
+      );
+      throw new NotFoundException('Order not found');
+    }
+
+    if (!order) {
+      throw new NotFoundException(`Order with ID ${orderId} not found`);
+    }
+
+    // Verify order belongs to vendor
+    if (order.vendorId !== user.id) {
+      this.logger.warn(
+        `Vendor ${user.id} attempted to cancel order ${orderId} owned by vendor ${order.vendorId}`,
+      );
+      throw new ForbiddenException(
+        'You do not have permission to cancel this order',
+      );
+    }
+
+    // Validate order is not already delivered
+    if (order.delivery_status === 'DELIVERED') {
+      this.logger.warn(
+        `Cancellation rejected - order ${orderId} is already delivered`,
+      );
+      throw new ConflictException(
+        'Cannot cancel an order that has already been delivered',
+      );
+    }
+
+    // Validate order is not already cancelled
+    if (order.delivery_status === 'CANCELLED') {
+      this.logger.warn(
+        `Cancellation rejected - order ${orderId} is already cancelled`,
+      );
+      throw new ConflictException('Order has already been cancelled');
+    }
+
+    // Prepare the prefixed cancellation reason
+    const prefixedCancelReason = `Vendor-Cancellation: ${trimmedReason}`;
+    const now = new Date();
+    let refundAmount: number | undefined;
+
+    try {
+      // Use Prisma transaction for atomicity
+      await this.prisma.$transaction(async (tx) => {
+        // Update order status to CANCELLED
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            delivery_status: 'CANCELLED',
+            cancelledAt: now,
+            cancelReason: prefixedCancelReason,
+          },
+        });
+
+        // Handle refund for ONLINE payments
+        if (order.payment_mode === 'ONLINE') {
+          const orderAmount = Number(order.total_amount);
+
+          // Create refund ledger entry (negative amount)
+          // Use first orderItem for the refund entry (aggregated refund)
+          const firstOrderItem = order.orderItems[0];
+          if (firstOrderItem) {
+            await tx.ledger.create({
+              data: {
+                vendorId: order.vendorId,
+                orderItemId: firstOrderItem.id,
+                type: 'REFUND',
+                feeType: 'ADJUSTMENT',
+                amount: -orderAmount, // Negative for refund
+                paymentMode: order.payment_mode,
+              },
+            });
+
+            this.logger.log(
+              `Created refund ledger entry for order ${orderId}: ₹${orderAmount} (refund)`,
+            );
+          }
+
+          // Create fee reversal entries for platform fees
+          await this.createRefundFeeReversalEntries(
+            tx as any,
+            orderId,
+            order.vendorId,
+            order.payment_mode,
+            order.orderItems,
+          );
+
+          refundAmount = orderAmount;
+        }
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to cancel order ${orderId}: ${errorMessage}`,
+      );
+      throw new InternalServerErrorException(
+        'Failed to process order cancellation. Please try again.',
+      );
+    }
+
+    // Log successful cancellation
+    this.logger.log(
+      `Order ${orderId} (${order.orderNo}) cancelled by vendor ${user.id}. Reason: ${trimmedReason}`,
+    );
+
+    // Send notifications asynchronously (outside transaction)
+    this.notificationOrchestrator
+      .sendOrderCancellationNotifications(orderId)
+      .catch((error) => {
+        this.logger.error(
+          `Failed to send cancellation notifications for order ${orderId}: ${error.message}`,
+        );
+      });
+
+    return { success: true };
+  }
+
+  /**
+   * Creates fee reversal ledger entries for refunds.
+   * Reverses any platform fees that were charged when the order was created.
+   *
+   * @param tx - Prisma transaction client
+   * @param orderId - The order ID
+   * @param vendorId - The vendor ID
+   * @param paymentMode - The order payment mode
+   * @param orderItems - The order items with product and category info
+   */
+  private async createRefundFeeReversalEntries(
+    tx: Omit<
+      PrismaService,
+      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
+    >,
+    orderId: string,
+    vendorId: string,
+    paymentMode: PaymentMode,
+    orderItems: Array<{
+      id: string;
+      price: any;
+      quantity: number;
+      product: {
+        categoryId: string;
+      };
+    }>,
+  ): Promise<void> {
+    const defaultPlatformFeePercentage = 0; // Default 0%
+
+    for (const orderItem of orderItems) {
+      try {
+        // Get platform fee percentage from category's platform fee settings
+        const platformFeeSetting = await tx.platformFee.findFirst({
+          where: { categoryId: orderItem.product.categoryId },
+        });
+
+        // Use category-specific fee or default
+        const feePercentage = platformFeeSetting
+          ? Number(platformFeeSetting.product_listing_fee)
+          : defaultPlatformFeePercentage;
+
+        // Calculate listing fee: price × quantity × (percentage / 100)
+        const itemPrice = Number(orderItem.price);
+        const quantity = orderItem.quantity;
+        const listingFee = Number(
+          ((itemPrice * quantity * feePercentage) / 100).toFixed(2),
+        );
+
+        // Skip if fee is zero or negative
+        if (listingFee <= 0) {
+          this.logger.debug(
+            `Skipping fee reversal for order item ${orderItem.id}: fee is ${listingFee}`,
+          );
+          continue;
+        }
+
+        // Create fee reversal ledger entry (positive value to reverse the charge)
+        await tx.ledger.create({
+          data: {
+            vendorId,
+            orderItemId: orderItem.id,
+            type: 'PLATFORM_FEE',
+            feeType: 'LISTING_FEE',
+            amount: listingFee, // Positive to reverse the fee
+            paymentMode,
+          },
+        });
+
+        this.logger.log(
+          `Created fee reversal entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
+        );
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(
+          `Failed to create fee reversal entry for order item ${orderItem.id}: ${errorMessage}`,
+        );
+        // Don't throw - refund should still proceed even if fee reversal fails
+        // Fee reversal can be handled manually if needed
       }
     }
   }

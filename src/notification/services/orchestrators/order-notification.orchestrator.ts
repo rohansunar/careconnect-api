@@ -12,6 +12,7 @@ import {
   AdminOrderConfirmationTemplate,
   CustomerOrderCancellationTemplate,
   VendorOrderCancellationTemplate,
+  AdminOrderCancellationTemplate,
   CustomerOrderDeliveredTemplate,
   VendorOrderDeliveredTemplate,
   AdminOrderDeliveredTemplate,
@@ -310,16 +311,19 @@ export class OrderNotificationOrchestrator {
    * Sends all notifications when an order is cancelled
    *
    * Coordinates:
-   * - Customer: Cancellation confirmation email
+   * - Customer: Cancellation confirmation email + push notification
    * - Vendor: Cancellation notification email + push notification
+   * - Admin: Cancellation notification email
    *
    * @param orderId - Order ID
    * @returns Summary of notification results
    */
   async sendOrderCancellationNotifications(orderId: string): Promise<{
     customerEmailSent: boolean;
+    customerPushSent: boolean;
     vendorEmailSent: boolean;
     vendorPushSent: boolean;
+    adminEmailSent: boolean;
     errors: string[];
   }> {
     const correlationId = `order-cancel-${orderId}-${Date.now()}`;
@@ -330,8 +334,10 @@ export class OrderNotificationOrchestrator {
 
     const result = {
       customerEmailSent: false,
+      customerPushSent: false,
       vendorEmailSent: false,
       vendorPushSent: false,
+      adminEmailSent: false,
       errors: [] as string[],
     };
 
@@ -349,15 +355,14 @@ export class OrderNotificationOrchestrator {
         throw new Error(`Order not found: ${orderId}`);
       }
 
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
         Number(order.total_amount),
         currency,
       );
       const refundAmount =
-        order.payment_status === 'REFUNDED'
-          ? Number(order.total_amount)
-          : undefined;
+        order.payment_mode === 'ONLINE' ? Number(order.total_amount) : undefined;
 
       // Send customer email
       if (order.customer?.email) {
@@ -399,6 +404,43 @@ export class OrderNotificationOrchestrator {
           result.errors.push(`Customer email error: ${errorMsg}`);
           this.logger.error(
             `Failed to send customer cancellation email: ${errorMsg}`,
+            { correlationId },
+          );
+        }
+      }
+
+      // Send customer push notification
+      if (order.customerId) {
+        try {
+          const payload: PushNotificationPayload = {
+            title: 'Order Cancelled 🚫',
+            body: `Your order #${order.orderNo} has been cancelled. ${refundAmount ? `Refund of ₹${refundAmount} will be processed.` : ''}`,
+            data: {
+              orderId: order.id,
+              orderNumber: order.orderNo,
+              notificationType: NotificationType.ORDER_CANCELLED_CUSTOMER,
+              screen: 'OrderDetails',
+            },
+            sound: 'default',
+          };
+
+          const successCount = await this.sendPushToUser(
+            order.customerId,
+            UserType.CUSTOMER,
+            payload,
+            correlationId,
+          );
+
+          result.customerPushSent = successCount > 0;
+          if (successCount === 0) {
+            result.errors.push('Customer push notification failed');
+          }
+        } catch (error) {
+          const errorMsg =
+            error instanceof Error ? error.message : 'Unknown error';
+          result.errors.push(`Customer push error: ${errorMsg}`);
+          this.logger.error(
+            `Failed to send customer cancellation push: ${errorMsg}`,
             { correlationId },
           );
         }
@@ -484,8 +526,56 @@ export class OrderNotificationOrchestrator {
         }
       }
 
+      // Send admin email
+      try {
+        const html = await renderToHtml(
+          React.createElement(AdminOrderCancellationTemplate, {
+            orderId: order.id,
+            orderNumber: order.orderNo,
+            formattedAmount,
+            currency,
+            cancellationReason: order.cancelReason || 'No reason provided',
+            cancellationDate:
+              order.cancelledAt?.toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }) || '',
+            customerName: order.customer?.name,
+            customerEmail: order.customer?.email || undefined,
+            vendorName: order.vendor?.name || 'Vendor',
+            vendorEmail: order.vendor?.email || undefined,
+            refundAmount,
+            adminDashboardUrl: process.env.ADMIN_DASHBOARD_URL || '',
+          }),
+        );
+
+        const emailResult = await this.emailChannel.sendEmail(
+          adminEmail,
+          `Order Cancelled - ${order.orderNo}`,
+          html,
+          correlationId,
+        );
+
+        result.adminEmailSent = emailResult.success;
+        if (!emailResult.success) {
+          result.errors.push(`Admin email failed: ${emailResult.error}`);
+        }
+      } catch (error) {
+        const errorMsg =
+          error instanceof Error ? error.message : 'Unknown error';
+        result.errors.push(`Admin email error: ${errorMsg}`);
+        this.logger.error(
+          `Failed to send admin cancellation email: ${errorMsg}`,
+          { correlationId },
+        );
+      }
+
       this.logger.log(
-        `Order cancellation notifications completed for ${order.orderNo}`,
+        `Order cancellation notifications completed for ${order.orderNo}: ` +
+          `customerEmail=${result.customerEmailSent}, customerPush=${result.customerPushSent}, ` +
+          `vendorEmail=${result.vendorEmailSent}, vendorPush=${result.vendorPushSent}, ` +
+          `admin=${result.adminEmailSent}`,
         { correlationId },
       );
 

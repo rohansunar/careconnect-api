@@ -3,6 +3,7 @@ export * from './vendor-order-confirmation';
 export * from './admin-order-confirmation';
 export * from './customer-order-cancellation';
 export * from './vendor-order-cancellation';
+export * from './admin-order-cancellation';
 export * from './customer-order-delivered';
 export * from './vendor-order-delivered';
 export * from './admin-order-delivered';
