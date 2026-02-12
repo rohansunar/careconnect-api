@@ -948,24 +948,26 @@ export class VendorOrderService extends OrderService {
       }
 
       // Validate payment status for ONLINE orders with PENDING delivery status
-      // Allow assignment only if payment_status is "PENDING" or "FAILED"
+      // Allow assignment only if payment_status not equal to "PENDING" or "FAILED"
       if (
         order.payment_mode === PaymentMode.ONLINE &&
-        order.delivery_status === 'PENDING'
+        order.delivery_status === OrderStatus.PENDING
       ) {
-        const isPaymentValid =
+        const isPaymentNotValid =
           order.payment_status === PaymentStatus.PENDING ||
           order.payment_status === PaymentStatus.FAILED;
 
-        if (!isPaymentValid) {
+        if (isPaymentNotValid) {
           failedOrders.push({
             orderId: order.id,
             reason: 'Order payment status does not allow assignment',
           });
           this.logger.warn(
-            `Order ${orderId} has invalid payment status for assignment: ${order.payment_status}`,
+            `Order ${order.id} has invalid payment status for assignment: ${order.payment_status}`,
             {
               correlationId,
+              orderId: order.id,
+              paymentStatus: order.payment_status,
               paymentMode: order.payment_mode,
               deliveryStatus: order.delivery_status,
             },
