@@ -31,4 +31,12 @@ export class UpdateProductDto {
   @IsOptional()
   @IsNumber()
   deposit?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  is_schedulable?: boolean;
 }
