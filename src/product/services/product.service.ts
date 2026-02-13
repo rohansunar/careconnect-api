@@ -109,12 +109,9 @@ export class ProductService {
         price: dto.price,
         deposit: dto.deposit,
         categoryId: dto.categoryId,
-      },
-      select: {
-        id: true,
-        name: true,
-        created_at: true,
-      },
+        is_active:dto.is_active || true,
+        is_schedulable:dto.is_schedulable || false 
+      }
     });
 
     return vendorProduct;
