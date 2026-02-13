@@ -20,6 +20,7 @@ export class ProductService {
     await this.validateVendor(vendorId);
     const products = await this.prisma.product.findMany({
       where: { vendorId: vendorId },
+      orderBy: { created_at: 'desc' },
     });
 
     return products;
@@ -109,9 +110,9 @@ export class ProductService {
         price: dto.price,
         deposit: dto.deposit,
         categoryId: dto.categoryId,
-        is_active:dto.is_active || true,
-        is_schedulable:dto.is_schedulable || false 
-      }
+        is_active: dto.is_active || true,
+        is_schedulable: dto.is_schedulable || false,
+      },
     });
 
     return vendorProduct;
