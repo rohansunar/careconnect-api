@@ -211,12 +211,9 @@ export class VendorAddressService {
     }
 
     if (data.lat !== undefined && data.lng !== undefined) {
-      const locationId = await this.locationService.findOrCreateLocation({
-        lat: data.lat,
-        lng: data.lng,
-        state: data.state,
-      });
-      updateData.locationId = locationId.id;
+      const { id: locationId, isServiceable } = await this.handleLocation(data);
+      updateData.locationId = locationId;
+      updateData.isServiceable = isServiceable;
     }
     const updatedAddress = await this.prisma.vendorAddress.update({
       where: { vendorId , is_active:true },
