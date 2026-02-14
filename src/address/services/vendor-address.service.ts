@@ -191,23 +191,6 @@ export class VendorAddressService {
   }
 
   /**
-   * Retrieves a VendorAddress by vendor ID.
-   * @param vendorId - The unique identifier of the vendor.
-   * @returns The VendorAddress.
-   */
-  async getAddressByVendorId(vendorId: string): Promise<VendorAddress> {
-    const address = await this.prisma.vendorAddress.findUnique({
-      where: { vendorId },
-    });
-
-    if (!address) {
-      throw new NotFoundException('Vendor address not found');
-    }
-
-    return address;
-  }
-
-  /**
    * Updates an existing VendorAddress by vendorId.
    * If lat/lng are provided, updates locationId and geoPoint using raw SQL.
    * @param vendorId - The unique identifier of the vendor.
@@ -236,7 +219,7 @@ export class VendorAddressService {
       updateData.locationId = locationId.id;
     }
     const updatedAddress = await this.prisma.vendorAddress.update({
-      where: { vendorId },
+      where: { vendorId , is_active:true },
       data: updateData,
     });
 
@@ -257,17 +240,79 @@ export class VendorAddressService {
    */
   async getAddressByVendorIdWithLocation(
     vendorId: string,
-  ): Promise<VendorAddress & { location?: any }> {
-    const address = await this.prisma.vendorAddress.findUnique({
-      where: { vendorId },
-      include: { location: true },
-    });
+  ): Promise<(Partial<VendorAddress> & { location?: any }) | null> {
+    try {
+      if (!vendorId || vendorId.trim() === '') {
+        throw new BadRequestException('Vendor ID is required');
+      }
 
-    if (!address) {
-      throw new NotFoundException('Vendor address not found');
+      const addresses = await this.prisma.$queryRaw<
+        {
+          id: string
+          is_active: boolean
+          address: string
+          isServiceable: boolean
+          pincode: string | null
+          latitude: number | null
+          longitude: number | null
+          locationName: string | null
+          locationState: string | null
+        }[]
+      >`SELECT 
+        a.id,
+        a.is_active,
+        a.address,
+        a."isServiceable",
+        a.pincode,
+        ST_Y(a.geopoint::geometry) AS latitude,
+        ST_X(a.geopoint::geometry) AS longitude,
+        l.name AS "locationName",
+        l.state AS "locationState"
+      FROM "VendorAddress" a
+      LEFT JOIN "Location" l ON l.id = a."locationId"
+      WHERE a."vendorId" = ${vendorId} AND a.is_active = true;
+      `;
+
+      if (!addresses || addresses.length === 0) {
+        this.logger.warn(`No address found for vendor: ${vendorId}`);
+        throw new NotFoundException(
+          'No vendor address found. Please add an address for your vendor profile.',
+        );
+      }
+
+      const address = addresses[0];
+      
+      return {
+        id: address.id,
+        is_active: address.is_active,
+        address: address.address,
+        isServiceable: address.isServiceable,
+        pincode: address.pincode,
+        location: address.locationName ? {
+          name: address.locationName,
+          state: address.locationState,
+          lat: address.latitude,
+          lng: address.longitude,
+        } : undefined,
+      };
+    } catch (error) {
+      // Re-throw NestJS exceptions as-is for proper HTTP error responses
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        this.logger.warn(`Error retrieving vendor address: ${error.message}`);
+        throw error;
+      }
+
+      // Log the full error for debugging purposes
+      this.logger.error(
+        `Failed to retrieve address for vendor ${vendorId}: ${error.message}`,
+        error.stack,
+      );
+
+      // Return a user-friendly error message
+      throw new BadRequestException(
+        'Unable to retrieve vendor address. Please try again later or contact support if the problem persists.',
+      );
     }
-
-    return address;
   }
 
   /**
