@@ -1,15 +1,50 @@
-model PlatformFee {
-  id              String @id @default(uuid())
-  categoryId      String
-  /// Relation to Categories (on delete -> CASCADE)
-  categories      Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  product_listing_fee Decimal @db.Decimal  @default(10.00) // Platform fee percentage on each order
-  platform_fee    Decimal  @db.Decimal(8, 2) @default(5.00) // Platform fee per on each order
-  transaction_fee Decimal  @db.Decimal(8, 2) @default(2.50) // Fee for online transactions
-  gst             Decimal  @db.Decimal(5, 2) @default(18.00) // Fee per WhatsApp message sent
-  sms_fee         Decimal  @db.Decimal(5, 2) @default(1.00) // Fee per SMS sent
-  whatsapp_fee    Decimal  @db.Decimal(5, 2) @default(2.00) // Fee per WhatsApp message sent
+enum FeeCalculationType {
+  PERCENTAGE
+  FIXED
+}
 
-  created_at      DateTime @default(now())
-  updated_at      DateTime @default(now())
+enum FeeName {
+  PRODUCT_LISTING
+  PLATFORM_FEE
+  TRANSACTION_FEE
+  GST
+  DELIVERY_FEE
+  PROCESSING_FEE
+  SERVICE_FEE
+  PACKAGING_FEE
+}
+
+model PlatformFee {
+  id              String   @id @default(uuid())
+  categoryId      String
+  
+  // Fee identification 
+  feeName         FeeName 
+  
+  // Calculation type enum (to be added to base.prisma)
+  calculationType FeeCalculationType
+  
+  // Fee value and application
+  value           Decimal  @db.Decimal(10, 2)        // The actual fee value (percentage or fixed)
+  applyOnFeeCode  String?  // null = applies to order total, populated = applies to result of specified fee
+  
+  // Validity period
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  
+  // Status
+  isActive        Boolean  @default(true)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relation to Categories (on delete -> CASCADE)
+  categories      Categories @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  // Unique constraint: No two platform fee records can have the same feeName within the same categoryId
+  @@unique([feeName, categoryId])
+  
+  // Indexes
+  @@index([categoryId])
 }

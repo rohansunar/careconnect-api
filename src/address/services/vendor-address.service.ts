@@ -216,7 +216,7 @@ export class VendorAddressService {
       updateData.isServiceable = isServiceable;
     }
     const updatedAddress = await this.prisma.vendorAddress.update({
-      where: { vendorId , is_active:true },
+      where: { vendorId, is_active: true },
       data: updateData,
     });
 
@@ -245,15 +245,15 @@ export class VendorAddressService {
 
       const addresses = await this.prisma.$queryRaw<
         {
-          id: string
-          is_active: boolean
-          address: string
-          isServiceable: boolean
-          pincode: string | null
-          latitude: number | null
-          longitude: number | null
-          locationName: string | null
-          locationState: string | null
+          id: string;
+          is_active: boolean;
+          address: string;
+          isServiceable: boolean;
+          pincode: string | null;
+          latitude: number | null;
+          longitude: number | null;
+          locationName: string | null;
+          locationState: string | null;
         }[]
       >`SELECT 
         a.id,
@@ -278,23 +278,28 @@ export class VendorAddressService {
       }
 
       const address = addresses[0];
-      
+
       return {
         id: address.id,
         is_active: address.is_active,
         address: address.address,
         isServiceable: address.isServiceable,
         pincode: address.pincode,
-        location: address.locationName ? {
-          name: address.locationName,
-          state: address.locationState,
-          lat: address.latitude,
-          lng: address.longitude,
-        } : undefined,
+        location: address.locationName
+          ? {
+              name: address.locationName,
+              state: address.locationState,
+              lat: address.latitude,
+              lng: address.longitude,
+            }
+          : undefined,
       };
     } catch (error) {
       // Re-throw NestJS exceptions as-is for proper HTTP error responses
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         this.logger.warn(`Error retrieving vendor address: ${error.message}`);
         throw error;
       }

@@ -8,6 +8,7 @@ import {
   ConflictException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from './order.service';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
@@ -16,6 +17,7 @@ import type { User } from '../../common/interfaces/user.interface';
 import { PaymentMode, PaymentStatus } from '@prisma/client';
 import { AssignOrdersDto } from '../dto/assign-orders.dto';
 import { OrderStatus, CancellationOrigin } from '@prisma/client';
+import { OrderDeliveredEvent } from '../events/order-delivered.event';
 
 /**
  * Platform fee calculation result
@@ -52,6 +54,7 @@ export class VendorOrderService extends OrderService {
     protected prisma: PrismaService,
     protected cartService: CartService,
     private readonly notificationOrchestrator: OrderNotificationOrchestrator,
+    private readonly eventBus: EventBus,
   ) {
     super(prisma, cartService, {} as any);
   }
@@ -129,11 +132,30 @@ export class VendorOrderService extends OrderService {
    * @returns Object with orders array and total count
    */
   async getMyOrders(user: User, page: number = 1, limit: number = 10) {
+
+    // Validate and sanitize pagination parameters
+    const sanitizedPage = typeof page === 'number' ? Math.max(1, page) : 1;
+    const sanitizedLimit = typeof limit === 'number' ? Math.max(1, Math.min(100, limit)) : 10;
+    const skip = (sanitizedPage - 1) * sanitizedLimit;
+
     const query = { vendorId: user.id };
-    const include = this.buildIncludeQuery();
-    const orders = await super.findAll(query, page, limit, include);
-    const total = await this.prisma.order.count({ where: query });
-    return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
+    try {
+      const include = this.buildIncludeQuery();
+      const orders = await super.findAll(query, skip, sanitizedLimit, include);
+      const total = await this.prisma.order.count({ where: query });
+
+      return {
+        orders,
+        total,
+        page: sanitizedPage,
+        limit: sanitizedLimit,
+        totalPages: Math.ceil(total / sanitizedLimit),
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to fetch orders for vendor ${user.id}: ${errorMessage}`, error.stack);
+      throw error;
+    }
   }
 
   /**
@@ -333,22 +355,18 @@ export class VendorOrderService extends OrderService {
           updateData.payment_status = 'PAID';
         }
 
-        // Create platform listing fee entries ONLY for COD orders
-        if (order.payment_mode === 'COD') {
-          await this.createPlatformListingFeeEntriesTransaction(
-            tx as any,
-            orderId,
-            order.vendorId,
-            order.payment_mode,
-            order.orderItems,
-          );
-        }
-
         // Update order status within transaction
         await tx.order.update({
           where: { id: orderId },
           data: updateData,
         });
+
+        // Capture delivery timestamp for ledger entries
+        const deliveryTimestamp = new Date();
+
+        // Publish OrderDeliveredEvent for ledger processing (outside transaction)
+        // This will create platform fee entries with delivery timestamp
+        // NOTE: Event is published after transaction commits to ensure order status is updated
       });
     } catch (error) {
       // Re-throw NestJS exceptions as-is
@@ -378,92 +396,41 @@ export class VendorOrderService extends OrderService {
         );
       });
 
-    return { success: true };
-  }
-
-  /**
-   * Creates platform listing fee ledger entries within a transaction.
-   * Fee calculation: item_price × quantity × (platform_fee_percentage / 100)
-   *
-   * @param tx - Prisma transaction client
-   * @param orderId - The order ID
-   * @param vendorId - The vendor ID
-   * @param paymentMode - The order payment mode
-   * @param orderItems - The order items with product and category info
-   */
-  private async createPlatformListingFeeEntriesTransaction(
-    tx: Omit<
-      PrismaService,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
-    >,
-    orderId: string,
-    vendorId: string,
-    paymentMode: PaymentMode,
-    orderItems: Array<{
-      id: string;
-      price: any;
-      quantity: number;
-      product: {
-        categoryId: string;
-      };
-    }>,
-  ): Promise<void> {
-    const defaultPlatformFeePercentage = 0; // Default 0%
-
-    for (const orderItem of orderItems) {
-      try {
-        // Get platform fee percentage from category's platform fee settings
-        const platformFeeSetting = await tx.platformFee.findFirst({
-          where: { categoryId: orderItem.product.categoryId },
-        });
-
-        // Use category-specific fee or default
-        const feePercentage = platformFeeSetting
-          ? Number(platformFeeSetting.product_listing_fee)
-          : defaultPlatformFeePercentage;
-
-        // Calculate listing fee: price × quantity × (percentage / 100)
-        const itemPrice = Number(orderItem.price);
-        const quantity = orderItem.quantity;
-        const listingFee = Number(
-          ((itemPrice * quantity * feePercentage) / 100).toFixed(2),
-        );
-
-        // Skip if fee is zero or negative
-        if (listingFee <= 0) {
-          this.logger.debug(
-            `Skipping ledger entry for order item ${orderItem.id}: fee is ${listingFee}`,
-          );
-          continue;
-        }
-
-        // Create ledger entry
-        await tx.ledger.create({
-          data: {
-            vendorId,
-            orderItemId: orderItem.id,
-            type: 'PLATFORM_FEE',
-            feeType: 'LISTING_FEE',
-            amount: listingFee,
-            paymentMode,
+    // Publish OrderDeliveredEvent for ledger processing
+    // This triggers the OnOrderDeliveredLedgerHandler to create fee entries
+    const deliveredOrder = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
           },
-        });
+        },
+      },
+    });
 
-        this.logger.log(
-          `Created ledger entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
-        );
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(
-          `Failed to create ledger entry for order item ${orderItem.id}: ${errorMessage}`,
-        );
-        // Re-throw to rollback transaction
-        throw new InternalServerErrorException(
-          `Failed to create ledger entry: ${errorMessage}`,
-        );
-      }
+    if (deliveredOrder && deliveredOrder.orderItems.length > 0) {
+      this.eventBus.publish(
+        new OrderDeliveredEvent(
+          deliveredOrder.id,
+          deliveredOrder.orderNo,
+          deliveredOrder.vendorId,
+          deliveredOrder.orderItems.map((item) => ({
+            id: item.id,
+            price: item.price,
+            quantity: item.quantity,
+            product: { categoryId: item.product.categoryId },
+          })),
+          deliveredOrder.payment_mode,
+          new Date(), // Delivery timestamp
+        ),
+      );
+      this.logger.log(
+        `Published OrderDeliveredEvent for order ${deliveredOrder.orderNo}`,
+      );
     }
+
+    return { success: true };
   }
 
   /**
@@ -613,13 +580,13 @@ export class VendorOrderService extends OrderService {
           }
 
           // Create fee reversal entries for platform fees
-          await this.createRefundFeeReversalEntries(
-            tx as any,
-            orderId,
-            order.vendorId,
-            order.payment_mode,
-            order.orderItems,
-          );
+          // await this.createRefundFeeReversalEntries(
+          //   tx as any,
+          //   orderId,
+          //   order.vendorId,
+          //   order.payment_mode,
+          //   order.orderItems,
+          // );
 
           refundAmount = orderAmount;
         }
@@ -660,78 +627,88 @@ export class VendorOrderService extends OrderService {
    * @param paymentMode - The order payment mode
    * @param orderItems - The order items with product and category info
    */
-  private async createRefundFeeReversalEntries(
-    tx: Omit<
-      PrismaService,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
-    >,
-    orderId: string,
-    vendorId: string,
-    paymentMode: PaymentMode,
-    orderItems: Array<{
-      id: string;
-      price: any;
-      quantity: number;
-      product: {
-        categoryId: string;
-      };
-    }>,
-  ): Promise<void> {
-    const defaultPlatformFeePercentage = 0; // Default 0%
+  // private async createRefundFeeReversalEntries(
+  //   tx: Omit<
+  //     PrismaService,
+  //     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'
+  //   >,
+  //   orderId: string,
+  //   vendorId: string,
+  //   paymentMode: PaymentMode,
+  //   orderItems: Array<{
+  //     id: string;
+  //     price: any;
+  //     quantity: number;
+  //     product: {
+  //       categoryId: string;
+  //     };
+  //   }>,
+  // ): Promise<void> {
+  //   const defaultListingFeeValue = new (require('@prisma/client/runtime/library')).Decimal(0);
 
-    for (const orderItem of orderItems) {
-      try {
-        // Get platform fee percentage from category's platform fee settings
-        const platformFeeSetting = await tx.platformFee.findFirst({
-          where: { categoryId: orderItem.product.categoryId },
-        });
+  //   for (const orderItem of orderItems) {
+  //     try {
+  //       // Get platform fee from category's platform fee settings
+  //       const platformFeeSetting = await tx.platformFee.findFirst({
+  //         where: {
+  //           categoryId: orderItem.product.categoryId,
+  //           isActive: true,
+  //           feeName: { contains: 'listing', mode: 'insensitive' },
+  //         },
+  //       });
 
-        // Use category-specific fee or default
-        const feePercentage = platformFeeSetting
-          ? Number(platformFeeSetting.product_listing_fee)
-          : defaultPlatformFeePercentage;
+  //       // Use category-specific fee or default
+  //       const feeValue = platformFeeSetting?.value ?? defaultListingFeeValue;
+  //       const calculationType = platformFeeSetting?.calculationType ?? 'PERCENTAGE';
 
-        // Calculate listing fee: price × quantity × (percentage / 100)
-        const itemPrice = Number(orderItem.price);
-        const quantity = orderItem.quantity;
-        const listingFee = Number(
-          ((itemPrice * quantity * feePercentage) / 100).toFixed(2),
-        );
+  //       // Calculate listing fee based on calculation type
+  //       const itemPrice = Number(orderItem.price);
+  //       const quantity = orderItem.quantity;
+  //       const itemAmount = itemPrice * quantity;
 
-        // Skip if fee is zero or negative
-        if (listingFee <= 0) {
-          this.logger.debug(
-            `Skipping fee reversal for order item ${orderItem.id}: fee is ${listingFee}`,
-          );
-          continue;
-        }
+  //       let listingFee: number;
+  //       if (calculationType === 'PERCENTAGE') {
+  //         listingFee = Number(
+  //           ((itemAmount * Number(feeValue)) / 100).toFixed(2),
+  //         );
+  //       } else {
+  //         listingFee = Number(feeValue);
+  //       }
 
-        // Create fee reversal ledger entry (positive value to reverse the charge)
-        await tx.ledger.create({
-          data: {
-            vendorId,
-            orderItemId: orderItem.id,
-            type: 'PLATFORM_FEE',
-            feeType: 'LISTING_FEE',
-            amount: listingFee, // Positive to reverse the fee
-            paymentMode,
-          },
-        });
+  //       // Skip if fee is zero or negative
+  //       if (listingFee <= 0) {
+  //         this.logger.debug(
+  //           `Skipping fee reversal for order item ${orderItem.id}: fee is ${listingFee}`,
+  //         );
+  //         continue;
+  //       }
 
-        this.logger.log(
-          `Created fee reversal entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
-        );
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : 'Unknown error';
-        this.logger.error(
-          `Failed to create fee reversal entry for order item ${orderItem.id}: ${errorMessage}`,
-        );
-        // Don't throw - refund should still proceed even if fee reversal fails
-        // Fee reversal can be handled manually if needed
-      }
-    }
-  }
+  //       // Create fee reversal ledger entry (positive value to reverse the charge)
+  //       await tx.ledger.create({
+  //         data: {
+  //           vendorId,
+  //           orderItemId: orderItem.id,
+  //           type: 'PLATFORM_FEE',
+  //           feeType: 'LISTING_FEE',
+  //           amount: listingFee, // Positive to reverse the fee
+  //           paymentMode,
+  //         },
+  //       });
+
+  //       this.logger.log(
+  //         `Created fee reversal entry for order ${orderId}, item ${orderItem.id}: ₹${listingFee}`,
+  //       );
+  //     } catch (error) {
+  //       const errorMessage =
+  //         error instanceof Error ? error.message : 'Unknown error';
+  //       this.logger.error(
+  //         `Failed to create fee reversal entry for order item ${orderItem.id}: ${errorMessage}`,
+  //       );
+  //       // Don't throw - refund should still proceed even if fee reversal fails
+  //       // Fee reversal can be handled manually if needed
+  //     }
+  //   }
+  // }
 
   /**
    * Assigns one or more orders to a rider for delivery.

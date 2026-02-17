@@ -12,7 +12,7 @@ import type { VendorDashboardResponse } from '../dashboard/dashboard.types';
  * their dashboard statistics including orders, earnings, and payouts.
  */
 @ApiTags('Vendor Dashboard')
-@Controller('vendors/dashboard')
+@Controller('vendor/dashboard')
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 

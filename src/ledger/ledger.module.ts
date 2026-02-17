@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
 import { CqrsModule } from '@nestjs/cqrs';
-import { OnPaymentSucceededLedgerHandler } from './services/handlers/on-payment-succeeded-ledger.handler';
+import { OnOrderDeliveredLedgerHandler } from './services/handlers/on-order-delivered-ledger.handler';
+import { VendorLedgerController } from './controllers/vendor-ledger.controller';
+import { VendorLedgerService } from './services/vendor-ledger.service';
+
+// Event handlers to register
+const EventHandlers = [OnOrderDeliveredLedgerHandler];
 
 @Module({
   imports: [CqrsModule, PrismaModule],
-  controllers: [],
-  providers: [OnPaymentSucceededLedgerHandler],
-  exports: [],
+  controllers: [VendorLedgerController],
+  providers: [...EventHandlers, VendorLedgerService],
+  exports: [VendorLedgerService],
 })
 export class LedgerModule {}

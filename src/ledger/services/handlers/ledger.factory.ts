@@ -2,7 +2,6 @@ import { Logger } from '@nestjs/common';
 import {
   LedgerType,
   PaymentMode,
-  PlatformFeeType,
   Prisma,
 } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
@@ -15,16 +14,22 @@ export class LedgerFactory {
   async createSaleEntry(params: {
     vendorId: string;
     orderItemId: string;
+    feeType: string;
     amount: Decimal;
     paymentMode: PaymentMode;
+    description?: string;
+    deliveryTimestamp?: Date;
   }) {
     return this.tx.ledger.create({
       data: {
         vendorId: params.vendorId,
         orderItemId: params.orderItemId,
         type: LedgerType.SALE,
+        feeType: params.feeType,
         amount: params.amount,
         paymentMode: params.paymentMode,
+        description: params.description,
+        deliveryTimestamp: params.deliveryTimestamp,
       },
     });
   }
@@ -32,9 +37,11 @@ export class LedgerFactory {
   async createPlatformFeeEntry(params: {
     vendorId: string;
     orderItemId: string;
-    feeType: PlatformFeeType;
+    feeType: string;
     amount: Decimal; // positive input
     paymentMode: PaymentMode;
+    description?: string;
+    deliveryTimestamp?: Date;
   }) {
     if (params.amount.lte(0)) return;
 
@@ -46,6 +53,8 @@ export class LedgerFactory {
         feeType: params.feeType,
         amount: params.amount.mul(-1), // 🔑 negative for vendor
         paymentMode: params.paymentMode,
+        description: params.description,
+        deliveryTimestamp: params.deliveryTimestamp,
       },
     });
   }
@@ -53,8 +62,10 @@ export class LedgerFactory {
   async createRefundReversal(params: {
     vendorId: string;
     orderItemId: string;
+    feeType: string;
     originalSaleAmount: Decimal;
     paymentMode: PaymentMode;
+    description?: string;
   }) {
     // Reverse SALE
     await this.tx.ledger.create({
@@ -62,8 +73,10 @@ export class LedgerFactory {
         vendorId: params.vendorId,
         orderItemId: params.orderItemId,
         type: LedgerType.REFUND,
+        feeType: params.feeType,
         amount: params.originalSaleAmount.mul(-1),
         paymentMode: params.paymentMode,
+        description: params.description,
       },
     });
 
@@ -84,6 +97,7 @@ export class LedgerFactory {
           feeType: fee.feeType,
           amount: fee.amount.abs(), // reverse negative → positive
           paymentMode: params.paymentMode,
+          description: `Reversal of ${fee.feeType}`,
         },
       });
     }
