@@ -74,7 +74,7 @@ export class OnOrderDeliveredLedgerHandler {
           const existingEntry = await tx.ledger.findFirst({
             where: { orderItemId: item.id, type: 'SALE' as any },
           });
-          
+
           if (existingEntry) {
             this.logger.warn(
               `Ledger entries already exist for order item ${item.id}, skipping`,
@@ -83,7 +83,7 @@ export class OnOrderDeliveredLedgerHandler {
           }
 
           const itemAmount = new Decimal(item.price).mul(item.quantity);
-          
+
           // Fetch platform fees based on payment mode
           const queryFilter = this.buildFeeQueryFilter(
             event.paymentMode,
@@ -99,7 +99,7 @@ export class OnOrderDeliveredLedgerHandler {
           if (platformFees.length === 0) {
             this.logger.warn(
               `No fees found for order ${event.orderNo} ` +
-              `in category ${item.product.categoryId}. No platform fee will be charged.`,
+                `in category ${item.product.categoryId}. No platform fee will be charged.`,
             );
           }
 
@@ -169,7 +169,12 @@ export class OnOrderDeliveredLedgerHandler {
    */
   private async processPlatformFees(
     event: OrderDeliveredEvent,
-    item: { id: string; price: Decimal; quantity: number; product: { categoryId: string } },
+    item: {
+      id: string;
+      price: Decimal;
+      quantity: number;
+      product: { categoryId: string };
+    },
     factory: LedgerFactory,
     platformFees: Array<{
       feeName: string;

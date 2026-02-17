@@ -141,7 +141,7 @@ export class CustomerOrderService extends OrderService {
         data: {
           amount: createdOrder.total_amount,
           currency: this.CURRENCY,
-          provider: providerResponse?.provider || undefined,
+          provider: providerResponse?.provider || 'COD',
           provider_payment_id: providerResponse?.providerPaymentId || undefined,
           provider_payload: providerResponse?.payload || undefined,
           status: PaymentStatus.PENDING,

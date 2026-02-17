@@ -132,13 +132,21 @@ export class VendorOrderService extends OrderService {
    * @returns Object with orders array and total count
    */
   async getMyOrders(user: User, page: number = 1, limit: number = 10) {
-
     // Validate and sanitize pagination parameters
     const sanitizedPage = typeof page === 'number' ? Math.max(1, page) : 1;
-    const sanitizedLimit = typeof limit === 'number' ? Math.max(1, Math.min(100, limit)) : 10;
+    const sanitizedLimit =
+      typeof limit === 'number' ? Math.max(1, Math.min(100, limit)) : 10;
     const skip = (sanitizedPage - 1) * sanitizedLimit;
 
-    const query = { vendorId: user.id };
+    const query = {
+      vendorId: user.id,
+      NOT: {
+        AND: [
+          { payment_mode: PaymentMode.ONLINE },
+          { payment_status: 'PENDING' },
+        ],
+      },
+    };
     try {
       const include = this.buildIncludeQuery();
       const orders = await super.findAll(query, skip, sanitizedLimit, include);
@@ -152,8 +160,12 @@ export class VendorOrderService extends OrderService {
         totalPages: Math.ceil(total / sanitizedLimit),
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`Failed to fetch orders for vendor ${user.id}: ${errorMessage}`, error.stack);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to fetch orders for vendor ${user.id}: ${errorMessage}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -297,7 +309,7 @@ export class VendorOrderService extends OrderService {
     try {
       // Use Prisma transaction for atomicity
       await this.prisma.$transaction(async (tx) => {
-        // Fetch order with order items for fee calculation
+        // Fetch order with order items for fee calculation and payment relation
         const order = await tx.order.findUnique({
           where: { id: orderId },
           include: {
@@ -310,6 +322,7 @@ export class VendorOrderService extends OrderService {
                 },
               },
             },
+            payment: true,
           },
         });
 
@@ -351,8 +364,17 @@ export class VendorOrderService extends OrderService {
         };
 
         // For COD orders, mark payment as PAID upon delivery
+        const now = new Date();
         if (order.payment_mode === 'COD') {
           updateData.payment_status = 'PAID';
+
+          // Update payment's completed_at timestamp if payment record exists
+          if (order.paymentId && order.payment) {
+            await tx.payment.update({
+              where: { id: order.paymentId },
+              data: { status: 'PAID', completed_at: now },
+            });
+          }
         }
 
         // Update order status within transaction
@@ -360,13 +382,6 @@ export class VendorOrderService extends OrderService {
           where: { id: orderId },
           data: updateData,
         });
-
-        // Capture delivery timestamp for ledger entries
-        const deliveryTimestamp = new Date();
-
-        // Publish OrderDeliveredEvent for ledger processing (outside transaction)
-        // This will create platform fee entries with delivery timestamp
-        // NOTE: Event is published after transaction commits to ensure order status is updated
       });
     } catch (error) {
       // Re-throw NestJS exceptions as-is

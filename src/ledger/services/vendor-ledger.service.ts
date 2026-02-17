@@ -49,23 +49,9 @@ export class VendorLedgerService {
     const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : undefined;
 
     try {
-
-      const feeBreakdown = await this.prisma.ledger.groupBy({
-                  by: ['feeType'],
-                  where: {
-                    vendorId,
-                    createdAt: {
-                      gte: start,
-                      lte: end
-                    }
-                  },
-                  _sum: {
-                    amount: true
-                  }
-              });
       const balanceResult = await this.prisma.ledger.aggregate({
         where: { vendorId },
-        _sum: { amount: true }
+        _sum: { amount: true },
       });
 
       // Extract the sum value, defaulting to 0 if null
@@ -75,7 +61,7 @@ export class VendorLedgerService {
       return {
         transactions: [await this.getLedgerTransactions(vendorId, start, end)],
         summary: { balance },
-      };  
+      };
     } catch (error) {
       this.logger.error(
         `Failed to fetch ledger transactions for vendor ${vendorId}`,
@@ -106,17 +92,13 @@ export class VendorLedgerService {
       }
     }
 
-    return await this.prisma.$queryRaw`
-                            SELECT DATE("createdAt") as date,
-                            "type" as type,
-                            SUM("amount") as amount,
-                            MAX("createdAt") as "CreatedAt"
-                            FROM "Ledger"
-                            WHERE "vendorId" = ${vendorId}
-                            AND "createdAt" BETWEEN ${startDate} AND ${endDate}
-                            GROUP BY DATE("createdAt"), "type"
-                            ORDER BY "CreatedAt" DESC
-                            `;
+    return await this.prisma.ledger.groupBy({
+      by: ['type', 'feeType'],
+      where,
+      _sum: {
+        amount: true,
+      },
+    });
   }
 
   /**

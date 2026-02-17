@@ -1,9 +1,5 @@
 import { Logger } from '@nestjs/common';
-import {
-  LedgerType,
-  PaymentMode,
-  Prisma,
-} from '@prisma/client';
+import { LedgerType, PaymentMode, Prisma } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 
 export class LedgerFactory {
