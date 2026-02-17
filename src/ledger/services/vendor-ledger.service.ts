@@ -44,13 +44,22 @@ export class VendorLedgerService {
       }
     }
 
-    // Parse dates for Prisma queries
-    const start = startDate ? new Date(startDate) : undefined;
-    const end = endDate ? new Date(endDate + 'T23:59:59.999Z') : undefined;
+    const where: Record<string, unknown> = { vendorId };
+
+    if (startDate || endDate) {
+      const dateFilter: { gte?: Date; lte?: Date } = {};
+      if (startDate) {
+        dateFilter.gte = new Date(startDate);
+      }
+      if (endDate) {
+        dateFilter.lte = new Date(endDate + 'T23:59:59.999Z');
+      }
+      where.createdAt = dateFilter;
+    }
 
     try {
       const balanceResult = await this.prisma.ledger.aggregate({
-        where: { vendorId },
+        where,
         _sum: { amount: true },
       });
 
@@ -59,7 +68,7 @@ export class VendorLedgerService {
       const balance = Number(balanceResult._sum.amount ?? 0);
 
       return {
-        transactions: [await this.getLedgerTransactions(vendorId, start, end)],
+        transactions: [await this.getLedgerTransactions(where)],
         summary: { balance },
       };
     } catch (error) {
@@ -76,22 +85,8 @@ export class VendorLedgerService {
    */
   // TransactionDto[]
   private async getLedgerTransactions(
-    vendorId: string,
-    startDate?: Date,
-    endDate?: Date,
+   where: Record<string, unknown>
   ): Promise<any> {
-    const where: Record<string, unknown> = { vendorId };
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        (where.createdAt as Record<string, Date>).gte = startDate;
-      }
-      if (endDate) {
-        (where.createdAt as Record<string, Date>).lte = endDate;
-      }
-    }
-
     return await this.prisma.ledger.groupBy({
       by: ['type', 'feeType'],
       where,
@@ -112,13 +107,14 @@ export class VendorLedgerService {
     const where: Record<string, unknown> = { vendorId };
 
     if (startDate || endDate) {
-      where.createdAt = {};
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        (where.createdAt as Record<string, Date>).gte = startDate;
+        dateFilter.gte = startDate;
       }
       if (endDate) {
-        (where.createdAt as Record<string, Date>).lte = endDate;
+        dateFilter.lte = endDate;
       }
+      where.createdAt = dateFilter;
     }
 
     const payouts = await this.prisma.vendorPayout.findMany({
