@@ -102,3 +102,28 @@ Document all configuration requirements and environment variables needed for not
  Update README with notification system architecture if applicable.
 
 DELIVERABLES: Production-ready TypeScript code following best practices, notification services with proper error handling, email templates for vendor and admin, comprehensive documentation, and working notification delivery system upon successful payment completion.
+
+This is for Order Creation as Multiple Database transaction are happen
+Also Notification is send to multiple users 
+So to avoid unhandled error and missed data apply below
+Retry and Dead Letter Queue (DLQ)
+
+Dashboard
+Orders -> Assign Single Order to Rider | Bulk Orders to Rider. 
+       -> Marks as Out For Delivery
+       -> Accepts Order
+       -> If Self Delivery -> Enter Delivery OTP, Upload Delivery Image,
+       -> Cancelled Order
+       -> 
+Wallets -> Earnings -> Filter By Month , Weekly , Date | Download PDF
+        -> Payouts
+Products -> Add Products
+         -> Add Images
+         -> Update Products Detials
+         -> Order Images
+         -> Deactived Products (Soft Delete)
+Profile -> Update (Name, Business Name, Phone Number)
+
+
+
+SHANNON
