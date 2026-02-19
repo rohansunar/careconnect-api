@@ -13,7 +13,7 @@ import type { User } from '../../common/interfaces/user.interface';
 // Note: Rider authentication guard not implemented in existing codebase
 
 @ApiTags('Rider Orders')
-@Controller('riders/orders')
+@Controller('rider/orders')
 // @UseGuards(RiderAuthGuard) // Placeholder for rider auth
 export class RiderOrderController {
   constructor(private readonly riderOrderService: RiderOrderService) {}
@@ -35,38 +35,6 @@ export class RiderOrderController {
   @Get()
   async getAssignedOrders(@CurrentUser() user: User) {
     return this.riderOrderService.getAssignedOrders(user);
-  }
-
-  /**
-   * Retrieves a single assigned order by ID for the authenticated rider.
-   * @param id - The unique identifier of the order
-   * @param user - The authenticated rider user
-   * @returns The order
-   */
-  @ApiOperation({
-    summary: 'Get assigned order by ID',
-    description:
-      'Retrieves a single assigned order by its ID, ensuring it is assigned to the authenticated rider.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique identifier of the order (UUID)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Order retrieved successfully.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - order not assigned to rider.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Order not found.',
-  })
-  @Get(':id')
-  async getAssignedOrder(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.riderOrderService.getAssignedOrder(id, user);
   }
 
   /**

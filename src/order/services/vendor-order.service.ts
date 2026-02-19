@@ -790,7 +790,7 @@ export class VendorOrderService extends OrderService {
           id: { in: validationResult.validOrderIds },
         },
         data: {
-          rider_id: dto.riderId,
+          riderId: dto.riderId,
           delivery_status: 'OUT_FOR_DELIVERY' as const,
         },
       });
@@ -877,7 +877,7 @@ export class VendorOrderService extends OrderService {
         orderNo: true,
         vendorId: true,
         delivery_status: true,
-        rider_id: true,
+        riderId: true,
         payment_mode: true,
         payment_status: true,
       },
@@ -914,13 +914,13 @@ export class VendorOrderService extends OrderService {
       }
 
       // Check if order is already assigned to another rider
-      if (order.rider_id !== null) {
+      if (order.riderId !== null) {
         failedOrders.push({
           orderId: order.id,
           reason: `Order is already assigned to another rider`,
         });
         this.logger.warn(
-          `Order ${orderId} is already assigned to rider ${order.rider_id}`,
+          `Order ${orderId} is already assigned to rider ${order.riderId}`,
           { correlationId },
         );
         continue;
@@ -1048,7 +1048,7 @@ export class VendorOrderService extends OrderService {
    * Business Logic:
    * - Only orders with an assigned rider can be reverted
    * - Order must not be already delivered
-   * - Clears rider_id and resets delivery status to CONFIRMED/PENDING
+   * - Clears riderId and resets delivery status to CONFIRMED/PENDING
    * - Sends push notification and WhatsApp message to the affected rider
    *
    * @param orderId - The unique identifier of the order (UUID format)
@@ -1125,7 +1125,7 @@ export class VendorOrderService extends OrderService {
     }
 
     // Verify rider is assigned
-    if (!order.rider_id) {
+    if (!order.riderId) {
       throw new BadRequestException(
         'No rider is currently assigned to this order',
       );
@@ -1139,7 +1139,7 @@ export class VendorOrderService extends OrderService {
       await this.prisma.order.update({
         where: { id: orderId },
         data: {
-          rider_id: null,
+          riderId: null,
           delivery_status: OrderStatus.PENDING,
         },
       });

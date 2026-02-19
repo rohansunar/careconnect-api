@@ -50,4 +50,22 @@ export class RiderController {
   async getRiders(@CurrentUser() user: User) {
     return this.riderService.getRiders(user);
   }
+
+  /**
+   * Business logic rationale: Allow vendors to view their profile information.
+   * Security consideration: JWT authentication ensures only authenticated vendors access their profile.
+   * Design decision: Cached endpoint for performance.
+   */
+  @ApiOperation({
+    summary: 'Get rider profile',
+    description: 'Allow rider to view their profile information.',
+  })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Get('/me')
+  @Roles('rider')
+  async getProfile(@CurrentUser() user: User) {
+    const { id } = user;
+    return this.riderService.getProfile(id);
+  }
 }

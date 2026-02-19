@@ -37,8 +37,8 @@ model Order {
   cart                  Cart? @relation("orders", fields: [cartId], references: [id])
   total_amount          Decimal  @db.Decimal(10, 2)
   payment_status        String   @db.VarChar(32) @default("PENDING")
-  rider_id              String?
-  rider                 Rider?   @relation("orderAssignments", fields: [rider_id], references: [id])
+  riderId              String?
+  rider                 Rider?   @relation("orderAssignments", fields: [riderId], references: [id])
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
   payment_mode          PaymentMode
@@ -55,6 +55,6 @@ model Order {
 
   orderItems  OrderItem[]
   @@index([orderNo])
-  @@index([rider_id])
+  @@index([riderId])
   @@index([vendorId, delivery_status])
 }

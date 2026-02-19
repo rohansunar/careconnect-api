@@ -89,4 +89,21 @@ export class RiderService {
       throw new BadRequestException('Unauthorized to view riders');
     }
   }
+
+    /**
+   * Retrieves the profile information for a specific rider.
+   * @param riderId - The unique identifier of the rider.
+   * @returns The rider's profile data including id, name, phone, email, address.
+   */
+  async getProfile(riderId: string) {
+    const rider = await this.prisma.rider.findUnique({
+      where: { id: riderId },
+    });
+
+    if (!rider) {
+      throw new BadRequestException('Vendor not found');
+    }
+
+    return rider;
+  }
 }
