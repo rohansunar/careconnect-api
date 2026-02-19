@@ -1,10 +1,11 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Get, Put } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { RiderService } from '../services/rider.service';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { CreateRiderDto } from '../dto/create-rider.dto';
+import { UpdateRiderProfileDto } from '../dto/update-rider-profile.dto';
 
 @ApiTags('Riders')
 @Controller('riders')
@@ -67,5 +68,27 @@ export class RiderController {
   async getProfile(@CurrentUser() user: User) {
     const { id } = user;
     return this.riderService.getProfile(id);
+  }
+
+  /**
+   * Business logic rationale: Riders should only edit non-sensitive profile fields.
+   * Security consideration: Restrict updates to email and address, scoped to the rider.
+   * Design decision: Idempotent PUT semantics for profile updates.
+   */
+  @ApiOperation({
+    summary: 'Update rider profile',
+    description:
+      'Update rider email and address. Only the authenticated rider can modify their profile.',
+  })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Validation failed.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @Put('/me')
+  @Roles('rider')
+  async updateProfile(
+    @CurrentUser() user: User,
+    @Body() dto: UpdateRiderProfileDto,
+  ) {
+    return this.riderService.updateProfile(user.id, dto);
   }
 }

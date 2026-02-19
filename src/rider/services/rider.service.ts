@@ -1,5 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
+import { UpdateRiderProfileDto } from '../dto/update-rider-profile.dto';
 
 @Injectable()
 export class RiderService {
@@ -101,9 +106,51 @@ export class RiderService {
     });
 
     if (!rider) {
-      throw new BadRequestException('Vendor not found');
+      throw new NotFoundException('Rider not found');
     }
 
     return rider;
+  }
+
+  /**
+   * Updates rider-controlled profile fields (email, address).
+   * @param riderId - Authenticated rider id
+   * @param dto - Partial fields to update
+   */
+  async updateProfile(riderId: string, dto: UpdateRiderProfileDto) {
+    const { email, address } = dto;
+
+    if (!email && !address) {
+      throw new BadRequestException(
+        'Provide at least one field: email or address',
+      );
+    }
+
+    try {
+      const updated = await this.prisma.rider.update({
+        where: { id: riderId },
+        data: {
+          ...(email ? { email } : {}),
+          ...(address ? { address } : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          address: true,
+        },
+      });
+
+      return updated;
+    } catch (error) {
+      if ((error as any).code === 'P2025') {
+        throw new NotFoundException('Rider not found');
+      }
+      if ((error as any).code === 'P2002') {
+        throw new BadRequestException('Email already in use');
+      }
+      throw error;
+    }
   }
 }

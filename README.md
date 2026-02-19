@@ -238,6 +238,12 @@ The order generation system follows a modular architecture leveraging NestJS, Bu
 
 For detailed documentation, see [`src/order/docs/order-generation-process.md`](src/order/docs/order-generation-process.md).
 
+### Rider Endpoint Additions (Feb 2026)
+- New rider self-service and delivery flows are documented in `docs/rider-endpoints.md`, including sample requests/responses for:
+  - `PUT /riders/me` (update email/address)
+  - `POST /rider/orders/:id/verify-delivery-otp`
+  - `POST /rider/orders/:id/cancel`
+
 </details>
 
 ---

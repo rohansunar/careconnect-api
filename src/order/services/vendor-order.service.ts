@@ -171,20 +171,6 @@ export class VendorOrderService extends OrderService {
   }
 
   /**
-   * Retrieves a single order by ID, ensuring it belongs to the vendor.
-   * @param id - The unique identifier of the order
-   * @param user - The authenticated vendor user
-   * @returns The order with relations
-   */
-  async getMyOrder(id: string, user: User) {
-    const order = await super.findOne(id);
-    if (order.vendorId !== user.id) {
-      throw new ForbiddenException('Access denied');
-    }
-    return order;
-  }
-
-  /**
    * Marks an order as OUT_FOR_DELIVERY and generates a 4-digit OTP.
    * @param orderId - The unique identifier of the order
    * @param user - The authenticated vendor user

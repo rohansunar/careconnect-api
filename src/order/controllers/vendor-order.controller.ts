@@ -67,38 +67,6 @@ export class VendorOrderController {
   ) {
     return this.vendorOrderService.getMyOrders(user, page, limit);
   }
-
-  /**
-   * Retrieves a single order by ID for the authenticated vendor.
-   * @param id - The unique identifier of the order
-   * @param user - The authenticated vendor user
-   * @returns The order
-   */
-  @ApiOperation({
-    summary: 'Get my order by ID',
-    description:
-      'Retrieves a single order by its ID, ensuring it belongs to the authenticated vendor.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Unique identifier of the order (UUID)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Order retrieved successfully.',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - order does not belong to vendor.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Order not found.',
-  })
-  @Get(':id')
-  async getMyOrder(@Param('id') id: string, @CurrentUser() user: User) {
-    return this.vendorOrderService.getMyOrder(id, user);
-  }
   /**
    * Marks an order as OUT_FOR_DELIVERY and generates a 4-digit OTP.
    * @param id - The unique identifier of the order
