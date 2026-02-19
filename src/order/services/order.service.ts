@@ -7,7 +7,6 @@ import { PrismaService } from '../../common/database/prisma.service';
 import { CartService } from '../../cart/services/cart.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { PaymentMode } from '@prisma/client';
-import { CartStatus } from '../../common/constants/order-status.constants';
 import { OrderNumberService } from './order-number.service';
 
 @Injectable()
