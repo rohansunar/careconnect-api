@@ -83,6 +83,7 @@ export class RiderService {
           },
           created_at: true,
         },
+        orderBy: { created_at: 'desc' },
       });
     } else {
       throw new BadRequestException('Unauthorized to view riders');
