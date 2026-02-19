@@ -85,7 +85,7 @@ export class VendorLedgerService {
    */
   // TransactionDto[]
   private async getLedgerTransactions(
-   where: Record<string, unknown>
+    where: Record<string, unknown>,
   ): Promise<any> {
     return await this.prisma.ledger.groupBy({
       by: ['type', 'feeType'],

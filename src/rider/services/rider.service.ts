@@ -90,7 +90,7 @@ export class RiderService {
     }
   }
 
-    /**
+  /**
    * Retrieves the profile information for a specific rider.
    * @param riderId - The unique identifier of the rider.
    * @returns The rider's profile data including id, name, phone, email, address.

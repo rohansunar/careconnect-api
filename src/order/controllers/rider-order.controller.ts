@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, Query } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -33,8 +33,12 @@ export class RiderOrderController {
     description: 'Orders retrieved successfully.',
   })
   @Get()
-  async getAssignedOrders(@CurrentUser() user: User) {
-    return this.riderOrderService.getAssignedOrders(user);
+  async getAssignedOrders(
+    @CurrentUser() user: User,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ) {
+    return this.riderOrderService.getAssignedOrders(user, page, limit);
   }
 
   /**
