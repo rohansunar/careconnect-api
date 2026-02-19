@@ -8,7 +8,7 @@ import { CreateRiderDto } from '../dto/create-rider.dto';
 
 @ApiTags('Riders')
 @Controller('riders')
-@Roles('vendor')
+@Roles('admin', 'vendor')
 export class RiderController {
   constructor(private readonly riderService: RiderService) {}
   /**

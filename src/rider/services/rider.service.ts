@@ -37,11 +37,6 @@ export class RiderService {
       );
     }
 
-    // Validate phone number format if provided (E.164 international format)
-    if (!/^\+[1-9]\d{1,14}$/.test(data.phone.replace('-', ''))) {
-      throw new BadRequestException('Invalid phone number format');
-    }
-
     // Enforce 10-rider limit per vendor for non-admin creations
     if (!isAdmin && vendorId) {
       const riderCount = await this.prisma.rider.count({

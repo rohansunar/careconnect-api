@@ -13,7 +13,7 @@ import type { User } from '../../common/interfaces/user.interface';
 // Note: Rider authentication guard not implemented in existing codebase
 
 @ApiTags('Rider Orders')
-@Controller('rider/orders')
+@Controller('riders/orders')
 // @UseGuards(RiderAuthGuard) // Placeholder for rider auth
 export class RiderOrderController {
   constructor(private readonly riderOrderService: RiderOrderService) {}
