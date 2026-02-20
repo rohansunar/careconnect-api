@@ -144,10 +144,10 @@ export class RiderService {
 
       return updated;
     } catch (error) {
-      if ((error as any).code === 'P2025') {
+      if (error.code === 'P2025') {
         throw new NotFoundException('Rider not found');
       }
-      if ((error as any).code === 'P2002') {
+      if (error.code === 'P2002') {
         throw new BadRequestException('Email already in use');
       }
       throw error;

@@ -1,7 +1,7 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import { OrderGenerationService } from '../../order/services/order-generation.service';
+import { OrderGenerationService } from 'src/order/services/order-generation.service';
 
 /**
  * OrderGenerationProcessor is a BullMQ processor responsible for handling order generation jobs.

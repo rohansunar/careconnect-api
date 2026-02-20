@@ -12,7 +12,7 @@ export class MonthEndAdjustmentService {
     private emailChannel: EmailChannelService,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS, {
+  @Cron(CronExpression.EVERY_10_HOURS, {
     name: 'order-generator-cron',
     disabled: process.env.SCHEDULER_DISABLE === 'true',
   }) // 1st of every month at midnight

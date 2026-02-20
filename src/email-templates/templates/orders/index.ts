@@ -7,3 +7,4 @@ export * from './admin-order-cancellation';
 export * from './customer-order-delivered';
 export * from './vendor-order-delivered';
 export * from './admin-order-delivered';
+export * from './admin-vendor-unavailable';

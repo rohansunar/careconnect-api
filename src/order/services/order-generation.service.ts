@@ -1,20 +1,60 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionFrequency } from '../../subscription/interfaces/delivery-frequency.interface';
 import { PrismaService } from '../../common/database/prisma.service';
-import { EmailChannelService } from '../../notification/services/channels/email-channel.service';
+import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import { DeliveryFrequencyService } from '../../subscription/services/delivery-frequency.service';
 import { OrderNumberService } from './order-number.service';
+import { DateTime } from 'luxon';
+
+/**
+ * Error codes for order generation service.
+ * Provides consistent error identification for debugging and monitoring.
+ */
+export enum OrderGenerationErrorCode {
+  SUBSCRIPTION_NOT_FOUND = 'SUBSCRIPTION_NOT_FOUND',
+  VENDOR_INACTIVE = 'VENDOR_INACTIVE',
+  PRODUCT_INACTIVE = 'PRODUCT_INACTIVE',
+  DUPLICATE_ORDER = 'DUPLICATE_ORDER',
+  MISSING_CUSTOMER_ADDRESS = 'MISSING_CUSTOMER_ADDRESS',
+  ORDER_CREATION_FAILED = 'ORDER_CREATION_FAILED',
+  SUBSCRIPTION_UPDATE_FAILED = 'SUBSCRIPTION_UPDATE_FAILED',
+  EMAIL_NOTIFICATION_FAILED = 'EMAIL_NOTIFICATION_FAILED',
+  PUSH_NOTIFICATION_FAILED = 'PUSH_NOTIFICATION_FAILED',
+  VENDOR_PUSH_FAILED = 'VENDOR_PUSH_FAILED',
+  CUSTOMER_PUSH_FAILED = 'CUSTOMER_PUSH_FAILED',
+  DATABASE_ERROR = 'DATABASE_ERROR',
+}
+
+/**
+ * Custom error class for order generation errors with error codes.
+ * Allows for consistent error handling and better debugging.
+ */
+export class OrderGenerationError extends Error {
+  constructor(
+    public readonly message: string,
+    public readonly code: OrderGenerationErrorCode,
+    public readonly statusCode: number,
+    public readonly details?: unknown,
+  ) {
+    super(message);
+    this.name = 'OrderGenerationError';
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
 
 /**
  * Type definition for subscription details used in order generation.
- * This type encapsulates all necessary data from a subscription entity
- * required for creating orders, including customer, product, and vendor information.
- * It ensures type safety and clarity when handling subscription data throughout the service.
- * Why: To avoid repetitive Prisma select queries and provide a structured interface for subscription data.
- * How: Populated via Prisma queries with specific select fields to minimize data transfer.
+ * Encapsulates data from subscription entity required for creating orders.
+ * Includes paymentId to link the payment record from subscription to the order.
  */
 type SubscriptionDetails = {
   id: string;
@@ -27,317 +67,491 @@ type SubscriptionDetails = {
   productId: string;
   customerAddressId: string;
   price_snapshot: number;
+  payment: { status: string };
+  paymentId: string | null;
   customerAddress: {
     customerId: string;
-    customer: { id: string };
+    address: string | null;
+    pincode: string | null;
+    label: string | null;
+    location: { name: string | null; state: string | null } | null;
+    customer: {
+      id: string;
+      name: string | null;
+      phone: string | null;
+      email: string | null;
+    };
   };
   product: {
+    id: string;
+    name: string;
     vendorId: string;
-    vendor: { is_active: boolean; is_available_today: boolean };
+    is_active: boolean;
+    vendor: {
+      id: string;
+      name: string;
+      is_active: boolean;
+      is_available_today: boolean;
+    };
   };
 };
 
 /**
+ * Result type for order creation operations.
+ * Provides clear indication of outcome for better error handling.
+ */
+type OrderCreationResult =
+  | { success: true; orderId: string; skipped: false }
+  | { success: false; reason: string; skipped: true };
+
+/**
+ * Configuration interface for order generation settings.
+ * Centralizes configuration to improve testability.
+ */
+interface OrderGenerationConfig {
+  adminEmail: string;
+  schedulerDisabled: boolean;
+  timezone: string;
+}
+
+/**
  * Service responsible for automated order generation from active subscriptions.
- * This service handles the scheduling, queuing, and creation of orders based on subscription frequencies,
- * ensuring reliable and scalable order processing for recurring deliveries.
- * Why: To automate the order creation process for subscriptions, reducing manual intervention and ensuring timely deliveries.
- * How: Uses cron jobs for daily checks, BullMQ for job queuing to handle load, and Prisma for database operations.
- * Scalability: Queuing allows processing in background, preventing blocking of main threads; retries and backoff handle failures.
- * Bugs/Edge Cases: Handles vendor inactivity, duplicate orders, missing addresses; logs and notifies admins for issues.
+ * Handles scheduling, queuing, and creation of orders based on subscription frequencies.
+ *
+ * This service follows SOLID principles:
+ * - Single Responsibility: Focused solely on order generation logic
+ * - Open/Closed: Extensible through configuration and result types
+ * - Liskov Substitution: Not applicable (no inheritance)
+ * - Interface Segregation: Uses focused interfaces for dependencies
+ * - Dependency Inversion: Depends on abstractions (interfaces) where possible
  */
 @Injectable()
 export class OrderGenerationService {
   private readonly logger = new Logger(OrderGenerationService.name);
+  /**
+   * Gets the configuration for order generation from environment variables.
+   * Centralized configuration access for better testability.
+   */
+  private get config(): OrderGenerationConfig {
+    return {
+      adminEmail: process.env.ADMIN_EMAIL || 'admin@waterdelivery.com',
+      schedulerDisabled: process.env.SCHEDULER_DISABLE === 'true',
+      timezone: process.env.TIMEZONE || 'Asia/Kolkata',
+    };
+  }
 
   /**
    * Constructor for OrderGenerationService.
-   * Injects necessary dependencies for database access, job queuing, notifications, delivery frequency calculations, and order number generation.
-   * Why: Dependency injection ensures loose coupling and testability.
-   * How: Uses NestJS DI container to provide instances.
    */
   constructor(
     private prisma: PrismaService,
     @InjectQueue('order-generation') private orderQueue: Queue,
-    private emailChannel: EmailChannelService,
+    private orderNotificationOrchestrator: OrderNotificationOrchestrator,
     private deliveryFrequencyService: DeliveryFrequencyService,
     private orderNumberService: OrderNumberService,
   ) {}
 
+
   /**
-   * Cron job that runs every 10 seconds to enqueue daily order generation jobs for active subscriptions.
-   * This method identifies subscriptions due for delivery today and adds them to a BullMQ queue for asynchronous processing.
-   * Why: Cron scheduling ensures regular checks; queuing prevents overwhelming the system with synchronous processing.
-   * How: Queries subscriptions with next_delivery_date <= today, adds jobs to queue with retry configuration.
-   * Algorithm:
-   * 1. Get current date (start of day).
-   * 2. Fetch active subscriptions due.
-   * 3. If none, notify admin and return.
-   * 4. Enqueue each subscription as a job.
-   * 5. Log completion.
-   * Scalability: Runs frequently but processes in batches via queue; removeOnComplete/Fail limits queue size.
-   * Bugs: If no subscriptions, notifies admin; handles empty results gracefully.
+   * Cron job that runs every 10 seconds to enqueue daily order generation jobs.
    */
   @Cron(CronExpression.EVERY_10_SECONDS, {
     name: 'order-generator-cron',
     disabled: process.env.SCHEDULER_DISABLE === 'true',
   })
-  async enqueueDailyOrders() {
+  async enqueueDailyOrders(): Promise<void> {
     this.logger.log('Starting daily order generation enqueue');
 
-    // Set today to start of day for date comparison
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    // Fetch active subscriptions due for delivery today or earlier
-    const subscriptions = await this.prisma.subscription.findMany({
-      where: {
-        status: 'ACTIVE',
-        next_delivery_date: { lte: today },
-      },
-      select: { id: true },
-    });
-
-    // If no subscriptions found, log and notify admin, then return
-    if (subscriptions.length === 0) {
-      this.logger.log('No subscriptions found for order generation.');
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
-      await this.emailChannel.sendEmail(
-        adminEmail,
-        'No Subscriptions Found',
-        '<p>No active subscriptions found for daily order generation.</p>',
+    try {
+      // Set today to start of day for date comparison
+      const today = this.getStartOfDay(
+        DateTime.now().setZone(this.config.timezone),
       );
-      return;
-    }
 
-    // Enqueue each subscription for order generation
-    for (const sub of subscriptions) {
-      await this.orderQueue.add(
-        'generate-order',
-        { subscriptionId: sub.id },
-        {
-          attempts: 3, // Retry up to 3 times on failure
-          backoff: { type: 'exponential', delay: 5000 }, // Exponential backoff starting at 5 seconds
-          removeOnComplete: 50, // Keep last 50 completed jobs
-          removeOnFail: 10, // Keep last 10 failed jobs
+      // Fetch active subscriptions due for delivery today or earlier
+      const subscriptions = await this.prisma.subscription.findMany({
+        where: {
+          status: 'ACTIVE',
+          next_delivery_date: { lte: today.toJSDate() },
         },
+        select: { id: true },
+      });
+
+      // If no subscriptions found, log and notify admin, then return
+      if (subscriptions.length === 0) {
+        this.logger.log('No subscriptions found for order generation.');
+        // await this.sendNoSubscriptionsNotification();
+        return;
+      }
+
+      // Enqueue each subscription for order generation
+      await this.enqueueSubscriptions(subscriptions.map((s) => s.id));
+
+      this.logger.log(`Enqueued ${subscriptions.length} order generation jobs`);
+    } catch (error) {
+      // Log error but don't throw - cron jobs should be resilient
+      this.logger.error(
+        `Failed to enqueue daily orders: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
       );
     }
+  }
 
-    this.logger.log(`Enqueued ${subscriptions.length} order generation jobs`);
+  /**
+   * Gets the start of day (midnight) for a given date.
+   * @param date - The date to get start of day for
+   * @returns Date set to midnight
+   */
+  private getStartOfDay(date: DateTime): DateTime {
+    return date.setZone(this.config.timezone).startOf('day');
+  }
+
+  /**
+   * Gets the end of day (start of next day) for a given date.
+   * @param date - The date to get end of day for
+   * @returns Date set to start of next day
+   */
+  private getEndOfDay(date: DateTime): DateTime {
+    return date.setZone(this.config.timezone).endOf('day');
+  }
+
+  /**
+   * Enqueues subscription IDs for order generation.
+   * @param subscriptionIds - Array of subscription IDs to enqueue
+   */
+  private async enqueueSubscriptions(subscriptionIds: string[]): Promise<void> {
+    const enqueuePromises = subscriptionIds.map((subscriptionId) =>
+      this.orderQueue.add(
+        'generate-order',
+        { subscriptionId },
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+          removeOnComplete: 50,
+          removeOnFail: 10,
+        },
+      ),
+    );
+
+    await Promise.all(enqueuePromises);
   }
 
   /**
    * Creates an order from a given subscription ID.
-   * This method fetches subscription details, validates vendor availability, checks for duplicates, and creates a new order with associated order items.
-   * Why: To generate orders automatically for subscriptions, ensuring all validations are performed.
-   * How: Fetches subscription data, checks conditions, creates order via Prisma, updates subscription's next delivery date.
-   * Algorithm:
-   * 1. Fetch subscription details.
-   * 2. If not found, throw error.
-   * 3. Check vendor active status.
-   * 4. If vendor unavailable today, reschedule.
-   * 5. Check for existing order today.
-   * 6. Determine payment mode.
-   * 7. Validate address.
-   * 8. Generate order number.
-   * 9. Create order with items.
-   * 10. Update next delivery.
-   * 11. Log and return order.
-   * Scalability: Database queries are selective; handles one subscription at a time via queue.
-   * Bugs: Throws on missing subscription; skips on inactive vendor or existing order; warns on missing address.
+   * Validates customer/address/vendor/product availability, checks for duplicates, creates order.
+   *
+   * @param subscriptionId - The ID of the subscription to create an order from
+   * @returns OrderCreationResult indicating success or skip with reason
+   * @throws BadRequestException for invalid subscription ID
+   * @throws NotFoundException if subscription not found
+   * @throws InternalServerErrorException for database or processing errors
    */
-  async createOrderFromSubscription(subscriptionId: string) {
-    // Fetch detailed subscription information required for order creation
-    const subscription = (await this.prisma.subscription.findUnique({
-      where: { id: subscriptionId },
-      select: {
-        id: true,
-        next_delivery_date: true,
-        frequency: true,
-        custom_days: true,
-        payment_mode: true,
-        total_price: true,
-        quantity: true,
-        productId: true,
-        customerAddressId: true,
-        price_snapshot: true,
-        customerAddress: {
-          select: {
-            customerId: true,
-            customer: {
-              select: { id: true },
+  async createOrderFromSubscription(
+    subscriptionId: string,
+  ): Promise<OrderCreationResult> {
+    try {
+      // Fetch detailed subscription information required for order creation
+      const subscription = await this.fetchSubscription(subscriptionId);
+
+      // If subscription not found, throw NotFoundException
+      if (!subscription) {
+        throw new NotFoundException({
+          message: `Subscription with ID ${subscriptionId} not found`,
+          code: OrderGenerationErrorCode.SUBSCRIPTION_NOT_FOUND,
+        });
+      }
+
+      // Check if vendor is active; skip order if not
+      const vendorInactive = !subscription.product?.vendor?.is_active;
+      if (vendorInactive) {
+        this.logger.warn(
+          `Vendor is inactive or product/vendor not found, skipping order for subscription ${subscription.id}`,
+        );
+        await this.orderNotificationOrchestrator.sendAdminVendorInactiveNotification(
+          subscription.id,
+        );
+        return { success: false, reason: 'Vendor inactive', skipped: true };
+      }
+
+      // Check if product is active; skip order if not
+      const productInactive = !subscription.product?.is_active;
+      if (productInactive) {
+        this.logger.warn(
+          `Product is inactive, skipping order for subscription ${subscription.id}`,
+        );
+        await this.orderNotificationOrchestrator.sendAdminProductInactiveNotification(
+          subscription.id,
+        );
+        return { success: false, reason: 'Product inactive', skipped: true };
+      }
+
+      // Handle vendor unavailability - create order but notify admin
+      const vendorUnavailable = !subscription.product.vendor.is_available_today;
+      if (vendorUnavailable) {
+        await this.orderNotificationOrchestrator.sendAdminVendorUnavailableNotification(
+          { id: subscription.id },
+          {
+            name: subscription.product.name,
+            vendor: subscription.product.vendor,
+          },
+          {
+            id: subscription.customerAddress.customer.id,
+            name: subscription.customerAddress.customer.name,
+            phone: subscription.customerAddress.customer.phone,
+          },
+          subscription.total_price,
+          subscription.price_snapshot,
+          subscription.quantity,
+        );
+        await this.updateNextDelivery(subscription,true);
+        return { success: false, reason: 'Vendor inactive for Today', skipped: true };
+      }
+
+      // Check for duplicate orders
+      const existingOrder = await this.findExistingOrder(subscription.id);
+      if (existingOrder) {
+        this.logger.warn(
+          `Order already exists for subscription ${subscription.id} today`,
+        );
+        return { success: false, reason: 'Duplicate order', skipped: true };
+      }
+
+      // Create the order
+      const order = await this.createOrder(subscription);
+
+      // Update the subscription's next delivery date after successful order creation
+      await this.updateNextDelivery(subscription);
+
+      // Reuse the shared order notification pipeline so email/push logic stays DRY
+      await this.orderNotificationOrchestrator.sendOrderCreationNotifications(
+        order.id,
+      );
+
+      this.logger.log(
+        `Created order ${order.id} for subscription ${subscription.id}`,
+      );
+
+      return { success: true, orderId: order.id, skipped: false };
+    } catch (error) {
+      // Handle known exceptions - rethrow as-is
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      // Log and transform unknown errors
+      this.logger.error(
+        `Error creating order from subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+
+      // Send error notification to admin
+      await this.orderNotificationOrchestrator.sendAdminOrderGenerationErrorNotification(
+        subscriptionId,
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+
+      // Throw as internal server error with user-friendly message
+      throw new InternalServerErrorException({
+        message:
+          'Failed to create order from subscription. Please try again later.',
+        code: OrderGenerationErrorCode.ORDER_CREATION_FAILED,
+        details: error instanceof Error ? error.message : undefined,
+      });
+    }
+  }
+
+  /**
+   * Fetches subscription details from database.
+   * @param subscriptionId - The subscription ID to fetch
+   * @returns Subscription details or null if not found
+   * @throws InternalServerErrorException if database query fails
+   */
+  private async fetchSubscription(
+    subscriptionId: string,
+  ): Promise<SubscriptionDetails | null> {
+    try {
+      return (await this.prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        select: {
+          id: true,
+          next_delivery_date: true,
+          frequency: true,
+          custom_days: true,
+          payment_mode: true,
+          total_price: true,
+          quantity: true,
+          productId: true,
+          customerAddressId: true,
+          price_snapshot: true,
+          paymentId: true,
+          payment: {
+            select: {
+              status: true,
+            },
+          },
+          customerAddress: {
+            select: {
+              customerId: true,
+              address: true,
+              pincode: true,
+              label: true,
+              location: {
+                select: { name: true, state: true },
+              },
+              customer: {
+                select: { id: true, name: true, phone: true, email: true },
+              },
+            },
+          },
+          product: {
+            select: {
+              id: true,
+              name: true,
+              vendorId: true,
+              is_active: true,
+              vendor: {
+                select: {
+                  id: true,
+                  name: true,
+                  is_active: true,
+                  is_available_today: true,
+                },
+              },
             },
           },
         },
-        product: {
-          select: {
-            vendorId: true,
-            vendor: {
-              select: { is_active: true, is_available_today: true },
-            },
+      })) as SubscriptionDetails | null;
+    } catch (error) {
+      this.logger.error(
+        `Database error fetching subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException({
+        message: 'Failed to fetch subscription details',
+        code: OrderGenerationErrorCode.DATABASE_ERROR,
+      });
+    }
+  }
+
+  /**
+   * Finds existing order for subscription on current day.
+   * @param subscriptionId - The subscription ID to check
+   * @returns Existing order if found, null otherwise
+   */
+  private async findExistingOrder(subscriptionId: string): Promise<{
+    id: string;
+  } | null> {
+    const today = this.getStartOfDay(
+      DateTime.now().setZone(this.config.timezone),
+    );
+    const tomorrow = this.getEndOfDay(today);
+
+    try {
+      return await this.prisma.order.findFirst({
+        where: {
+          subscriptionId,
+          created_at: {
+            gte: today.toJSDate(),
+            lt: tomorrow.toJSDate(),
           },
         },
-      },
-    })) as SubscriptionDetails | null;
-
-    // If subscription not found, throw error to indicate invalid ID
-    if (!subscription) {
-      throw new Error(`Subscription ${subscriptionId} not found`);
-    }
-
-    // Check if vendor is active; skip order if not
-    if (!subscription.product?.vendor?.is_active) {
-      this.logger.warn(
-        `Vendor is inactive or product/vendor not found, skipping order for subscription ${subscription.id}`,
+        select: { id: true },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Database error checking duplicate order for subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
-      await this.emailChannel.sendEmail(
-        adminEmail,
-        'Vendor Inactive',
-        `<p>Order skipped for subscription ${subscription.id} due to inactive vendor.</p>`,
-      );
-      return;
+      // Return null to allow order creation - duplicate check failure shouldn't block
+      return null;
     }
+  }
 
-    // If vendor not available today, reschedule subscription to next available day
-    if (!subscription.product.vendor.is_available_today) {
-      await this.rescheduleSubscription(subscription);
-      return;
-    }
-
-    // Prevent duplicate orders by checking if an order already exists for today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    const existingOrder = await this.prisma.order.findFirst({
-      where: {
-        subscriptionId: subscription.id,
-        created_at: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-    });
-
-    // If order exists, log warning and skip
-    if (existingOrder) {
-      this.logger.warn(
-        `Order already exists for subscription ${subscription.id} today`,
-      );
-      return;
-    }
-
+  /**
+   * Creates an order from subscription details.
+   * @param subscription - The subscription details
+   * @returns Created order
+   * @throws InternalServerErrorException if order creation fails
+   */
+  private async createOrder(subscription: SubscriptionDetails): Promise<{
+    id: string;
+    orderNo: string;
+  }> {
     // Map subscription payment mode to order payment mode
     const paymentMode =
       subscription.payment_mode === 'UPFRONT' ? 'ONLINE' : 'MONTHLY';
 
-    // Ensure customer address exists
-    if (!subscription.customerAddress) {
-      this.logger.warn(
-        `Subscription ${subscription.id} has no customer address`,
-      );
-      return;
-    }
-
-    // Generate unique order number
-    const orderNo = await this.orderNumberService.generateOrderNumber();
-
-    // Create the order with associated order item
-    const order = await this.prisma.order.create({
-      data: {
-        orderNo,
-        customerId: subscription.customerAddress.customerId,
-        addressId: subscription.customerAddressId,
-        vendorId: subscription.product.vendorId,
-        total_amount: subscription.total_price,
-        delivery_status: 'PENDING',
-        payment_mode: paymentMode as any,
-        subscriptionId: subscription.id,
-        orderItems: {
-          create: {
-            productId: subscription.productId,
-            quantity: subscription.quantity,
-            price: subscription.price_snapshot,
+    try {
+      return await this.prisma.order.create({
+        data: {
+          orderNo: await this.orderNumberService.generateOrderNumber(),
+          customerId: subscription.customerAddress.customerId,
+          addressId: subscription.customerAddressId,
+          vendorId: subscription.product.vendorId,
+          total_amount: subscription.total_price,
+          delivery_status: 'PENDING',
+          payment_mode: paymentMode as never,
+          subscriptionId: subscription.id,
+          paymentId: subscription.paymentId || undefined,
+          payment_status: subscription.payment.status || 'PENDING',
+          orderItems: {
+            create: {
+              productId: subscription.productId,
+              quantity: subscription.quantity,
+              price: subscription.price_snapshot,
+            },
           },
         },
-      },
-    });
-
-    // Update the subscription's next delivery date after successful order creation
-    await this.updateSubscriptionNextDelivery(subscription);
-
-    this.logger.log(
-      `Created order ${order.id} for subscription ${subscription.id}`,
-    );
-    return order;
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to create order for subscription ${subscription.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException({
+        message: 'Failed to create order',
+        code: OrderGenerationErrorCode.ORDER_CREATION_FAILED,
+      });
+    }
   }
 
   /**
-   * Private method to update the next delivery date for a subscription.
-   * Calculates the next delivery date based on frequency and custom days, updates the database, and optionally notifies admin if rescheduled.
-   * Why: To keep subscription delivery dates accurate after order creation or rescheduling.
-   * How: Uses DeliveryFrequencyService to compute next date, updates via Prisma.
-   * Algorithm:
-   * 1. Calculate next delivery date.
-   * 2. Update subscription in DB.
-   * 3. If notifyRescheduled, send admin notification.
-   * Scalability: Lightweight DB update; called per subscription.
-   * Bugs: Relies on DeliveryFrequencyService for accurate calculations.
+   * Updates the next delivery date for a subscription based on frequency.
+   * @param subscription - The subscription to update
+   * @param notifyRescheduled - Whether to notify admin about rescheduling
    */
   private async updateNextDelivery(
     subscription: SubscriptionDetails,
     notifyRescheduled: boolean = false,
-  ) {
-    // Calculate next delivery date using frequency service
-    const nextDelivery = this.deliveryFrequencyService.getNextDeliveryDate(
-      subscription.next_delivery_date,
-      subscription.frequency,
-      subscription.custom_days,
-    );
-
-    // Update subscription with new next delivery date
-    await this.prisma.subscription.update({
-      where: { id: subscription.id },
-      data: { next_delivery_date: nextDelivery },
-    });
-
-    // If rescheduled due to unavailability, notify admin
-    if (notifyRescheduled) {
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
-      await this.emailChannel.sendEmail(
-        adminEmail,
-        'Order Rescheduled',
-        `<p>Subscription ${subscription.id} rescheduled due to vendor unavailability.</p>`,
+  ): Promise<void> {
+    try {
+      // Calculate next delivery date using frequency service
+      const nextDelivery = this.deliveryFrequencyService.getNextDeliveryDate(
+        subscription.next_delivery_date,
+        subscription.frequency,
+        subscription.custom_days,
       );
+
+      // Update subscription with new next delivery date
+      await this.prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { next_delivery_date: nextDelivery },
+      });
+
+      // If rescheduled due to unavailability, notify admin
+      if (notifyRescheduled) {
+        await this.orderNotificationOrchestrator.sendAdminRescheduledNotification(
+          subscription.id,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to update next delivery for subscription ${subscription.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException({
+        message: 'Failed to update subscription next delivery date',
+        code: OrderGenerationErrorCode.SUBSCRIPTION_UPDATE_FAILED,
+      });
     }
-  }
-
-  /**
-   * Private method to reschedule a subscription when vendor is unavailable today.
-   * Calls updateNextDelivery with notification flag set to true.
-   * Why: To handle vendor unavailability by postponing delivery and alerting admin.
-   * How: Delegates to updateNextDelivery.
-   * Algorithm: Simply calls updateNextDelivery with notifyRescheduled=true.
-   * Scalability: Same as updateNextDelivery.
-   */
-  private async rescheduleSubscription(subscription: SubscriptionDetails) {
-    await this.updateNextDelivery(subscription, true);
-  }
-
-  /**
-   * Private method to update subscription's next delivery date after successful order creation.
-   * Calls updateNextDelivery without notification.
-   * Why: To advance the delivery schedule post-order.
-   * How: Delegates to updateNextDelivery.
-   * Algorithm: Calls updateNextDelivery with notifyRescheduled=false.
-   * Scalability: Same as updateNextDelivery.
-   */
-  private async updateSubscriptionNextDelivery(
-    subscription: SubscriptionDetails,
-  ) {
-    await this.updateNextDelivery(subscription, false);
   }
 }

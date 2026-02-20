@@ -18,6 +18,7 @@ import {
   VendorOrderDeliveredTemplate,
   AdminOrderDeliveredTemplate,
 } from '../../../email-templates/templates/orders';
+import { AdminVendorUnavailableTemplate } from '../../../email-templates/templates/orders/admin-vendor-unavailable';
 import { NotificationType } from '../../types/notification-types.enum';
 import { UserType } from '../../dto/user-type.enum';
 import React from 'react';
@@ -1304,6 +1305,269 @@ export class OrderNotificationOrchestrator {
       return false;
     }
   }
+
+  /**
+   * Sends admin notification when vendor is inactive.
+   *
+   * @param subscriptionId - The subscription ID
+   * @returns True if email sent successfully
+   */
+  async sendAdminVendorInactiveNotification(
+    subscriptionId: string,
+  ): Promise<boolean> {
+    const correlationId = `vendor-inactive-${subscriptionId}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+
+    try {
+      await this.emailChannel.sendEmail(
+        adminEmail,
+        'Vendor Inactive - Order Skipped',
+        `<p>Order generation was skipped for subscription <strong>${subscriptionId}</strong> because the vendor is inactive.</p>
+         <p>Please review the subscription and activate the vendor if needed.</p>`,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Vendor inactive notification sent for subscription ${subscriptionId}`,
+        { correlationId },
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send vendor inactive notification for subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends admin notification when product is inactive.
+   *
+   * @param subscriptionId - The subscription ID
+   * @returns True if email sent successfully
+   */
+  async sendAdminProductInactiveNotification(
+    subscriptionId: string,
+  ): Promise<boolean> {
+    const correlationId = `product-inactive-${subscriptionId}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+
+    try {
+      await this.emailChannel.sendEmail(
+        adminEmail,
+        'Product Inactive - Order Skipped',
+        `<p>Order generation was skipped for subscription <strong>${subscriptionId}</strong> because the product is inactive.</p>
+         <p>Please review the subscription and activate the product if needed.</p>`,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Product inactive notification sent for subscription ${subscriptionId}`,
+        { correlationId },
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send product inactive notification for subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends admin notification when vendor is unavailable for today's delivery.
+   * Uses AdminVendorUnavailableTemplate to notify admin about manual processing needed.
+   *
+   * @param subscription - Subscription details
+   * @param product - Product details
+   * @param customer - Customer details
+   * @param totalPrice - Total price
+   * @param priceSnapshot - Price snapshot
+   * @param quantity - Quantity
+   * @returns True if email sent successfully
+   */
+  async sendAdminVendorUnavailableNotification(
+    subscription: { id: string },
+    product: {
+      name: string;
+      vendor: { name: string; is_available_today: boolean };
+    },
+    customer: { id: string; name: string | null; phone: string | null },
+    totalPrice: number,
+    priceSnapshot: number,
+    quantity: number,
+  ): Promise<boolean> {
+    const correlationId = `vendor-unavailable-${subscription.id}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const timezone = process.env.TIMEZONE || 'Asia/Kolkata';
+    const timestamp = new Date().toLocaleString('en-IN', {
+      timeZone: timezone,
+    });
+
+    try {
+      const html = await renderToHtml(
+        React.createElement(AdminVendorUnavailableTemplate, {
+          subscriptionId: subscription.id,
+          timestamp,
+          productName: product.name,
+          price: `₹${priceSnapshot}`,
+          quantity,
+          vendorName: product.vendor.name,
+          vendorAvailableToday: product.vendor.is_available_today,
+          customerId: customer.id,
+          customerName: customer.name || 'N/A',
+          customerPhone: customer.phone || 'N/A',
+          totalPrice: `₹${totalPrice}`,
+          adminDashboardUrl: process.env.ADMIN_DASHBOARD_URL || '',
+        }),
+      );
+
+      await this.emailChannel.sendEmail(
+        adminEmail,
+        'Action Required: Manual Order Processing Needed - Vendor Unavailable',
+        html,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Vendor unavailable notification sent for subscription ${subscription.id}`,
+        { correlationId },
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send vendor unavailable notification for subscription ${subscription.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends admin notification when order generation fails.
+   *
+   * @param subscriptionId - The subscription ID
+   * @param errorMessage - The error message
+   * @returns True if email sent successfully
+   */
+  async sendAdminOrderGenerationErrorNotification(
+    subscriptionId: string,
+    errorMessage: string,
+  ): Promise<boolean> {
+    const correlationId = `order-gen-error-${subscriptionId}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+
+    try {
+      await this.emailChannel.sendEmail(
+        adminEmail,
+        'Order Generation Error',
+        `<p>An error occurred while generating an order for subscription <strong>${subscriptionId}</strong>.</p>
+         <p><strong>Error:</strong> ${errorMessage}</p>
+         <p>Please investigate and resolve the issue.</p>`,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Order generation error notification sent for subscription ${subscriptionId}`,
+        { correlationId },
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send order generation error notification for subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends admin notification when subscription is rescheduled due to vendor unavailability.
+   *
+   * @param subscriptionId - The subscription ID
+   * @returns True if email sent successfully
+   */
+  async sendAdminRescheduledNotification(
+    subscriptionId: string,
+  ): Promise<boolean> {
+    const correlationId = `rescheduled-${subscriptionId}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+
+    try {
+      await this.emailChannel.sendEmail(
+        adminEmail,
+        'Subscription Rescheduled',
+        `<p>Subscription <strong>${subscriptionId}</strong> has been rescheduled due to vendor unavailability.</p>
+         <p>The order was not created and will be retried on the next delivery date.</p>`,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Rescheduled notification sent for subscription ${subscriptionId}`,
+        { correlationId },
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send rescheduled notification for subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Sends push notification to customer only (without email).
+   *
+   * @param customerId - Customer ID
+   * @param title - Notification title
+   * @param body - Notification body
+   * @param data - Optional additional data payload
+   * @returns True if push notification was sent successfully
+   */
+  async sendCustomerPushNotificationOnly(
+    customerId: string,
+    title: string,
+    body: string,
+    data?: Record<string, string>,
+  ): Promise<boolean> {
+    const correlationId = `customer-push-${customerId}-${Date.now()}`;
+
+    try {
+      const payload: PushNotificationPayload = {
+        title,
+        body,
+        data: data || {},
+        sound: 'default',
+      };
+
+      const successCount = await this.sendPushToUser(
+        customerId,
+        UserType.CUSTOMER,
+        payload,
+        correlationId,
+      );
+
+      this.logger.log(
+        `Customer push notification sent: ${successCount} devices for customer ${customerId}`,
+        { correlationId, successCount },
+      );
+
+      return successCount > 0;
+    } catch (error) {
+      this.logger.error(
+        `Failed to send customer push notification to ${customerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  // ============================================
+  // HELPER METHODS
+  // ============================================
 
   /**
    * Helper: Format currency
