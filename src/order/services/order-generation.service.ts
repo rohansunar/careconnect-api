@@ -14,6 +14,7 @@ import { OrderNotificationOrchestrator } from '../../notification/services/orche
 import { DeliveryFrequencyService } from '../../subscription/services/delivery-frequency.service';
 import { OrderNumberService } from './order-number.service';
 import { DateTime } from 'luxon';
+import { ORDER_GENERATION } from 'src/queue/queue.constants';
 
 /**
  * Error codes for order generation service.
@@ -145,18 +146,16 @@ export class OrderGenerationService {
    */
   constructor(
     private prisma: PrismaService,
-    @InjectQueue('order-generation') private orderQueue: Queue,
+    @InjectQueue(ORDER_GENERATION) private orderQueue: Queue,
     private orderNotificationOrchestrator: OrderNotificationOrchestrator,
     private deliveryFrequencyService: DeliveryFrequencyService,
     private orderNumberService: OrderNumberService,
   ) {}
 
-
   /**
    * Cron job that runs every 10 seconds to enqueue daily order generation jobs.
    */
-  @Cron(CronExpression.EVERY_10_SECONDS, {
-    name: 'order-generator-cron',
+  @Cron(CronExpression.EVERY_DAY_AT_9AM, {
     disabled: process.env.SCHEDULER_DISABLE === 'true',
   })
   async enqueueDailyOrders(): Promise<void> {
@@ -303,8 +302,12 @@ export class OrderGenerationService {
           subscription.price_snapshot,
           subscription.quantity,
         );
-        await this.updateNextDelivery(subscription,true);
-        return { success: false, reason: 'Vendor inactive for Today', skipped: true };
+        await this.updateNextDelivery(subscription, true);
+        return {
+          success: false,
+          reason: 'Vendor inactive for Today',
+          skipped: true,
+        };
       }
 
       // Check for duplicate orders

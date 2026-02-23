@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from '../common/database/prisma.module';
 import { CartModule } from '../cart/cart.module';
 import { PaymentModule } from '../payment/payment.module';
@@ -29,7 +28,6 @@ import { CqrsModule } from '@nestjs/cqrs';
     CartModule,
     PaymentModule,
     NotificationModule,
-    ScheduleModule.forRoot(),
     QueueModule,
     SubscriptionModule,
     OtpModule,

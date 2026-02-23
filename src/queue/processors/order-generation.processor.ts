@@ -2,6 +2,7 @@ import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 import { OrderGenerationService } from 'src/order/services/order-generation.service';
+import { ORDER_GENERATION } from '../queue.constants';
 
 /**
  * OrderGenerationProcessor is a BullMQ processor responsible for handling order generation jobs.
@@ -11,7 +12,7 @@ import { OrderGenerationService } from 'src/order/services/order-generation.serv
  * The processor extends WorkerHost to leverage BullMQ's worker functionality and listens to job events.
  */
 @Injectable()
-@Processor('order-generation')
+@Processor(ORDER_GENERATION)
 export class OrderGenerationProcessor extends WorkerHost {
   private readonly logger = new Logger(OrderGenerationProcessor.name);
 
@@ -20,7 +21,8 @@ export class OrderGenerationProcessor extends WorkerHost {
    * Injects the OrderGenerationService dependency, which is used to perform the actual order generation logic.
    * Calls super() to initialize the WorkerHost base class.
    */
-  constructor(private orderGenerationService: OrderGenerationService) {
+  constructor(
+    private orderGenerationService: OrderGenerationService) {
     super();
   }
 
