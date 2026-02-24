@@ -8,7 +8,7 @@ enum LedgerType {
 model Ledger {
   id           String   @id @default(cuid())
   vendorId     String
-  orderItemId  String
+  orderItemId  String?
 
   type         LedgerType
   feeType      String
@@ -28,7 +28,7 @@ model Ledger {
   vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   
   /// Relation to OrderItem (on delete -> CASCADE)
-  orderItem    OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  orderItem    OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
   // sourceEventId   String   // paymentId / refundId // ✅ Schema-level Idempotency (Best Practice)
 

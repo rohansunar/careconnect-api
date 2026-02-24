@@ -21,8 +21,7 @@ export class OrderGenerationProcessor extends WorkerHost {
    * Injects the OrderGenerationService dependency, which is used to perform the actual order generation logic.
    * Calls super() to initialize the WorkerHost base class.
    */
-  constructor(
-    private orderGenerationService: OrderGenerationService) {
+  constructor(private orderGenerationService: OrderGenerationService) {
     super();
   }
 

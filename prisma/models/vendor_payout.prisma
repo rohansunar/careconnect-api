@@ -1,20 +1,24 @@
 enum PayoutStatus {
   INITIATED
+  APPROVED
   PROCESSING
   PAID
   FAILED
+  CANCELLED
 }
 
 model VendorPayout {
-  id             String      @id @default(cuid())
-  vendorId       String
-  amount         Decimal     @db.Decimal(12, 2)
-  status         PayoutStatus @default(INITIATED)
-  gatewayTxnId   String?
-  failureReason  String?
-  notes          String?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id              String       @id @default(cuid())
+  vendorId        String
+  amount          Decimal      @db.Decimal(12, 2)
+  status          PayoutStatus @default(INITIATED)
+  bankReferenceId String?
+  failureReason   String?
+  notes           String?
+  transferNotes   String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  processedAt     DateTime?
 
   /// Start date of the payout period (inclusive)
   periodStart    DateTime
@@ -23,10 +27,13 @@ model VendorPayout {
   periodEnd      DateTime
 
   /// Relation to Vendor (on delete -> CASCADE)
-  vendor         Vendor      @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  vendor         Vendor       @relation(fields: [vendorId], references: [id], onDelete: Cascade)
 
   /// Indexes for efficient queries
   @@index([vendorId])
   @@index([status])
   @@index([createdAt])
+
+  /// Unique constraint for idempotency - prevents duplicate payouts for same period
+  @@unique([vendorId, periodStart, periodEnd], name: "vendor_payout_unique_period")
 }

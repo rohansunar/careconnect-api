@@ -24,6 +24,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CqrsModule } from '@nestjs/cqrs';
 import { LedgerModule } from 'src/ledger/ledger.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { VendorPayoutModule } from 'src/vendor-payout/vendor-payout.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     SearchModule,
     CartModule,
     ScheduleModule.forRoot(), // ✅ initialize here for CronJob
+    VendorPayoutModule,
     OrderModule,
     PaymentModule,
     RiderModule,
