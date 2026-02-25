@@ -33,4 +33,5 @@ model Vendor {
   riders             Rider[]
   ledgers            Ledger[]
   payouts            VendorPayout[]
+  balance            VendorBalance?
 }

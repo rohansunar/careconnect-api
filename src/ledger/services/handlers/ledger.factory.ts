@@ -16,7 +16,7 @@ export class LedgerFactory {
     description?: string;
     deliveryTimestamp?: Date;
   }) {
-    return this.tx.ledger.create({
+    await this.tx.ledger.create({
       data: {
         vendorId: params.vendorId,
         orderItemId: params.orderItemId,
@@ -27,6 +27,13 @@ export class LedgerFactory {
         description: params.description,
         deliveryTimestamp: params.deliveryTimestamp,
       },
+    });
+
+    return this.tx.vendorBalance.update({
+      where:{vendorId:params.vendorId},
+      data:{
+        availableBalance:{increment:params.amount}
+      }
     });
   }
 
@@ -41,7 +48,7 @@ export class LedgerFactory {
   }) {
     if (params.amount.lte(0)) return;
 
-    return this.tx.ledger.create({
+    await this.tx.ledger.create({
       data: {
         vendorId: params.vendorId,
         orderItemId: params.orderItemId,
@@ -52,6 +59,12 @@ export class LedgerFactory {
         description: params.description,
         deliveryTimestamp: params.deliveryTimestamp,
       },
+    });
+    return this.tx.vendorBalance.update({
+      where:{vendorId:params.vendorId},
+      data:{
+        availableBalance:{decrement:params.amount}
+      }
     });
   }
 

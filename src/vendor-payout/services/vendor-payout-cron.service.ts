@@ -87,7 +87,7 @@ export class VendorPayoutCronService implements OnModuleInit {
    * Weekly cron job - triggers every Sunday at 12:00 AM UTC
    * Cron Expression: 0 0 * * 0 (minute, hour, day of month, month, day of week)
    */
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_10_HOURS)
   async handlePayout(): Promise<void> {
     if (!this.cronEnabled) {
       this.logger.log({

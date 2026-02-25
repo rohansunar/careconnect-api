@@ -1,0 +1,24 @@
+model VendorBalance {
+  /// Primary identifier (foreign key to Vendor)
+  vendorId        String   @id
+
+  /// Current available balance (updated synchronously with ledger)
+  availableBalance Decimal  @db.Decimal(14, 2) @default(0) @map("availableBalance")
+
+  /// Version field for optimistic locking - prevents concurrent update conflicts
+  version         Int      @default(0) @map("version")
+
+  /// Timestamp tracking (precision configured for timezone handling)
+  updatedAt       DateTime @updatedAt
+
+  /// Creation timestamp for audit purposes
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  /// Relation to Vendor (on delete -> CASCADE)
+  vendor          Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  /// Index for efficient queries
+  @@index([vendorId])
+
+  @@map("VendorBalance")
+}

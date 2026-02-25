@@ -59,6 +59,7 @@ export class VendorAuthService {
 
       // Handle vendor creation or update atomically
       const vendor = await this.handleVendorCreationOrUpdate(phone);
+      await this.createBalance(vendor.id)
 
       // Generate JWT token with vendor information
       const payload = {
@@ -85,6 +86,18 @@ export class VendorAuthService {
         'Failed to verify OTP and create vendor. Please try again.',
       );
     }
+  }
+
+  private async createBalance(vendorId:string){
+    let balance = await this.prisma.vendorBalance.findUnique({
+      where: { vendorId: vendorId },
+    });
+
+    if (balance) return;
+
+    return await this.prisma.vendorBalance.create({
+      data: { vendorId: vendorId },
+    });
   }
 
   /**
