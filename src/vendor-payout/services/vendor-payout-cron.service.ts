@@ -1,401 +1,220 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { VendorQueryService } from './vendor-query.service';
-import { PayoutCalculatorService } from './payout-calculator.service';
-import { PayoutRecordService } from './payout-record.service';
-import { PayoutNotificationService } from './payout-notification.service';
+import { Decimal } from '@prisma/client/runtime/library';
+import { PrismaService } from '../../common/database/prisma.service';
+import { EmailChannelService } from '../../notification/services/channels/email-channel.service';
 
 /**
- * Cron job execution status tracking
- */
-export interface CronExecutionStatus {
-  isRunning: boolean;
-  lastRun: Date | null;
-  lastPeriodStart: Date | null;
-  lastPeriodEnd: Date | null;
-  totalProcessed: number;
-  totalSucceeded: number;
-  totalFailed: number;
-  error?: string;
-}
-
-/**
- * Vendor payout cron service - main orchestrator for weekly automated payouts
+ * Vendor Payout Detection Service
  *
- * This service:
- * - Runs on a weekly cron schedule (Sunday 12:00 AM UTC by default)
- * - Queries eligible vendors with ledger entries
- * - Calculates net payouts
- * - Creates payout records
- * - Sends notifications on status changes
- * - Handles failures with retry logic
+ * This service runs a weekly cron job to detect vendors with available balance > 100
+ * and sends an email notification to the admin with the total transfer amount.
  *
- * Performance:
- * - Batch size: 100 vendors per batch
- * - Distributed lock prevents concurrent executions
+ * Functionality:
+ * - Runs weekly via cron job
+ * - Queries VendorBalance model for vendors with availableBalance > 100
+ * - Calculates sum of all eligible vendor balances
+ * - Sends email notification to admin with total amount
  */
 @Injectable()
-export class VendorPayoutCronService implements OnModuleInit {
+export class VendorPayoutCronService {
   private readonly logger = new Logger(VendorPayoutCronService.name);
 
-  // Configuration
-  private readonly cronEnabled: boolean;
-  private readonly batchSize: number;
-  private readonly lockTimeoutMs: number;
-
-  // Execution status tracking
-  private executionStatus: CronExecutionStatus = {
-    isRunning: false,
-    lastRun: null,
-    lastPeriodStart: null,
-    lastPeriodEnd: null,
-    totalProcessed: 0,
-    totalSucceeded: 0,
-    totalFailed: 0,
-  };
+  // Minimum balance threshold for payout detection
+  private readonly minBalanceThreshold = 10;
 
   constructor(
-    private readonly vendorQueryService: VendorQueryService,
-    private readonly payoutCalculatorService: PayoutCalculatorService,
-    private readonly payoutRecordService: PayoutRecordService,
-    private readonly payoutNotificationService: PayoutNotificationService,
+    private readonly prismaService: PrismaService,
+    private readonly emailChannelService: EmailChannelService,
     private readonly configService: ConfigService,
-  ) {
-    // Load configuration from environment
-    this.cronEnabled = this.configService.get<boolean>(
-      'PAYOUT_CRON_ENABLED',
-      true,
-    );
-    this.batchSize = this.configService.get<number>('PAYOUT_BATCH_SIZE', 100);
-    this.lockTimeoutMs = this.configService.get<number>(
-      'PAYOUT_LOCK_TIMEOUT_MS',
-      3600000,
-    ); // 1 hour
-  }
+  ) {}
 
-  async onModuleInit(): Promise<void> {
+  /**
+   * Weekly cron job - runs every Sunday at midnight
+   * Uses CronExpression.EVERY_WEEK for weekly scheduling
+   */
+  @Cron(CronExpression.EVERY_WEEKEND)
+  async handleWeeklyPayoutDetection(): Promise<void> {
     this.logger.log({
-      event: 'CRON_SERVICE_INITIALIZED',
-      cronEnabled: this.cronEnabled,
-      batchSize: this.batchSize,
-      message: 'Vendor Payout Cron Service initialized',
-    });
-  }
-
-  /**
-   * Weekly cron job - triggers every Sunday at 12:00 AM UTC
-   * Cron Expression: 0 0 * * 0 (minute, hour, day of month, month, day of week)
-   */
-  @Cron(CronExpression.EVERY_10_HOURS)
-  async handlePayout(): Promise<void> {
-    if (!this.cronEnabled) {
-      this.logger.log({
-        event: 'CRON_DISABLED',
-        message: 'Payout cron job is disabled via configuration',
-      });
-      return;
-    }
-
-    // Check if already running
-    if (this.executionStatus.isRunning) {
-      this.logger.warn({
-        event: 'CRON_ALREADY_RUNNING',
-        lastRun: this.executionStatus.lastRun?.toISOString(),
-        message: 'Payout cron job is already running - skipping this execution',
-      });
-      return;
-    }
-
-    // Acquire distributed lock (simplified - in production use Redis/database lock)
-    const lockAcquired = await this.acquireLock();
-    if (!lockAcquired) {
-      this.logger.warn({
-        event: 'LOCK_NOT_ACQUIRED',
-        message: 'Could not acquire lock for payout cron - skipping execution',
-      });
-      return;
-    }
-
-    try {
-      await this.executePayoutProcess();
-    } finally {
-      await this.releaseLock();
-    }
-  }
-
-  /**
-   * Manual trigger endpoint - for testing and emergency scenarios
-   *
-   * @param periodStart - Optional period start (defaults to 7 days ago)
-   * @param periodEnd - Optional period end (defaults to now)
-   * @returns Execution status
-   */
-  async triggerManualPayout(
-    periodStart?: Date,
-    periodEnd?: Date,
-  ): Promise<CronExecutionStatus> {
-    // Check if already running
-    if (this.executionStatus.isRunning) {
-      this.logger.warn({
-        event: 'CRON_ALREADY_RUNNING',
-        lastRun: this.executionStatus.lastRun?.toISOString(),
-        message: 'Payout cron job is already running',
-      });
-      return this.executionStatus;
-    }
-
-    // Acquire lock
-    const lockAcquired = await this.acquireLock();
-    if (!lockAcquired) {
-      throw new Error(
-        'Could not acquire lock - another process may be running',
-      );
-    }
-
-    try {
-      await this.executePayoutProcess(periodStart, periodEnd);
-      return this.executionStatus;
-    } finally {
-      await this.releaseLock();
-    }
-  }
-
-  /**
-   * Get current execution status
-   */
-  getExecutionStatus(): CronExecutionStatus {
-    return { ...this.executionStatus };
-  }
-
-  /**
-   * Main payout process execution
-   */
-  private async executePayoutProcess(
-    periodStart?: Date,
-    periodEnd?: Date,
-  ): Promise<void> {
-    const startTime = Date.now();
-
-    const pStart = periodStart || this.calculatePeriodStart();
-    const pEnd = periodEnd || new Date();
-
-    this.executionStatus = {
-      isRunning: true,
-      lastRun: new Date(),
-      lastPeriodStart: pStart,
-      lastPeriodEnd: pEnd,
-      totalProcessed: 0,
-      totalSucceeded: 0,
-      totalFailed: 0,
-    };
-
-    this.logger.log({
-      event: 'PAYOUT_CRON_STARTED',
-      periodStart: pStart.toISOString(),
-      periodEnd: pEnd.toISOString(),
-      message: 'Weekly payout process started',
+      event: 'WEEKLY_CRON_STARTED',
+      message: 'Weekly vendor payout detection cron job started',
     });
 
     try {
-      // Send batch started notification to admin
-      // await this.payoutNotificationService.sendBatchStartedNotification(
-      //   pStart,
-      //   pEnd,
-      //   0, // Unknown at this point
-      // );
-
-      // Step 1: Query eligible vendors
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const eligibleVendors: any[] =
-        await this.vendorQueryService.getEligibleVendors(pStart, pEnd);
+      // Step 1: Query all vendors with availableBalance > 100
+      const eligibleVendors = await this.prismaService.vendorBalance.findMany({
+        where: {
+          availableBalance: {
+            gt: this.minBalanceThreshold,
+          },
+        },
+        select: {
+          vendorId: true,
+          availableBalance: true,
+          vendor: {
+            select: {
+              vendorNo:true,
+              name: true,
+              business_name: true,
+              email: true,
+            },
+          },
+        },
+      });
 
       this.logger.log({
-        event: 'ELIGIBLE_VENDORS_FOUND',
+        event: 'VENDORS_QUERIED',
         count: eligibleVendors.length,
-        message: `Found ${eligibleVendors.length} eligible vendors`,
+        message: `Found ${eligibleVendors.length} vendors with available balance > ${this.minBalanceThreshold}`,
       });
 
-      // Step 2: Process each vendor in batches
-      let processedCount = 0;
-      let succeededCount = 0;
-      let failedCount = 0;
-      let totalPayoutAmount = 0;
-
-      for (const vendor of eligibleVendors) {
-        try {
-          // Calculate payout - using totalPayout directly with fees and refunds set to 0
-          // (Simplified approach: VendorQueryService returns net payout amount)
-          const calculationResult =
-            this.payoutCalculatorService.calculatePayout(
-              vendor.id,
-              vendor.name || vendor.business_name || null,
-              vendor.totalPayout,
-            );
-
-          if (!calculationResult.shouldProcess) {
-            this.logger.log({
-              event: 'VENDOR_SKIPPED',
-              vendorId: vendor.id,
-              vendorName: calculationResult.vendorName,
-              reason: calculationResult.skipReason,
-              message: `Vendor skipped: ${calculationResult.skipReason}`,
-            });
-            continue;
-          }
-
-          // Create payout record
-          const recordResult =
-            await this.payoutRecordService.createPayoutRecord(
-              vendor.id,
-              calculationResult.netPayout,
-              pStart,
-              pEnd,
-            );
-
-          if (recordResult.success && recordResult.payout) {
-            succeededCount++;
-            totalPayoutAmount += Number(calculationResult.netPayout);
-
-            // Send initiated notification to vendor
-            // Note: Only INITIATED status records are created automatically
-            // await this.payoutNotificationService.sendPayoutInitiatedNotification(
-            //   vendor.id,
-            //   Number(calculationResult.netPayout),
-            //   pStart,
-            //   pEnd,
-            // );
-          } else if (recordResult.isDuplicate) {
-            this.logger.log({
-              event: 'DUPLICATE_DETECTED',
-              vendorId: vendor.id,
-              message: 'Payout already exists for this period - skipping',
-            });
-          } else {
-            failedCount++;
-            this.logger.error({
-              event: 'PAYOUT_FAILED',
-              vendorId: vendor.id,
-              error: recordResult.error,
-              message: 'Failed to create payout record',
-            });
-          }
-
-          processedCount++;
-
-          // Check for high failure rate
-          if (processedCount > 10) {
-            const failureRate = (failedCount / processedCount) * 100;
-            if (failureRate > 5) {
-              await this.payoutNotificationService.sendHighFailureRateAlert(
-                failureRate,
-                failedCount,
-                processedCount,
-              );
-            }
-          }
-
-          // Small delay between batches to prevent overwhelming the system
-          if (processedCount % this.batchSize === 0) {
-            await this.sleep(100);
-          }
-        } catch (error: any) {
-          failedCount++;
-          processedCount++;
-
-          this.logger.error({
-            event: 'VENDOR_PROCESSING_ERROR',
-            vendorId: vendor.id,
-            error: error.message,
-            stack: error.stack,
-            message: 'Error processing vendor payout',
-          });
-
-          // Attempt retry for the vendor's payout
-          // In a real implementation, we'd track the payout ID
-        }
-      }
-
-      // Update final status
-      this.executionStatus.totalProcessed = processedCount;
-      this.executionStatus.totalSucceeded = succeededCount;
-      this.executionStatus.totalFailed = failedCount;
-
-      const duration = Date.now() - startTime;
+      // Step 2: Calculate sum of all vendor available balances
+      const totalTransferAmount = eligibleVendors.reduce(
+        (sum, vendor) => sum + Number(vendor.availableBalance),
+        0,
+      );
 
       this.logger.log({
-        event: 'PAYOUT_CRON_COMPLETED',
-        totalProcessed: processedCount,
-        totalSucceeded: succeededCount,
-        totalFailed: failedCount,
-        durationMs: duration,
-        message: 'Weekly payout process completed',
+        event: 'TOTAL_CALCULATED',
+        totalAmount: totalTransferAmount,
+        message: `Total transfer amount: ${totalTransferAmount}`,
       });
 
-      // Send batch completed notification
-      // await this.payoutNotificationService.sendBatchCompletedNotification(
-      //   pStart,
-      //   pEnd,
-      //   totalPayoutAmount,
-      //   succeededCount,
-      //   failedCount,
-      // );
-    } catch (error: any) {
-      this.executionStatus.error = error.message;
+      // Step 3: Send email notification to admin
+      await this.sendAdminNotification(eligibleVendors, totalTransferAmount);
 
+      this.logger.log({
+        event: 'WEEKLY_CRON_COMPLETED',
+        message: 'Weekly vendor payout detection cron job completed successfully',
+      });
+    } catch (error) {
       this.logger.error({
-        event: 'PAYOUT_CRON_FAILED',
-        error: error.message,
-        stack: error.stack,
-        message: 'Weekly payout process failed',
+        event: 'WEEKLY_CRON_FAILED',
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        message: 'Weekly vendor payout detection cron job failed',
       });
-
-      // Send critical failure notification
-      // await this.payoutNotificationService.sendBatchFailedNotification(
-      //   error.message,
-      // );
-    } finally {
-      this.executionStatus.isRunning = false;
+      // @TODO - Send SMS on error
     }
   }
 
   /**
-   * Calculate period start (7 days ago from current time)
-   */
-  private calculatePeriodStart(): Date {
-    const now = new Date();
-    const periodStart = new Date(now);
-    periodStart.setDate(periodStart.getDate() - 7);
-    periodStart.setHours(0, 0, 0, 0);
-    return periodStart;
-  }
-
-  /**
-   * Acquire distributed lock
+   * Sends email notification to admin with vendor payout summary
    *
-   * In production, this would use Redis or database-based locking
+   * @param eligibleVendors - List of vendors with eligible balances
+   * @param totalAmount - Total sum of all eligible balances
    */
-  private async acquireLock(): Promise<boolean> {
-    // Simplified implementation - in production use Redis or database
-    // For now, we just check if already running
-    if (this.executionStatus.isRunning) {
-      return false;
+  private async sendAdminNotification(
+    eligibleVendors: Array<{
+      vendorId: string;
+      availableBalance: Decimal;
+      vendor: {
+        vendorNo:string
+        name: string | null;
+        business_name: string | null;
+        email: string | null;
+      };
+    }>,
+    totalAmount: number,
+  ): Promise<void> {
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL');
+
+    if (!adminEmail) {
+      this.logger.error({
+        event: 'ADMIN_EMAIL_NOT_CONFIGURED',
+        message: 'ADMIN_EMAIL is not configured - cannot send notification',
+      });
+      return;
     }
-    return true;
-  }
 
-  /**
-   * Release distributed lock
-   */
-  private async releaseLock(): Promise<void> {
-    // Simplified implementation
-    this.executionStatus.isRunning = false;
-  }
+    // Build vendor details HTML
+    const vendorDetailsHtml = eligibleVendors
+      .map(
+        (vendor) => `
+        <tr>
+          <td>${vendor.vendor.vendorNo}</td>
+          <td>${vendor.vendor.name || vendor.vendor.business_name || 'N/A'}</td>
+          <td>${vendor.vendorId}</td>
+          <td>${Number(vendor.availableBalance).toFixed(2)}</td>
+        </tr>
+      `,
+      )
+      .join('');
 
-  /**
-   * Sleep utility
-   */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    // Build email HTML
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+            .content { padding: 20px; background-color: #f9f9f9; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background-color: #f2f2f2; }
+            .total { font-weight: bold; font-size: 18px; color: #4CAF50; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Weekly Vendor Payout Detection</h1>
+            </div>
+            <div class="content">
+              <p>This is a weekly notification regarding vendors with available balances exceeding the threshold.</p>
+              
+              <h2>Summary</h2>
+              <p><strong>Minimum Balance Threshold:</strong> ${this.minBalanceThreshold.toFixed(2)}</p>
+              <p><strong>Total Vendors Eligible:</strong> ${eligibleVendors.length}</p>
+              <p class="total">Total Transfer Amount: ${totalAmount.toFixed(2)}</p>
+              
+              <h2>Eligible Vendors</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Vendor Name</th>
+                    <th>Vendor ID</th>
+                    <th>Available Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${vendorDetailsHtml || '<tr><td colspan="3">No eligible vendors found</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <div class="footer">
+              <p>This is an automated notification from the Vendor Payout System.</p>
+              <p>Generated on: ${new Date().toISOString()}</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const result = await this.emailChannelService.sendEmail(
+      adminEmail,
+      `Weekly Vendor Payout Detection - Total: $${totalAmount.toFixed(2)}`,
+      emailHtml,
+    );
+
+    if (result.success) {
+      this.logger.log({
+        event: 'ADMIN_NOTIFICATION_SENT',
+        adminEmail,
+        messageId: result.messageId,
+        message: 'Admin notification email sent successfully',
+      });
+    } else {
+      this.logger.error({
+        event: 'ADMIN_NOTIFICATION_FAILED',
+        adminEmail,
+        error: result.error,
+        message: 'Failed to send admin notification email',
+      });
+    }
   }
 }
