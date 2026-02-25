@@ -14,7 +14,6 @@ import { SubscriptionRepositoryService } from './repositories/subscription.repos
 import { DeliveryFrequencyFactoryService } from './services/delivery-frequency/delivery-frequency.factory';
 import { PriceCalculatorFactoryService } from './services/price-calculation/price-calculator.factory';
 import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.repository';
-import { MonthEndAdjustmentService } from './services/month-end-adjustment.service';
 import { OnPaymentSucceededSubscriptionHandler } from './services/handlers/on-payment-success-subscription.handler';
 import { CqrsModule } from '@nestjs/cqrs';
 
@@ -32,7 +31,6 @@ import { CqrsModule } from '@nestjs/cqrs';
     DeliveryFrequencyFactoryService,
     PriceCalculatorFactoryService,
     JsonPaymentModeRepository,
-    MonthEndAdjustmentService,
     OnPaymentSucceededSubscriptionHandler,
   ],
   exports: [CustomerSubscriptionService, DeliveryFrequencyService],

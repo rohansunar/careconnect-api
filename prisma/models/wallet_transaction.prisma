@@ -1,0 +1,77 @@
+/// Type of wallet transaction
+enum WalletTransactionType {
+  CREDIT    /// Money added to wallet
+  DEBIT     /// Money deducted from wallet
+  REVERSAL  /// Transaction reversal
+}
+
+/// Status of a wallet transaction
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REVERSED
+}
+
+/// Type of reference for the transaction
+enum ReferenceType {
+  ORDER
+  PAYMENT
+  SUBSCRIPTION
+  REFUND
+  BONUS
+  ADJUSTMENT
+  TRANSFER
+  WITHDRAWAL
+  DEPOSIT
+}
+
+model WalletTransaction {
+  id              String                 @id @default(uuid())
+
+  /// Foreign key to CustomerWallet
+  walletId        String
+  wallet          CustomerWallet         @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  /// Transaction amount
+  amount          Decimal                @db.Decimal(14, 2)
+
+  /// Type of transaction (CREDIT, DEBIT, REVERSAL)
+  type            WalletTransactionType
+
+  /// Current status of the transaction
+  status          TransactionStatus      @default(PENDING)
+  currency        String                 @default("INR")
+
+  /// External reference ID (e.g., order ID, payment ID)
+  referenceId     String?
+
+  /// Type of reference (ORDER, PAYMENT, etc.)
+  referenceType   ReferenceType?
+
+  /// Human-readable description of the transaction
+  description     String?
+
+  /// Internal note for the transaction
+  internalNote   String?
+
+  /// Unique key for idempotency (prevents duplicate transactions)
+  idempotencyKey  String?                @unique
+
+  /// Timestamp when the transaction was created
+  createdAt       DateTime               @default(now())
+
+  /// Timestamp when the transaction was completed
+  completedAt    DateTime?
+
+  @@index([walletId, createdAt])
+  @@index([walletId, status])
+  @@index([type, createdAt])
+  @@index([referenceId, referenceType])
+  @@index([idempotencyKey])
+  @@unique([walletId, idempotencyKey])
+
+  @@map("WalletTransaction")
+}

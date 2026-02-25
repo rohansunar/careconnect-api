@@ -59,7 +59,7 @@ export class VendorAuthService {
 
       // Handle vendor creation or update atomically
       const vendor = await this.handleVendorCreationOrUpdate(phone);
-      await this.createBalance(vendor.id)
+      await this.createBalance(vendor.id);
 
       // Generate JWT token with vendor information
       const payload = {
@@ -88,7 +88,7 @@ export class VendorAuthService {
     }
   }
 
-  private async createBalance(vendorId:string){
+  private async createBalance(vendorId: string) {
     let balance = await this.prisma.vendorBalance.findUnique({
       where: { vendorId: vendorId },
     });

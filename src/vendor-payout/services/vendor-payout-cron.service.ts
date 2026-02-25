@@ -54,7 +54,7 @@ export class VendorPayoutCronService {
           availableBalance: true,
           vendor: {
             select: {
-              vendorNo:true,
+              vendorNo: true,
               name: true,
               business_name: true,
               email: true,
@@ -86,7 +86,8 @@ export class VendorPayoutCronService {
 
       this.logger.log({
         event: 'WEEKLY_CRON_COMPLETED',
-        message: 'Weekly vendor payout detection cron job completed successfully',
+        message:
+          'Weekly vendor payout detection cron job completed successfully',
       });
     } catch (error) {
       this.logger.error({
@@ -110,7 +111,7 @@ export class VendorPayoutCronService {
       vendorId: string;
       availableBalance: Decimal;
       vendor: {
-        vendorNo:string
+        vendorNo: string;
         name: string | null;
         business_name: string | null;
         email: string | null;

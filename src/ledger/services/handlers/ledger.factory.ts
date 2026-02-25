@@ -30,10 +30,10 @@ export class LedgerFactory {
     });
 
     return this.tx.vendorBalance.update({
-      where:{vendorId:params.vendorId},
-      data:{
-        availableBalance:{increment:params.amount}
-      }
+      where: { vendorId: params.vendorId },
+      data: {
+        availableBalance: { increment: params.amount },
+      },
     });
   }
 
@@ -61,10 +61,10 @@ export class LedgerFactory {
       },
     });
     return this.tx.vendorBalance.update({
-      where:{vendorId:params.vendorId},
-      data:{
-        availableBalance:{decrement:params.amount}
-      }
+      where: { vendorId: params.vendorId },
+      data: {
+        availableBalance: { decrement: params.amount },
+      },
     });
   }
 

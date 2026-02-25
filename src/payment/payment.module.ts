@@ -4,6 +4,8 @@ import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
 import { PaymentProviderService } from './services/payment-provider.service';
 import { WebhookIdempotencyService } from './services/webhook-idempotency.service';
+import { WalletService } from './services/wallet.service';
+import { OnPaymentSucceededWalletHandler } from './services/handlers/on-payment-succeeded-wallet.handler';
 import { CqrsModule } from '@nestjs/cqrs';
 
 /**
@@ -17,6 +19,8 @@ import { CqrsModule } from '@nestjs/cqrs';
  * - PaymentService: Core payment processing logic
  * - PaymentProviderService: Payment gateway integration
  * - WebhookIdempotencyService: Idempotency guard for webhook processing
+ * - WalletService: Wallet balance management
+ * - OnPaymentSucceededWalletHandler: Event handler for wallet credits on subscription payment
  */
 @Module({
   imports: [CqrsModule, PrismaModule],
@@ -25,7 +29,14 @@ import { CqrsModule } from '@nestjs/cqrs';
     PaymentService,
     PaymentProviderService,
     WebhookIdempotencyService,
+    WalletService,
+    OnPaymentSucceededWalletHandler,
   ],
-  exports: [PaymentService, PaymentProviderService, WebhookIdempotencyService],
+  exports: [
+    PaymentService,
+    PaymentProviderService,
+    WebhookIdempotencyService,
+    WalletService,
+  ],
 })
 export class PaymentModule {}

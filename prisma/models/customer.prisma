@@ -13,4 +13,5 @@ model Customer {
   orders Order[] @relation("orders")
   monthlyBills MonthlyBill[]
   notifications  Notification[]
+  wallet        CustomerWallet?
 }

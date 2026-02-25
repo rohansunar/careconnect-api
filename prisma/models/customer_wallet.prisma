@@ -1,0 +1,29 @@
+model CustomerWallet {
+  /// Primary identifier
+  id         String   @id @default(uuid())
+
+  /// Foreign key to Customer (unique - one wallet per customer)
+  customerId String   @unique
+
+  /// Current wallet balance
+  balance    Decimal  @db.Decimal(14, 2) @default(0)
+
+  /// Creation timestamp
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  /// Last update timestamp (auto-updated)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  /// Relation to Customer (cascade delete)
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  /// All transactions for this wallet
+  transactions WalletTransaction[]
+
+  /// Index for efficient queries by customer
+  @@index([customerId])
+
+  @@map("CustomerWallet")
+}
+
+

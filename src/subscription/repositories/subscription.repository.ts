@@ -97,7 +97,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
     const result = await this.prisma.subscription.update({
       where: { id },
       data: {
-        customerAddressId: data.customerId,
+        customerAddressId: data.customerAddressId,
         productId: data.productId,
         quantity: data.quantity,
         total_price: data.price,

@@ -18,7 +18,6 @@ import {
 } from '@nestjs/swagger';
 import { CustomerSubscriptionService } from '../services/customer-subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
