@@ -3,7 +3,7 @@ import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { PrismaService } from '../../../common/database/prisma.service';
 import { ReferenceType } from '@prisma/client';
 import { PaymentSucceededEvent } from '../payment-succeeded.event';
-import { WalletService, CreditWalletData } from '../wallet.service';
+import { WalletService } from '../../../wallet/services/wallet.service';
 
 /**
  * Event handler that processes wallet credits when a subscription payment succeeds.
@@ -57,21 +57,22 @@ export class OnPaymentSucceededWalletHandler implements IEventHandler<PaymentSuc
         return;
       }
 
-      // Build credit data with customer ID
-      const creditData: CreditWalletData = {
-        customerId: subscription.customerId,
-        amount: Number(amount),
-        referenceId: subscriptionId,
-        referenceType: ReferenceType.SUBSCRIPTION,
-        description: 'Wallet credit for subscription payment',
-        idempotencyKey: `subscription_${subscriptionId}_payment_${payment?.id}`,
-      };
+      // Build credit data for canonical wallet service
+      const idempotencyKey = `subscription_${subscriptionId}_payment_${payment?.id}`;
+      const description = 'Wallet credit for subscription payment';
 
-      // Credit the wallet
-      const result = await this.walletService.creditWallet(creditData);
+      // Credit the wallet using canonical service
+      const result = await this.walletService.creditToWallet(
+        subscription.customerId, // customerId
+        Number(amount), // amount
+        subscriptionId, // orderId (reference ID)
+        description, // description
+        idempotencyKey, // idempotencyKey
+        ReferenceType.SUBSCRIPTION, // referenceType
+      );
 
       this.logger.log(
-        `Wallet credited successfully for customer ${subscription.customerId}. New balance: ${result.balance}`,
+        `Wallet credited successfully for customer ${subscription.customerId}. Transaction ID: ${result.transactionId}, New balance: ${result.newBalance}`,
       );
     } catch (error: unknown) {
       const errorMessage =

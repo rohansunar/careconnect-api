@@ -19,13 +19,7 @@ import {
   SubscriptionFrequency,
 } from '../interfaces/delivery-frequency.interface';
 import { PaymentProviderService } from '../../payment/services/payment-provider.service';
-import {
-  PaymentStatus,
-  Order,
-  PaymentMode,
-  Prisma,
-  Subscription,
-} from '@prisma/client';
+import { PaymentStatus, Prisma, Subscription } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
 
 // Define DELETED status constant since it may not be in generated client yet

@@ -19,6 +19,8 @@ import { OrderGenerationService } from './services/order-generation.service';
 import { OrderNumberService } from './services/order-number.service';
 import { OrderGenerationProcessor } from '../queue/processors/order-generation.processor';
 import { OnPaymentSucceededOrderHandler } from './services/handlers/on-payment-succeeded-order.handler';
+import { OnOrderDeliveredWalletHandler } from './services/handlers/on-order-delivered-wallet.handler';
+import { WalletModule } from '../wallet/wallet.module';
 import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
@@ -31,6 +33,7 @@ import { CqrsModule } from '@nestjs/cqrs';
     QueueModule,
     SubscriptionModule,
     OtpModule,
+    WalletModule,
   ],
   controllers: [
     CustomerOrderController,
@@ -48,6 +51,7 @@ import { CqrsModule } from '@nestjs/cqrs';
     OrderNumberService,
     OrderGenerationProcessor,
     OnPaymentSucceededOrderHandler,
+    OnOrderDeliveredWalletHandler,
   ],
   exports: [
     OrderService,
