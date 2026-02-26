@@ -3,6 +3,7 @@ enum SubscriptionStatus {
   INACTIVE
   PROCESSING
   DELETED
+  SUSPENDED
 }
 
 enum SubscriptionFrequency {

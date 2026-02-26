@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { SubscriptionFrequency } from '@prisma/client';
 import { PrismaService } from '../../../common/database/prisma.service';
 import { EmailChannelService } from '../channels/email-channel.service';
 import { renderToHtml } from '../../../email-templates/utils/renderTemplate';
@@ -6,6 +7,7 @@ import {
   SubscriptionConfirmationTemplate,
   SubscriptionActivationTemplate,
   SubscriptionRenewalReminderTemplate,
+  SubscriptionSuspensionTemplate,
 } from '../../../email-templates/templates/subscriptions';
 import React from 'react';
 
@@ -236,6 +238,167 @@ export class SubscriptionNotificationOrchestrator {
   }
 
   /**
+   * Sends suspension notification email when subscription is suspended due to insufficient wallet balance
+   * @param subscriptionId - The subscription ID
+   * @param currentBalance - Current wallet balance
+   * @param requiredAmount - Required amount for the order
+   */
+  async sendSubscriptionSuspensionNotification(
+    subscriptionId: string,
+    currentBalance: number,
+    requiredAmount: number,
+  ): Promise<boolean> {
+    const correlationId = `subscription-suspend-${subscriptionId}-${Date.now()}`;
+
+    try {
+      const subscription = await this.prisma.subscription.findUnique({
+        where: { id: subscriptionId },
+        include: {
+          customer: true,
+          product: true,
+        },
+      });
+
+      if (!subscription || !subscription.customer?.email) {
+        throw new Error(
+          `Subscription or customer email not found: ${subscriptionId}`,
+        );
+      }
+
+      const currency = 'INR';
+      const formattedAmount = this.formatCurrency(
+        subscription.total_price,
+        currency,
+      );
+      const formattedCurrentBalance = this.formatCurrency(
+        currentBalance,
+        currency,
+      );
+      const formattedRequiredAmount = this.formatCurrency(
+        requiredAmount,
+        currency,
+      );
+      const formattedShortfall = this.formatCurrency(
+        requiredAmount - currentBalance,
+        currency,
+      );
+
+      const html = await renderToHtml(
+        React.createElement(SubscriptionSuspensionTemplate, {
+          customerName: subscription.customer.name,
+          subscriptionId: subscription.id,
+          productName: subscription.product?.name || 'Subscription',
+          frequency: this.formatFrequency(subscription.frequency),
+          nextDeliveryDate:
+            subscription.next_delivery_date?.toLocaleDateString('en-IN', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }) || 'N/A',
+          formattedAmount,
+          currentBalance: formattedCurrentBalance,
+          requiredAmount: formattedRequiredAmount,
+          shortfall: formattedShortfall,
+          supportEmail:
+            process.env.SUPPORT_EMAIL || 'support@waterdelivery.com',
+          manageUrl: process.env.CUSTOMER_PORTAL_URL || '',
+        }),
+      );
+
+      const result = await this.emailChannel.sendEmail(
+        subscription.customer.email,
+        `Subscription Temporarily Paused - ${subscription.product?.name || 'Subscription'}`,
+        html,
+        correlationId,
+      );
+
+      this.logger.log(`Subscription suspension email sent: ${result.success}`, {
+        correlationId,
+      });
+      return result.success;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to send suspension notification: ${errorMsg}`, {
+        correlationId,
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Sends admin notification when subscription is suspended due to insufficient wallet balance
+   * @param subscriptionId - The subscription ID
+   * @param customerId - The customer ID
+   * @param customerName - Customer name
+   * @param customerEmail - Customer email
+   * @param customerPhone - Customer phone
+   * @param productName - Product name
+   * @param requiredAmount - Required amount for the order
+   * @param currentBalance - Current wallet balance
+   */
+  async sendAdminSuspensionNotification(
+    subscriptionId: string,
+    customerId: string,
+    customerName: string | null,
+    customerEmail: string | null,
+    customerPhone: string | null,
+    productName: string,
+    requiredAmount: number,
+    currentBalance: number,
+  ): Promise<boolean> {
+    const correlationId = `admin-suspend-${subscriptionId}-${Date.now()}`;
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const currency = 'INR';
+
+    const formatCurrency = (amount: number): string =>
+      new Intl.NumberFormat('en-IN', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2,
+      }).format(amount);
+
+    const subject = `Action Required: Subscription Suspended - Insufficient Wallet Balance`;
+    const body = `Subscription Suspended Due to Insufficient Wallet Balance
+
+Subscription ID: ${subscriptionId}
+Customer ID: ${customerId}
+Customer Name: ${customerName || 'N/A'}
+Customer Email: ${customerEmail || 'N/A'}
+Customer Phone: ${customerPhone || 'N/A'}
+
+Product: ${productName}
+Required Amount: ${formatCurrency(requiredAmount)}
+Current Wallet Balance: ${formatCurrency(currentBalance)}
+Shortfall: ${formatCurrency(requiredAmount - currentBalance)}
+
+The subscription has been suspended automatically due to insufficient wallet balance. Please contact the customer to recharge their wallet.
+
+- Water Delivery System`;
+
+    try {
+      const result = await this.emailChannel.sendEmail(
+        adminEmail,
+        subject,
+        body,
+        correlationId,
+      );
+
+      this.logger.log(`Admin suspension notification sent: ${result.success}`, {
+        correlationId,
+      });
+      return result.success;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send admin suspension notification: ${errorMsg}`,
+        { correlationId },
+      );
+      return false;
+    }
+  }
+
+  /**
    * Helper: Format currency
    */
   private formatCurrency(amount: number, currency: string = 'INR'): string {
@@ -250,14 +413,16 @@ export class SubscriptionNotificationOrchestrator {
   /**
    * Helper: Format frequency for display
    */
-  private formatFrequency(frequency: any): string {
+  private formatFrequency(frequency: SubscriptionFrequency): string {
     const frequencyMap: Record<string, string> = {
       DAILY: 'Daily',
       WEEKLY: 'Weekly',
       BIWEEKLY: 'Bi-weekly',
       MONTHLY: 'Monthly',
+      ALTERNATIVE_DAYS: 'Alternative Days',
+      CUSTOM_DAYS: 'Custom Days',
     };
 
-    return frequencyMap[frequency] || frequency;
+    return frequencyMap[frequency] || frequency.toString();
   }
 }

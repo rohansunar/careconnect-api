@@ -11,10 +11,12 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SubscriptionFrequency } from '../../subscription/interfaces/delivery-frequency.interface';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
+import { SubscriptionNotificationOrchestrator } from '../../notification/services/orchestrators/subscription-notification.orchestrator';
 import { DeliveryFrequencyService } from '../../subscription/services/delivery-frequency.service';
 import { OrderNumberService } from './order-number.service';
 import { DateTime } from 'luxon';
 import { ORDER_GENERATION } from 'src/queue/queue.constants';
+import { SubscriptionStatus } from '@prisma/client';
 
 /**
  * Error codes for order generation service.
@@ -33,6 +35,8 @@ export enum OrderGenerationErrorCode {
   VENDOR_PUSH_FAILED = 'VENDOR_PUSH_FAILED',
   CUSTOMER_PUSH_FAILED = 'CUSTOMER_PUSH_FAILED',
   DATABASE_ERROR = 'DATABASE_ERROR',
+  INSUFFICIENT_WALLET_BALANCE = 'INSUFFICIENT_WALLET_BALANCE',
+  SUBSCRIPTION_SUSPENSION_FAILED = 'SUBSCRIPTION_SUSPENSION_FAILED',
 }
 
 /**
@@ -148,6 +152,7 @@ export class OrderGenerationService {
     private prisma: PrismaService,
     @InjectQueue(ORDER_GENERATION) private orderQueue: Queue,
     private orderNotificationOrchestrator: OrderNotificationOrchestrator,
+    private subscriptionNotificationOrchestrator: SubscriptionNotificationOrchestrator,
     private deliveryFrequencyService: DeliveryFrequencyService,
     private orderNumberService: OrderNumberService,
   ) {}
@@ -319,6 +324,35 @@ export class OrderGenerationService {
         return { success: false, reason: 'Duplicate order', skipped: true };
       }
 
+      // Validate wallet balance before order creation
+      const walletValidation = await this.validateWalletBalance(
+        subscription.customerAddress.customerId,
+        subscription.price_snapshot,
+      );
+
+      if (!walletValidation.hasSufficientBalance) {
+        this.logger.warn(
+          `Insufficient wallet balance for customer ${subscription.customerAddress.customerId}. ` +
+            `Required: ${subscription.price_snapshot}, Available: ${walletValidation.currentBalance}`,
+        );
+
+        // Suspend the subscription due to insufficient wallet balance
+        await this.suspendSubscription(subscription.id);
+
+        // Send notifications about subscription suspension
+        await this.sendInsufficientBalanceNotifications(
+          subscription,
+          walletValidation.currentBalance,
+          subscription.price_snapshot,
+        );
+
+        return {
+          success: false,
+          reason: 'Insufficient wallet balance - subscription suspended',
+          skipped: true,
+        };
+      }
+
       // Create the order
       const order = await this.createOrder(subscription);
 
@@ -390,11 +424,6 @@ export class OrderGenerationService {
           customerAddressId: true,
           price_snapshot: true,
           paymentId: true,
-          payment: {
-            select: {
-              status: true,
-            },
-          },
           customerAddress: {
             select: {
               customerId: true,
@@ -555,6 +584,110 @@ export class OrderGenerationService {
         message: 'Failed to update subscription next delivery date',
         code: OrderGenerationErrorCode.SUBSCRIPTION_UPDATE_FAILED,
       });
+    }
+  }
+
+  /**
+   * Validates customer wallet balance against required amount.
+   * @param customerId - The customer ID to check wallet for
+   * @param requiredAmount - The required amount for the order
+   * @returns Object with balance status and current balance
+   */
+  private async validateWalletBalance(
+    customerId: string,
+    requiredAmount: number,
+  ): Promise<{ hasSufficientBalance: boolean; currentBalance: number }> {
+    try {
+      const wallet = await this.prisma.customerWallet.findUnique({
+        where: { customerId },
+        select: { balance: true },
+      });
+
+      // If no wallet found, treat as zero balance
+      const currentBalance = wallet ? Number(wallet.balance) : 0;
+
+      return {
+        hasSufficientBalance: currentBalance >= requiredAmount,
+        currentBalance,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error fetching wallet for customer ${customerId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      // Return insufficient balance on error to be safe
+      return { hasSufficientBalance: false, currentBalance: 0 };
+    }
+  }
+
+  /**
+   * Suspends a subscription due to insufficient wallet balance.
+   * @param subscriptionId - The subscription ID to suspend
+   */
+  private async suspendSubscription(subscriptionId: string): Promise<void> {
+    try {
+      await this.prisma.subscription.update({
+        where: { id: subscriptionId },
+        data: { status: SubscriptionStatus.SUSPENDED },
+      });
+
+      this.logger.log(
+        `Subscription ${subscriptionId} suspended due to insufficient wallet balance`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to suspend subscription ${subscriptionId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      throw new InternalServerErrorException({
+        message: 'Failed to suspend subscription',
+        code: OrderGenerationErrorCode.SUBSCRIPTION_SUSPENSION_FAILED,
+      });
+    }
+  }
+
+  /**
+   * Sends notifications about insufficient wallet balance to admin and customer.
+   * @param subscription - The subscription details
+   * @param currentBalance - Current wallet balance
+   * @param requiredAmount - Required amount for the order
+   */
+  private async sendInsufficientBalanceNotifications(
+    subscription: SubscriptionDetails,
+    currentBalance: number,
+    requiredAmount: number,
+  ): Promise<void> {
+    // Send notification to admin using the subscription notification orchestrator
+    try {
+      await this.subscriptionNotificationOrchestrator.sendAdminSuspensionNotification(
+        subscription.id,
+        subscription.customerAddress.customerId,
+        subscription.customerAddress.customer.name,
+        subscription.customerAddress.customer.email,
+        subscription.customerAddress.customer.phone,
+        subscription.product.name,
+        requiredAmount,
+        currentBalance,
+      );
+
+      this.logger.log(
+        `Admin notification sent for insufficient balance on subscription ${subscription.id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send admin notification for subscription ${subscription.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    }
+
+    // Send email to customer using the subscription notification system
+    try {
+      await this.subscriptionNotificationOrchestrator.sendSubscriptionSuspensionNotification(
+        subscription.id,
+        currentBalance,
+        requiredAmount,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send customer notification for subscription ${subscription.id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 }
