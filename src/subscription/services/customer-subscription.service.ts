@@ -253,12 +253,41 @@ export class CustomerSubscriptionService {
    * @param user - The authenticated customer user
    * @returns The updated subscription
    * @throws NotFoundException if subscription is not found
-   * @throws ForbiddenException if user doesn't own the subscription
+   * @throws ForbiddenException if user doesn't own the subscription or subscription is suspended
    */
   async toggleSubscriptionStatus(id: string, user: User) {
     const subscription = await this.validateSubscriptionOwnership(id, user);
+
+    // Check if subscription is suspended - cannot modify suspended subscriptions
+    if (subscription.status === 'SUSPENDED') {
+      throw new ForbiddenException(
+        'Your subscription is currently suspended and cannot be modified at this time. Please contact support for assistance.',
+      );
+    }
+
+    // Determine the new status based on current status
     const newStatus = subscription.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-    return this.subscriptionRepository.update(id, { status: newStatus });
+
+    // Prepare update data with new status
+    const updateData: { status: 'ACTIVE' | 'INACTIVE'; nextDeliveryDate?: Date } = {
+      status: newStatus,
+    };
+
+    // If reactivating subscription (INACTIVE -> ACTIVE), recalculate next delivery date
+    // based on the current date and subscription frequency
+    if (newStatus === 'ACTIVE' && subscription.status === 'INACTIVE') {
+      const currentDate = new Date();
+      const customDays = subscription.customDays || [];
+
+      // Calculate the next delivery date using the delivery frequency service
+      updateData.nextDeliveryDate = this.deliveryFrequencyService.getNextDeliveryDate(
+        currentDate,
+        subscription.frequency,
+        customDays,
+      );
+    }
+
+    return this.subscriptionRepository.update(id, updateData);
   }
 
   /**

@@ -93,8 +93,8 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
   async update(
     id: string,
     data: Partial<SubscriptionData>,
-  ): Promise<Subscription> {
-    const result = await this.prisma.subscription.update({
+  ): Promise<any> {
+    return await this.prisma.subscription.update({
       where: { id },
       data: {
         customerAddressId: data.customerAddressId,
@@ -108,9 +108,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         start_date: data.startDate,
         status: data.status as SubscriptionStatus,
       },
-      include: { customerAddress: true },
     });
-    return this.mapToSubscription(result);
   }
 
   /**

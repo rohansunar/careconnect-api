@@ -158,7 +158,7 @@ export class OrderGenerationService {
   ) {}
 
   /**
-   * Cron job that runs every 10 seconds to enqueue daily order generation jobs.
+   * Cron job that runs every EVERY_DAY_AT_9AM to enqueue daily order generation jobs.
    */
   @Cron(CronExpression.EVERY_DAY_AT_9AM, {
     disabled: process.env.SCHEDULER_DISABLE === 'true',
@@ -424,6 +424,7 @@ export class OrderGenerationService {
           customerAddressId: true,
           price_snapshot: true,
           paymentId: true,
+          payment: { select: { status: true } },
           customerAddress: {
             select: {
               customerId: true,
