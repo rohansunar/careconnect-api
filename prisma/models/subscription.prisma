@@ -36,11 +36,11 @@ model Subscription {
   next_delivery_date DateTime?
   status             SubscriptionStatus @default(PROCESSING)
   start_date         DateTime
-  total_price        Float @default(0)
+  total_price        Decimal @db.Decimal(12,2) @default(0.00)
   payment_mode       String @default("UPFRONT")
   created_at         DateTime           @default(now())
   updated_at         DateTime           @default(now())
-  price_snapshot     Float              @default(0)
+  price_snapshot     Decimal @db.Decimal(12,2) @default(0.00)
   paymentId          String? // For linking payments to subscriptions
   payment            Payment? @relation("subscriptionPayment", fields: [paymentId], references: [id])
 
