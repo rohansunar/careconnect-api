@@ -72,6 +72,21 @@ export class CustomerAuthService {
         },
       });
 
+      // Check if customer has an existing wallet, create one if not
+      const existingWallet = await this.prisma.customerWallet.findUnique({
+        where: { customerId: customer.id },
+      });
+
+      if (!existingWallet) {
+        await this.prisma.customerWallet.create({
+          data: {
+            customerId: customer.id,
+            balance: 0,
+          },
+        });
+        this.logger.log(`Wallet created for customer: ${customer.id}`);
+      }
+
       // Generate JWT token with customer information
       const payload = {
         sub: customer.id.toString(),
