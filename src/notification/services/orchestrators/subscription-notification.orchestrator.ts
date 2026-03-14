@@ -57,7 +57,7 @@ export class SubscriptionNotificationOrchestrator {
 
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
-        subscription.total_price,
+        Number(subscription.total_price),
         currency,
       );
 
@@ -131,7 +131,7 @@ export class SubscriptionNotificationOrchestrator {
 
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
-        subscription.total_price,
+        Number(subscription.total_price),
         currency,
       );
 
@@ -196,7 +196,7 @@ export class SubscriptionNotificationOrchestrator {
 
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
-        subscription.total_price,
+        Number(subscription.total_price),
         currency,
       );
 
@@ -267,7 +267,7 @@ export class SubscriptionNotificationOrchestrator {
 
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
-        subscription.total_price,
+        Number(subscription.total_price),
         currency,
       );
       const formattedCurrentBalance = this.formatCurrency(
