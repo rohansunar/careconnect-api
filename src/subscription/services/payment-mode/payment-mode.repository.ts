@@ -28,9 +28,14 @@ export class JsonPaymentModeRepository implements PaymentModeRepository {
       const config = JSON.parse(fs.readFileSync(this.configPath, 'utf-8'));
       return config.payment_mode;
     } catch (error) {
-      throw new InternalServerErrorException(
-        'Failed to load payment mode configuration',
-      );
+    // create folder if not exists
+    fs.mkdirSync(path.dirname(this.configPath), { recursive: true });
+    // create file
+    fs.writeFileSync(this.configPath,'{"payment_mode": "UPFRONT"}', 'utf8');
+
+    throw new InternalServerErrorException(
+      'Failed to load payment mode configuration',
+    );
     }
   }
 

@@ -89,7 +89,7 @@ export class VendorAuthService {
   }
 
   private async createBalance(vendorId: string) {
-    let balance = await this.prisma.vendorBalance.findUnique({
+    const balance = await this.prisma.vendorBalance.findUnique({
       where: { vendorId: vendorId },
     });
 
