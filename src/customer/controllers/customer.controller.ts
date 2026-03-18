@@ -33,7 +33,8 @@ export class CustomerController {
    */
   @ApiOperation({
     summary: 'Get Customer profile',
-    description: 'Allow customer to view their profile information including wallet balance and recent transactions.',
+    description:
+      'Allow customer to view their profile information including wallet balance and recent transactions.',
   })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
@@ -73,7 +74,8 @@ export class CustomerController {
    */
   @ApiOperation({
     summary: 'Delete customer profile (soft delete)',
-    description: 'Soft delete customer profile by setting isActive flag to false.',
+    description:
+      'Soft delete customer profile by setting isActive flag to false.',
   })
   @ApiResponse({ status: 200, description: 'Profile deleted successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })

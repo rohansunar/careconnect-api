@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { PaymentController } from './controllers/payment.controller';
@@ -23,7 +23,7 @@ import { CqrsModule } from '@nestjs/cqrs';
  * - OnPaymentSucceededWalletHandler: Event handler for wallet credits on subscription payment
  */
 @Module({
-  imports: [CqrsModule, PrismaModule, WalletModule],
+  imports: [CqrsModule, PrismaModule, forwardRef(() => WalletModule)],
   controllers: [PaymentController],
   providers: [
     PaymentService,

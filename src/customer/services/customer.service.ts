@@ -74,10 +74,15 @@ export class CustomerService {
       };
     } catch (error) {
       this.logger.error(`Failed to get customer profile: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
-      throw new BadRequestException('Failed to retrieve customer profile. Please try again later.');
+      throw new BadRequestException(
+        'Failed to retrieve customer profile. Please try again later.',
+      );
     }
   }
 
@@ -126,7 +131,9 @@ export class CustomerService {
       if (error.code === 'P2025') {
         throw new NotFoundException('Customer not found');
       }
-      throw new BadRequestException('Failed to update customer profile. Please try again later.');
+      throw new BadRequestException(
+        'Failed to update customer profile. Please try again later.',
+      );
     }
   }
 
@@ -162,13 +169,18 @@ export class CustomerService {
       };
     } catch (error) {
       this.logger.error(`Failed to delete customer profile: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       if (error.code === 'P2025') {
         throw new NotFoundException('Customer not found');
       }
-      throw new BadRequestException('Failed to delete profile. Please try again later.');
+      throw new BadRequestException(
+        'Failed to delete profile. Please try again later.',
+      );
     }
   }
 
@@ -192,10 +204,15 @@ export class CustomerService {
       }
     } catch (error) {
       this.logger.error(`Failed to validate customer: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
-      throw new BadRequestException('Failed to validate customer. Please try again later.');
+      throw new BadRequestException(
+        'Failed to validate customer. Please try again later.',
+      );
     }
   }
 }
