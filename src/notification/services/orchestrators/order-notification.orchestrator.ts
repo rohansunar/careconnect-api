@@ -107,7 +107,7 @@ export class OrderNotificationOrchestrator {
         throw new Error(`Order not found: ${orderId}`);
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
         Number(order.total_amount),
@@ -358,7 +358,7 @@ export class OrderNotificationOrchestrator {
         throw new Error(`Order not found: ${orderId}`);
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
         Number(order.total_amount),
@@ -655,7 +655,7 @@ export class OrderNotificationOrchestrator {
         throw new Error(`Order not found: ${orderId}`);
       }
 
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+      const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
       const currency = 'INR';
       const formattedAmount = this.formatCurrency(
         Number(order.total_amount),
@@ -1316,7 +1316,7 @@ export class OrderNotificationOrchestrator {
     subscriptionId: string,
   ): Promise<boolean> {
     const correlationId = `vendor-inactive-${subscriptionId}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
 
     try {
       await this.emailChannel.sendEmail(
@@ -1351,7 +1351,7 @@ export class OrderNotificationOrchestrator {
     subscriptionId: string,
   ): Promise<boolean> {
     const correlationId = `product-inactive-${subscriptionId}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
 
     try {
       await this.emailChannel.sendEmail(
@@ -1400,7 +1400,7 @@ export class OrderNotificationOrchestrator {
     quantity: number,
   ): Promise<boolean> {
     const correlationId = `vendor-unavailable-${subscription.id}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
     const timezone = process.env.TIMEZONE || 'Asia/Kolkata';
     const timestamp = new Date().toLocaleString('en-IN', {
       timeZone: timezone,
@@ -1457,7 +1457,7 @@ export class OrderNotificationOrchestrator {
     errorMessage: string,
   ): Promise<boolean> {
     const correlationId = `order-gen-error-${subscriptionId}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
 
     try {
       await this.emailChannel.sendEmail(
@@ -1493,7 +1493,7 @@ export class OrderNotificationOrchestrator {
     subscriptionId: string,
   ): Promise<boolean> {
     const correlationId = `rescheduled-${subscriptionId}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
 
     try {
       await this.emailChannel.sendEmail(

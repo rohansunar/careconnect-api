@@ -115,7 +115,7 @@ export const AdminOrderCancellationTemplate: React.FC<AdminOrderCancellationTemp
 
             <EmailFooter
                 companyName="Water Delivery System"
-                supportEmail="support@waterdelivery.com"
+                supportEmail="support@droptro.com"
             />
         </EmailLayout>
     );

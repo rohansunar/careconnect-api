@@ -300,7 +300,7 @@ export class SubscriptionNotificationOrchestrator {
           requiredAmount: formattedRequiredAmount,
           shortfall: formattedShortfall,
           supportEmail:
-            process.env.SUPPORT_EMAIL || 'support@waterdelivery.com',
+            process.env.SUPPORT_EMAIL || 'support@droptro.com',
           manageUrl: process.env.CUSTOMER_PORTAL_URL || '',
         }),
       );
@@ -347,7 +347,7 @@ export class SubscriptionNotificationOrchestrator {
     currentBalance: number,
   ): Promise<boolean> {
     const correlationId = `admin-suspend-${subscriptionId}-${Date.now()}`;
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@waterdelivery.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@droptro.com';
     const currency = 'INR';
 
     const formatCurrency = (amount: number): string =>

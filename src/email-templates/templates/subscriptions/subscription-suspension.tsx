@@ -36,7 +36,7 @@ export const SubscriptionSuspensionTemplate: React.FC<
     currentBalance,
     requiredAmount,
     shortfall,
-    supportEmail = 'support@waterdelivery.com',
+    supportEmail = 'support@droptro.com',
     manageUrl,
 }) => {
         const subscriptionRows: DetailsTableRow[] = [

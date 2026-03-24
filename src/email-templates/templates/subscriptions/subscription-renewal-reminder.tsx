@@ -57,7 +57,7 @@ export const SubscriptionRenewalReminderTemplate: React.FC<SubscriptionRenewalRe
                     )}
                 </Section>
             </Section>
-            <EmailFooter companyName="Water Delivery System" supportEmail="support@waterdelivery.com" />
+            <EmailFooter companyName="Water Delivery System" supportEmail="support@droptro.com" />
         </EmailLayout>
     );
 };

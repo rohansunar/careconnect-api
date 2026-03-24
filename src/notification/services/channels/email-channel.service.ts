@@ -44,7 +44,7 @@ export class EmailChannelService {
     this.resend = new Resend(resendApiKey);
     this.fromEmail =
       this.configService.get<string>('RESEND_FROM_EMAIL') ||
-      'noreply@waterdelivery.com';
+      'noreply@droptro.com';
     this.maxRetries = NOTIFICATION_CONFIG.retryAttempts.email;
     this.retryDelayMs = NOTIFICATION_CONFIG.retryDelayMs.email;
 

@@ -66,7 +66,7 @@ export interface SubscriptionData {
   productId: string;
   quantity: number;
   priceSnapshot: number;
-  total_price:number;
+  total_price: number;
   frequency: SubscriptionFrequency;
   customDays?: DayOfWeek[];
   startDate: Date;

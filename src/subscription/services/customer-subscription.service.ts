@@ -148,7 +148,7 @@ export class CustomerSubscriptionService {
       productId: dto.productId,
       quantity: dto.quantity,
       priceSnapshot: Number(product.subscription_price),
-      total_price:totalPrice,
+      total_price: totalPrice,
       frequency: dto.frequency,
       customDays: customDays,
       startDate: startDate,
@@ -226,7 +226,7 @@ export class CustomerSubscriptionService {
       take: validatedLimit,
       include: {
         product: {
-          select: { name: true, images:true },
+          select: { name: true, images: true },
         },
       },
       orderBy: { created_at: 'desc' },
@@ -269,7 +269,10 @@ export class CustomerSubscriptionService {
     const newStatus = subscription.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
     // Prepare update data with new status
-    const updateData: { status: 'ACTIVE' | 'INACTIVE'; nextDeliveryDate?: Date } = {
+    const updateData: {
+      status: 'ACTIVE' | 'INACTIVE';
+      nextDeliveryDate?: Date;
+    } = {
       status: newStatus,
     };
 
@@ -280,11 +283,12 @@ export class CustomerSubscriptionService {
       const customDays = subscription.customDays || [];
 
       // Calculate the next delivery date using the delivery frequency service
-      updateData.nextDeliveryDate = this.deliveryFrequencyService.getNextDeliveryDate(
-        currentDate,
-        subscription.frequency,
-        customDays,
-      );
+      updateData.nextDeliveryDate =
+        this.deliveryFrequencyService.getNextDeliveryDate(
+          currentDate,
+          subscription.frequency,
+          customDays,
+        );
     }
 
     return this.subscriptionRepository.update(id, updateData);

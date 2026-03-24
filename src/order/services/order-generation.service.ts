@@ -139,7 +139,7 @@ export class OrderGenerationService {
    */
   private get config(): OrderGenerationConfig {
     return {
-      adminEmail: process.env.ADMIN_EMAIL || 'admin@waterdelivery.com',
+      adminEmail: process.env.ADMIN_EMAIL || 'support@droptro.com',
       schedulerDisabled: process.env.SCHEDULER_DISABLE === 'true',
       timezone: process.env.TIMEZONE || 'Asia/Kolkata',
     };

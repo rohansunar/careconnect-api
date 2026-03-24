@@ -51,7 +51,7 @@ export const SubscriptionActivationTemplate: React.FC<SubscriptionActivationTemp
                     </Section>
                 )}
             </Section>
-            <EmailFooter companyName="Water Delivery System" supportEmail="support@waterdelivery.com" />
+            <EmailFooter companyName="Water Delivery System" supportEmail="support@droptro.com" />
         </EmailLayout>
     );
 };

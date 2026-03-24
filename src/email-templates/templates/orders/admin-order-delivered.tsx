@@ -129,7 +129,7 @@ export const AdminOrderDeliveredTemplate: React.FC<AdminOrderDeliveredTemplatePr
 
             <EmailFooter
                 companyName="Water Delivery System"
-                supportEmail="support@waterdelivery.com"
+                supportEmail="support@droptro.com"
             />
         </EmailLayout>
     );

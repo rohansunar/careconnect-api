@@ -10,8 +10,8 @@ export const EmailFooter: React.FC<EmailFooterProps> = ({
   companyName = 'Water Delivery Service',
   companyAddress,
   unsubscribeUrl,
-  supportEmail = 'support@waterdelivery.com',
-  websiteUrl = 'https://waterdelivery.com',
+  supportEmail = 'support@droptro.com',
+  websiteUrl = 'https://droptro.com',
   year = new Date().getFullYear(),
 }) => {
   return (

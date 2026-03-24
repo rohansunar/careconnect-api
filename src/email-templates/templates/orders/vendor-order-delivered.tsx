@@ -127,7 +127,7 @@ export const VendorOrderDeliveredTemplate: React.FC<VendorOrderDeliveredTemplate
 
             <EmailFooter
                 companyName="Water Delivery System"
-                supportEmail="support@waterdelivery.com"
+                supportEmail="support@droptro.com"
             />
         </EmailLayout>
     );

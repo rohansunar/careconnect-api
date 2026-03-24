@@ -135,7 +135,7 @@ export const AdminVendorUnavailableTemplate: React.FC<
 
         <EmailFooter
           companyName="Water Delivery System - Admin Panel"
-          supportEmail="admin@waterdelivery.com"
+          supportEmail="connect@droptro.com"
         />
       </EmailLayout>
     );
