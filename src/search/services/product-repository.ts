@@ -128,9 +128,26 @@ export class ProductRepository implements IProductRepository {
   private processResults(results: any[]): IProximitySearchResult[] {
     return results.map((row) => {
       const { distance, ...product } = row;
+
+      // Calculate percentage decrease between regular price and subscription price
+      const regularPrice = parseFloat(product.price);
+      const subscriptionPrice = product.subscription_price
+        ? parseFloat(product.subscription_price)
+        : null;
+
+      let percentageDecrease: number | null = null;
+      if (subscriptionPrice !== null && regularPrice > 0) {
+        percentageDecrease = parseFloat(
+          (((regularPrice - subscriptionPrice) / regularPrice) * 100).toFixed(
+            2,
+          ),
+        );
+      }
+
       return {
         ...product,
         distance: this.formatDistance(distance / 1000),
+        percentageDecrease,
       };
     });
   }

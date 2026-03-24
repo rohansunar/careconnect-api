@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,

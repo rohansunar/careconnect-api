@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, UseGuards } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -143,9 +136,7 @@ export class WalletPaymentController {
     description: 'Internal server error.',
   })
   @Get('transactions')
-  async getLastTransactions(
-     @CurrentUser() user: User,
-  ) {
+  async getLastTransactions(@CurrentUser() user: User) {
     return this.walletService.getTransactionHistory(user.id);
   }
 }

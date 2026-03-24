@@ -1,4 +1,10 @@
-import { Injectable, Logger, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from '../../payment/services/payment-provider.service';
 import { PaymentStatus } from '@prisma/client';
@@ -54,10 +60,7 @@ export class WalletPaymentService {
    * @returns Payment object with customer details
    * @throws BadRequestException if payment initialization fails
    */
-  async initializePayment(
-    user: User,
-    dto: CreatePaymentDto,
-  ) {
+  async initializePayment(user: User, dto: CreatePaymentDto) {
     this.logger.log(
       `Initializing payment for customer: ${user.id} with amount: ${dto.amount}`,
     );

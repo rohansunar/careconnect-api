@@ -3,9 +3,16 @@ import {
   BadRequestException,
   Logger,
   ConflictException,
+  NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { RegisterTokenDto } from '../dto/register-token.dto';
+import { SendNotificationDto } from '../dto/send-notification.dto';
+import {
+  PushChannelService,
+  PushNotificationPayload,
+} from '../../notification/services/channels/push-channel.service';
 
 /**
  * TokenService handles device token registration and management for push notifications.
@@ -15,11 +22,25 @@ import { RegisterTokenDto } from '../dto/register-token.dto';
  * - Multi-device support: Users can have multiple devices registered
  * - Soft delete: Tokens are deactivated rather than deleted for audit trail
  */
+/**
+ * Result of sending notification to user devices
+ */
+export interface SendNotificationResult {
+  success: boolean;
+  totalDevices: number;
+  successfulDeliveries: number;
+  failedDeliveries: number;
+  errors: string[];
+}
+
 @Injectable()
 export class TokenService {
   private readonly logger = new Logger(TokenService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pushChannelService: PushChannelService,
+  ) {}
 
   /**
    * Register a new device token or update existing one
@@ -188,5 +209,105 @@ export class TokenService {
     });
 
     return tokens.map((t: { device_token: string }) => t.device_token);
+  }
+
+  /**
+   * Send push notification to all active devices of the logged-in user
+   *
+   * This method retrieves all active device tokens for the user and sends
+   * a push notification to each device via FCM/APNs.
+   *
+   * @param userId - The user ID from JWT
+   * @param userType - The user type (CUSTOMER, RIDER, VENDOR)
+   * @param dto - Notification data (title, body, data, imageUrl)
+   * @returns Result of the notification sending operation
+   */
+  async sendNotification(
+    userId: string,
+    userType: string,
+    dto: SendNotificationDto,
+  ): Promise<SendNotificationResult> {
+    this.logger.log(`Sending notification to user ${userId} (${userType})`);
+
+    // Get all active device tokens for the user
+    const activeTokens = await this.getActiveTokens(userId, userType);
+
+    if (activeTokens.length === 0) {
+      this.logger.warn(`No active devices found for user ${userId}`);
+      throw new NotFoundException(
+        'No active devices found. Please register a device token first.',
+      );
+    }
+
+    this.logger.log(
+      `Found ${activeTokens.length} active device(s) for user ${userId}`,
+    );
+
+    // Build the notification payload
+    const payload: PushNotificationPayload = {
+      title: dto.title,
+      body: dto.body,
+      data: dto.data,
+    };
+
+    // Send notification to all devices
+    const correlationId = this.pushChannelService.generateCorrelationId();
+    let successfulDeliveries = 0;
+    let failedDeliveries = 0;
+    const errors: string[] = [];
+
+    // Send to each device
+    const sendPromises = activeTokens.map(async (token) => {
+      try {
+        const result = await this.pushChannelService.send(
+          token,
+          payload,
+          correlationId,
+        );
+
+        if (result.success) {
+          successfulDeliveries++;
+        } else {
+          failedDeliveries++;
+          if (result.error) {
+            errors.push(`Device ${token.substring(0, 10)}...: ${result.error}`);
+          }
+        }
+      } catch (error) {
+        failedDeliveries++;
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        errors.push(`Device ${token.substring(0, 10)}...: ${errorMessage}`);
+        this.logger.error(
+          `Failed to send notification to device: ${errorMessage}`,
+          { correlationId },
+        );
+      }
+    });
+
+    // Wait for all notifications to be sent
+    await Promise.all(sendPromises);
+
+    const success = successfulDeliveries > 0;
+
+    this.logger.log(
+      `Notification sent to user ${userId}: ${successfulDeliveries} successful, ${failedDeliveries} failed`,
+      { correlationId },
+    );
+
+    // If all deliveries failed, throw an error
+    if (!success && errors.length > 0) {
+      throw new InternalServerErrorException(
+        `Failed to send notifications to all devices: ${errors.join('; ')}`,
+      );
+    }
+
+    return {
+      success,
+      totalDevices: activeTokens.length,
+      successfulDeliveries,
+      failedDeliveries,
+      errors,
+    };
   }
 }

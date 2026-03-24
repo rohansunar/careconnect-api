@@ -67,14 +67,50 @@ export class ProductService {
   }
 
   /**
+   * Validates subscription_price when is_schedulable is true.
+   * Ensures subscription_price is provided and is strictly less than the price.
+   * @param isSchedulable - Whether the product is schedulable.
+   * @param subscriptionPrice - The subscription price to validate.
+   * @param price - The base price to compare against.
+   * @throws BadRequestException if validation fails.
+   */
+  private validateSubscriptionPrice(
+    isSchedulable: boolean,
+    subscriptionPrice: number | undefined | null,
+    price: number,
+  ): void {
+    if (isSchedulable === true) {
+      if (subscriptionPrice === undefined || subscriptionPrice === null) {
+        throw new BadRequestException(
+          'subscription_price is required when is_schedulable is true',
+        );
+      }
+
+      if (subscriptionPrice >= price) {
+        throw new BadRequestException(
+          'subscription_price must be strictly less than the price',
+        );
+      }
+    }
+  }
+
+  /**
    * Creates a new vendor product after validating that the base product exists
    * and that the vendor doesn't already have this product.
    * @param vendorId - The unique identifier of the vendor.
-   * @param dto - The data transfer object containing product details (product_id, price, deposit).
+   * @param dto - The data transfer object containing product details.
    * @returns The created vendor product details.
    */
   async createProduct(vendorId: string, dto: CreateProductDto) {
     await this.validateVendor(vendorId);
+
+    // Validate subscription_price when is_schedulable is true
+    this.validateSubscriptionPrice(
+      dto.is_schedulable ?? false,
+      dto.subscription_price,
+      dto.price,
+    );
+
     // Check if vendor_product already exists for this product and vendor
     const existing = await this.prisma.product.findFirst({
       where: {
@@ -108,10 +144,10 @@ export class ProductService {
         name: dto.name,
         description: dto.description,
         price: dto.price,
-        deposit: dto.deposit,
         categoryId: dto.categoryId,
         is_active: dto.is_active || true,
         is_schedulable: dto.is_schedulable || false,
+        subscription_price: dto.subscription_price,
       },
     });
 
@@ -141,6 +177,14 @@ export class ProductService {
     if (!vendorProduct) {
       throw new NotFoundException('Vendor product not found');
     }
+
+    // Validate subscription_price when is_schedulable is true
+    const priceToCompare = dto.price ?? vendorProduct.price;
+    this.validateSubscriptionPrice(
+      dto.is_schedulable ?? vendorProduct.is_schedulable,
+      dto.subscription_price,
+      priceToCompare,
+    );
 
     const updated = await this.prisma.product.update({
       where: { id: productId },

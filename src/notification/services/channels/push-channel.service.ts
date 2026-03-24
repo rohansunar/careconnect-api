@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as admin from 'firebase-admin';
 import { PrismaService } from '../../../common/database/prisma.service';
 import { NOTIFICATION_CONFIG } from '../../config/notification.config';
-import { UserType } from '../../dto/user-type.enum';
 
 /**
  * Result of a push notification send operation
@@ -157,7 +156,6 @@ export class PushChannelService implements OnModuleInit {
           notification: {
             title: payload.title,
             body: payload.body,
-            imageUrl: payload.imageUrl,
           },
           data: payload.data,
           android: {

@@ -29,14 +29,19 @@ export class UpdateProductDto {
   price: number;
 
   @IsOptional()
-  @IsNumber()
-  deposit?: number;
-
-  @IsOptional()
   @IsBoolean()
   is_active?: boolean;
 
   @IsOptional()
   @IsBoolean()
   is_schedulable?: boolean;
+
+  @ApiProperty({
+    description: 'Subscription price (required when is_schedulable is true)',
+    example: 80.0,
+    required: false,
+  })
+  @IsOptional()
+  @IsNumber()
+  subscription_price?: number;
 }

@@ -5,7 +5,6 @@ import {
   Delete,
   Body,
   Query,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
@@ -14,9 +13,16 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
-import { TokenService } from '../services/token.service';
+import {
+  TokenService,
+  SendNotificationResult,
+} from '../services/token.service';
 import { RegisterTokenDto } from '../dto/register-token.dto';
+import { SendNotificationDto } from '../dto/send-notification.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('Device Tokens')
@@ -95,6 +101,50 @@ export class TokenController {
       user.id,
       user.role.toUpperCase(),
       deviceId,
+    );
+  }
+
+  /**
+   * Send push notification to the logged-in user's device(s)
+   *
+   * This endpoint retrieves all active device tokens for the authenticated user
+   * (customer, vendor, or rider) and sends a push notification to each registered device.
+   *
+   * The user is identified by the JWT token in the Authorization header.
+   */
+  @Post('notify')
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Send push notification to user devices',
+    description:
+      'Sends a push notification to all active devices of the logged-in user. ' +
+      'Supports customers, vendors, and riders. The notification is delivered via FCM/APNs.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification sent successfully',
+    type: Object,
+  })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiNotFoundResponse({
+    description: 'No active devices found for the user',
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid request body',
+  })
+  @ApiInternalServerErrorResponse({
+    description: 'Failed to send notifications to all devices',
+  })
+  async sendNotification(
+    @Body() dto: SendNotificationDto,
+    @CurrentUser() user: { id: string; role: string },
+  ): Promise<SendNotificationResult> {
+    return this.tokenService.sendNotification(
+      user.id,
+      user.role.toUpperCase(),
+      dto,
     );
   }
 }

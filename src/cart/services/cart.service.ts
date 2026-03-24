@@ -81,7 +81,6 @@ export class CartService {
           productId: dto.productId,
           quantity,
           price: product.price,
-          deposit: product.deposit,
         },
       });
     });

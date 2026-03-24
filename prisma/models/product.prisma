@@ -16,11 +16,11 @@ model Product {
   created_at  DateTime   @default(now())
   vendorId    String
   vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  price       Decimal  @db.Decimal(10, 2)  
-  deposit     Decimal?  @db.Decimal(10, 2) 
+  price       Decimal    @db.Decimal(10, 2)  
+  subscription_price     Decimal? @db.Decimal(10,2)
   is_active   Boolean    @default(true)
-  approval_status ProductApprovalStatus @default(PENDING)
-  approved_by String? // Admin ID
+  approval_status        ProductApprovalStatus @default(PENDING)
+  approved_by String?     // Admin ID
   approved_at DateTime?
   is_schedulable Boolean @default(false) // Vendor can select for scheduling
   updated_at  DateTime   @default(now())

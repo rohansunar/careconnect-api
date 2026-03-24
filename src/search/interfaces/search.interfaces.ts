@@ -28,9 +28,15 @@ export interface IProximitySearchResult {
   created_at: Date;
   vendorId: string;
   price: number;
-  deposit: number | null;
+  subscription_price: number | null;
+  is_active: boolean;
+  approval_status: string;
+  approved_by: string | null;
+  approved_at: Date | null;
+  is_schedulable: boolean;
   updated_at: Date;
   distance: IDistance;
+  percentageDecrease: number | null;
 }
 
 /**

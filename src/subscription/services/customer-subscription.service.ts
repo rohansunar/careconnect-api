@@ -115,7 +115,7 @@ export class CustomerSubscriptionService {
 
     const totalPrice = this.priceCalculationService.calculateTotalPrice(
       dto.quantity,
-      Number(product.price),
+      Number(product.subscription_price),
       dto.frequency,
       startDate,
       customDays,
@@ -147,8 +147,8 @@ export class CustomerSubscriptionService {
       customerAddressId: customerAddress.id,
       productId: dto.productId,
       quantity: dto.quantity,
-      price: totalPrice,
-      priceSnapshot: Number(product.price),
+      priceSnapshot: Number(product.subscription_price),
+      total_price:totalPrice,
       frequency: dto.frequency,
       customDays: customDays,
       startDate: startDate,
@@ -157,7 +157,7 @@ export class CustomerSubscriptionService {
     });
 
     const providerResponse = await this.paymentProvider.initiatePayment({
-      amount: createdSubscription.price,
+      amount: createdSubscription.subscription_price,
       currency: this.CURRENCY,
       orderId: createdSubscription.id,
       notes: { subscribeID: createdSubscription.id },
@@ -166,7 +166,7 @@ export class CustomerSubscriptionService {
     // Create payment record in database
     const payment = (await this.prisma.payment.create({
       data: {
-        amount: createdSubscription.price,
+        amount: createdSubscription.subscription_price,
         currency: this.CURRENCY,
         provider: providerResponse?.provider || undefined,
         provider_payment_id: providerResponse?.providerPaymentId || undefined,
@@ -226,7 +226,7 @@ export class CustomerSubscriptionService {
       take: validatedLimit,
       include: {
         product: {
-          select: { name: true },
+          select: { name: true, images:true },
         },
       },
       orderBy: { created_at: 'desc' },

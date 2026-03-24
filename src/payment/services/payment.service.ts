@@ -7,7 +7,12 @@ import {
 import { PrismaService } from '../../common/database/prisma.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { WebhookIdempotencyService } from './webhook-idempotency.service';
-import { PaymentStatus, SubscriptionStatus } from '@prisma/client';
+import {
+  PaymentStatus,
+  SubscriptionStatus,
+  ReferenceType,
+} from '@prisma/client';
+import { WalletService } from '../../wallet/services/wallet.service';
 
 import {
   InitiatePaymentData,
@@ -30,6 +35,7 @@ export class PaymentService {
     private paymentProvider: PaymentProviderService,
     private readonly eventBus: EventBus,
     private readonly idempotencyService: WebhookIdempotencyService,
+    private readonly walletService: WalletService,
   ) {}
 
   async initiatePayment(
@@ -186,6 +192,10 @@ export class PaymentService {
           payment.payment_mode,
         ),
       );
+
+      // Handle wallet top-up if flagged in payment notes
+      await this.handleWalletTopup(payment, webhookData, notes);
+
       return { success: true };
     } catch (error) {
       this.logger.error(
@@ -239,6 +249,86 @@ export class PaymentService {
         error.stack,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Handles wallet top-up when payment is successful and walletTopup flag is true.
+   * Extracts customerId and walletTopup from payment notes and credits the wallet.
+   * Uses payment ID as idempotency key to prevent duplicate transactions.
+   * @param payment - The existing payment record
+   * @param webhookData - The webhook payload
+   * @param notes - Payment notes containing customerId and walletTopup flag
+   */
+  private async handleWalletTopup(
+    payment: any,
+    webhookData: any,
+    notes: Record<string, any>,
+  ): Promise<void> {
+    const customerId = notes?.customerId;
+    const walletTopup = notes?.walletTopup;
+
+    // Skip if walletTopup flag is not set to true
+    if (!walletTopup) {
+      this.logger.debug(
+        `Wallet top-up not requested for payment ${payment.id}`,
+      );
+      return;
+    }
+
+    // Validate customerId exists
+    if (!customerId) {
+      this.logger.warn(
+        `Wallet top-up requested but customerId not found in payment notes for payment ${payment.id}`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `Processing wallet top-up for customer ${customerId} with amount ${payment.amount} for payment ${payment.id}`,
+    );
+
+    try {
+      // Use payment ID as idempotency key to prevent duplicate transactions
+      const idempotencyKey = `wallet_topup_payment_${payment.id}`;
+      const description = `Wallet top-up via payment: ${payment.id}`;
+
+      // Credit the wallet using canonical wallet service
+      const result = await this.walletService.creditToWallet(
+        customerId, // customerId
+        Number(payment.amount), // amount
+        payment.id, // orderId (reference ID)
+        description, // description
+        idempotencyKey, // idempotencyKey
+        ReferenceType.PAYMENT, // referenceType
+      );
+
+      this.logger.log(
+        `Wallet top-up successful for customer ${customerId}. Transaction ID: ${result.transactionId}, New balance: ${result.newBalance}`,
+      );
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      // Check if it's a duplicate transaction error (idempotency violation)
+      if (
+        error instanceof Error &&
+        error.name === 'DuplicateTransactionError'
+      ) {
+        this.logger.warn(
+          `Duplicate wallet top-up detected for payment ${payment.id}: ${errorMessage}`,
+        );
+        // Don't throw - this is expected for duplicate webhook calls
+        return;
+      }
+
+      this.logger.error(
+        `Failed to process wallet top-up for customer ${customerId} payment ${payment.id}: ${errorMessage}`,
+        errorStack,
+      );
+      // Don't throw - payment processing should not fail due to wallet issues
+      // The core payment and order status updates are more critical
     }
   }
 

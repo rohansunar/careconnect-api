@@ -70,7 +70,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         customerId: subscription.customerId,
         productId: subscription.productId,
         quantity: subscription.quantity,
-        total_price: subscription.price,
+        total_price: subscription.total_price,
         price_snapshot: subscription.priceSnapshot,
         frequency: subscription.frequency,
         custom_days: subscription.customDays
@@ -90,17 +90,14 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
    * @param data - Partial subscription data to update
    * @returns Updated subscription
    */
-  async update(
-    id: string,
-    data: Partial<SubscriptionData>,
-  ): Promise<any> {
+  async update(id: string, data: Partial<SubscriptionData>): Promise<any> {
     return await this.prisma.subscription.update({
       where: { id },
       data: {
         customerAddressId: data.customerAddressId,
         productId: data.productId,
         quantity: data.quantity,
-        total_price: data.price,
+        total_price: data.total_price,
         frequency: data.frequency,
         custom_days: data.customDays
           ? this.mapDayOfWeekToPrisma(data.customDays)
@@ -164,7 +161,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         prismaSubscription.customerAddressId,
       productId: prismaSubscription.productId,
       quantity: prismaSubscription.quantity,
-      price: prismaSubscription.total_price,
+      subscription_price: prismaSubscription.total_price,
       frequency: prismaSubscription.frequency,
       customDays: prismaSubscription.custom_days,
       startDate: prismaSubscription.start_date,

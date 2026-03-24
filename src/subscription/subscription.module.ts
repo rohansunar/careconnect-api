@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
 import { NotificationModule } from '../notification/notification.module';
 import { PaymentModule } from '../payment/payment.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { CustomerSubscriptionController } from './controllers/customer-subscription.controller';
 import { AdminSubscriptionController } from './controllers/admin-subscription.controller';
 import { CustomerSubscriptionService } from './services/customer-subscription.service';
@@ -18,7 +19,13 @@ import { OnPaymentSucceededSubscriptionHandler } from './services/handlers/on-pa
 import { CqrsModule } from '@nestjs/cqrs';
 
 @Module({
-  imports: [CqrsModule, PrismaModule, NotificationModule, PaymentModule],
+  imports: [
+    CqrsModule,
+    PrismaModule,
+    NotificationModule,
+    PaymentModule,
+    WalletModule,
+  ],
   controllers: [CustomerSubscriptionController, AdminSubscriptionController],
   providers: [
     CustomerSubscriptionService,
