@@ -4,6 +4,7 @@ import {
   IsEmail,
   IsArray,
   IsEnum,
+  IsBoolean,
 } from 'class-validator';
 
 export enum DayOfWeek {
@@ -24,6 +25,10 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsEmail()
   email?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_available_today?:boolean
 
   @IsOptional()
   @IsString()
