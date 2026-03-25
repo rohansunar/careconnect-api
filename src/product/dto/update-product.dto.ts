@@ -4,6 +4,7 @@ import {
   IsString,
   IsBoolean,
   IsNotEmpty,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -13,11 +14,11 @@ export class UpdateProductDto {
     example: 'Mineral Water 20L',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   name: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   categoryId: string;
 
   @IsString()
@@ -25,7 +26,7 @@ export class UpdateProductDto {
   description?: string;
 
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   price: number;
 
   @IsOptional()
@@ -43,5 +44,6 @@ export class UpdateProductDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(0)
   subscription_price?: number;
 }

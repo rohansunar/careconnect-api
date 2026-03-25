@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsNotEmpty,
   IsBoolean,
+  Min,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -43,5 +44,6 @@ export class CreateProductDto {
   })
   @IsOptional()
   @IsNumber()
+  @Min(0)
   subscription_price?: number;
 }
