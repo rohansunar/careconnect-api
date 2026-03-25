@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  HttpException,
+} from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { OtpService } from '../../otp/services/otp.service';
 import { OtpPurpose } from '@prisma/client';
@@ -104,7 +109,7 @@ export class CustomerAuthService {
     } catch (error) {
       this.logger.error('Error in verifyOtpAndCreateCustomer:', error);
 
-      if (error instanceof BadRequestException) {
+      if (error instanceof HttpException) {
         throw error;
       }
       throw new BadRequestException(

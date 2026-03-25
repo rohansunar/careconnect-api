@@ -28,7 +28,7 @@ export class UpdateProfileDto {
 
   @IsOptional()
   @IsBoolean()
-  is_available_today?:boolean
+  is_available_today?: boolean;
 
   @IsOptional()
   @IsString()

@@ -37,6 +37,10 @@ export interface IProximitySearchResult {
   updated_at: Date;
   distance: IDistance;
   percentageDecrease: number | null;
+  vendorName?: string;
+  openingTime: string;
+  closingTime: string;
+  isReadyToAcceptOrders: boolean;
 }
 
 /**

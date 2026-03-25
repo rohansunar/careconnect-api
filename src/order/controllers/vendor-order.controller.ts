@@ -1,7 +1,6 @@
 import {
   Controller,
   Get,
-  Patch,
   Post,
   Body,
   Param,
@@ -33,15 +32,20 @@ export class VendorOrderController {
 
   /**
    * Retrieves paginated orders for the authenticated vendor.
+   * Each order includes the distance between the vendor's address and customer's address.
+   * Distance is returned as { value: number, unit: string } (e.g., { value: 2.5, unit: 'km' }).
+   * If distance cannot be calculated, the distance field is omitted.
    * @param user - The authenticated vendor user
    * @param page - The page number (optional, default: 1)
    * @param limit - The number of orders per page (optional, default: 10)
-   * @returns Paginated orders with total count
+   * @returns Paginated orders with total count and distance in { value, unit } format
    */
   @ApiOperation({
     summary: 'Get my orders',
     description:
-      'Retrieves a paginated list of orders for the authenticated vendor.',
+      'Retrieves a paginated list of orders for the authenticated vendor. ' +
+      'Each order includes a distance field showing the distance between ' +
+      "the vendor's address and the customer's delivery address.",
   })
   @ApiQuery({
     name: 'page',
@@ -58,6 +62,111 @@ export class VendorOrderController {
   @ApiResponse({
     status: 200,
     description: 'Orders retrieved successfully.',
+    schema: {
+      type: 'object',
+      properties: {
+        orders: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                example: '550e8400-e29b-41d4-a716-446655440001',
+              },
+              orderNo: { type: 'string', example: 'O000001' },
+              customerId: { type: 'string' },
+              vendorId: { type: 'string' },
+              addressId: { type: 'string' },
+              total_amount: { type: 'number', example: 250.0 },
+              payment_status: { type: 'string', example: 'PAID' },
+              payment_mode: { type: 'string', example: 'ONLINE' },
+              delivery_status: { type: 'string', example: 'PENDING' },
+              created_at: { type: 'string', format: 'date-time' },
+              distance: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  value: {
+                    type: 'number',
+                    example: 2.5,
+                    description: 'Numeric distance value',
+                  },
+                  unit: {
+                    type: 'string',
+                    example: 'km',
+                    description: 'Unit of measurement (km or meters)',
+                  },
+                },
+                description:
+                  'Distance between vendor and customer address',
+              },
+              customer: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string', example: 'John Doe' },
+                  phone: { type: 'string', example: '+919999999999' },
+                },
+              },
+              address: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  address: { type: 'string', example: '123 Main Street' },
+                  pincode: { type: 'string', example: '123456' },
+                  location: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', example: 'Mumbai' },
+                      state: { type: 'string', example: 'Maharashtra' },
+                    },
+                  },
+                },
+              },
+              orderItems: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    price: { type: 'number' },
+                    quantity: { type: 'number' },
+                    product: {
+                      type: 'object',
+                      properties: {
+                        name: { type: 'string' },
+                        categoryId: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+              rider: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                },
+              },
+              payment: {
+                type: 'object',
+                nullable: true,
+                properties: {
+                  id: { type: 'string' },
+                  status: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        total: { type: 'number', example: 50 },
+        page: { type: 'number', example: 1 },
+        limit: { type: 'number', example: 10 },
+        totalPages: { type: 'number', example: 5 },
+      },
+    },
   })
   @Get()
   async getMyOrders(

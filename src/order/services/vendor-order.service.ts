@@ -6,7 +6,6 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ConflictException,
-  UnprocessableEntityException,
 } from '@nestjs/common';
 import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from './order.service';
@@ -18,6 +17,7 @@ import { PaymentMode, PaymentStatus } from '@prisma/client';
 import { AssignOrdersDto } from '../dto/assign-orders.dto';
 import { OrderStatus, CancellationOrigin } from '@prisma/client';
 import { OrderDeliveredEvent } from '../events/order-delivered.event';
+import { IDistance } from '../../search/interfaces/search.interfaces';
 
 /**
  * Platform fee calculation result
@@ -125,11 +125,31 @@ export class VendorOrderService extends OrderService {
   }
 
   /**
+   * Formats distance in kilometers to IDistance object.
+   * @param distanceKm - Distance in kilometers
+   * @returns Formatted distance with value and unit
+   */
+  private formatDistance(distanceKm: number): IDistance {
+    if (distanceKm < 1) {
+      return {
+        value: Math.round(distanceKm * 1000),
+        unit: 'meters',
+      };
+    } else {
+      return {
+        value: Math.round(distanceKm * 100) / 100,
+        unit: 'km',
+      };
+    }
+  }
+
+  /**
    * Retrieves paginated orders for the authenticated vendor.
+   * Includes distance calculation between vendor's address and customer's address.
    * @param user - The authenticated vendor user
    * @param page - The page number (default: 1)
    * @param limit - The number of orders per page (default: 10)
-   * @returns Object with orders array and total count
+   * @returns Object with orders array and total count, including distance in { value, unit } format
    */
   async getMyOrders(user: User, page: number = 1, limit: number = 10) {
     // Validate and sanitize pagination parameters
@@ -148,12 +168,30 @@ export class VendorOrderService extends OrderService {
       },
     };
     try {
-      const include = this.buildIncludeQuery();
-      const orders = await super.findAll(query, skip, sanitizedLimit, include);
+      // Use raw SQL query to calculate distance between vendor and customer addresses
+      const orders = await this.getOrdersWithDistance(
+        user.id,
+        skip,
+        sanitizedLimit,
+      );
       const total = await this.prisma.order.count({ where: query });
 
+      // Transform orders to include distance in { value, unit } format
+      const transformedOrders = orders.map((order) => {
+        const { distanceKm, ...rest } = order;
+        // Only include distance if it has a valid value
+        if (distanceKm !== null && distanceKm !== undefined) {
+          return {
+            ...rest,
+            distance: this.formatDistance(Number(distanceKm)),
+          };
+        }
+        // If distance cannot be calculated, omit the distance field
+        return rest;
+      });
+
       return {
-        orders,
+        orders: transformedOrders,
         total,
         page: sanitizedPage,
         limit: sanitizedLimit,
@@ -168,6 +206,135 @@ export class VendorOrderService extends OrderService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Retrieves orders with distance calculation using PostGIS.
+   * Calculates the distance between vendor's address and customer's address.
+   * @param vendorId - The vendor ID
+   * @param skip - Number of records to skip
+   * @param limit - Maximum number of records to return
+   * @returns Array of orders with distance in kilometers
+   */
+  private async getOrdersWithDistance(
+    vendorId: string,
+    skip: number,
+    limit: number,
+  ): Promise<Array<Record<string, unknown>>> {
+    // Raw SQL query to fetch orders with distance calculation
+    const query = `
+      SELECT 
+        o."id",
+        o."orderNo",
+        o."customerId",
+        o."vendorId",
+        o."addressId",
+        o."cartId",
+        o."total_amount",
+        o."payment_status",
+        o."riderId",
+        o."created_at",
+        o."updated_at",
+        o."payment_mode",
+        o."subscriptionId",
+        o."delivery_status",
+        o."delivery_otp",
+        o."otp_verified",
+        o."otp_generated_at",
+        o."cancelledAt",
+        o."cancelReason",
+        o."cancellation_origin",
+        o."paymentId",
+        -- Calculate distance in kilometers between vendor and customer addresses
+        COALESCE(
+          ST_Distance(
+            va."geopoint",
+            ca."geopoint"
+          ) / 1000.0,
+          NULL
+        ) AS "distanceKm",
+        -- Customer relation
+        json_build_object(
+          'id', c."id",
+          'name', c."name",
+          'phone', c."phone"
+        ) AS "customer",
+        -- Vendor relation
+        json_build_object(
+          'id', v."id",
+          'name', v."name",
+          'phone', v."phone"
+        ) AS "vendor",
+        -- Address (customer address) relation
+        json_build_object(
+          'id', ca."id",
+          'label', ca."label",
+          'address', ca."address",
+          'pincode', ca."pincode",
+          'isDefault', ca."isDefault",
+          'is_active', ca."is_active",
+          'isServiceable', ca."isServiceable",
+          'location', json_build_object(
+            'id', l."id",
+            'name', l."name",
+            'state', l."state",
+            'country', l."country"
+          )
+        ) AS "address",
+        -- Rider relation
+        CASE WHEN o."riderId" IS NOT NULL THEN
+          json_build_object(
+            'id', r."id",
+            'name', r."name"
+          )
+        ELSE NULL END AS "rider",
+        -- Order items
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', oi."id",
+                'price', oi."price",
+                'quantity', oi."quantity",
+                'product', json_build_object(
+                  'id', p."id",
+                  'name', p."name",
+                  'categoryId', p."categoryId"
+                )
+              )
+            )
+            FROM "OrderItem" oi
+            JOIN "Product" p ON oi."productId" = p."id"
+            WHERE oi."orderId" = o."id"
+          ),
+          '[]'::json
+        ) AS "orderItems",
+        -- Payment relation
+        CASE WHEN o."paymentId" IS NOT NULL THEN
+          json_build_object(
+            'id', pay."id",
+            'status', pay."status"
+          )
+        ELSE NULL END AS "payment"
+      FROM "Order" o
+      JOIN "Customer" c ON o."customerId" = c."id"
+      JOIN "Vendor" v ON o."vendorId" = v."id"
+      JOIN "CustomerAddress" ca ON o."addressId" = ca."id"
+      LEFT JOIN "Location" l ON ca."locationId" = l."id"
+      LEFT JOIN "VendorAddress" va ON v."id" = va."vendorId"
+      LEFT JOIN "Rider" r ON o."riderId" = r."id"
+      LEFT JOIN "Payment" pay ON o."paymentId" = pay."id"
+      WHERE o."vendorId" = $1
+        AND NOT (o."payment_mode" = 'ONLINE' AND o."payment_status" = 'PENDING')
+      ORDER BY o."created_at" DESC
+      LIMIT $2 OFFSET $3
+    `;
+
+    const result = await this.prisma.$queryRawUnsafe<
+      Array<Record<string, unknown>>
+    >(query, vendorId, limit, skip);
+
+    return result;
   }
 
   /**
