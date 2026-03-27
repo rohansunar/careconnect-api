@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   Delete,
+  ValidationPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +18,10 @@ import {
 } from '@nestjs/swagger';
 import { CustomerSubscriptionService } from '../services/customer-subscription.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
+import {
+  RecalculateSubscriptionPreviewDto,
+  RecalculateSubscriptionPreviewResponseDto,
+} from '../dto/subscription-preview.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { User } from '../../common/interfaces/user.interface';
 import { Roles } from '../../auth/decorators/roles.decorator';
@@ -28,6 +33,43 @@ export class CustomerSubscriptionController {
   constructor(
     private readonly customerSubscriptionService: CustomerSubscriptionService,
   ) {}
+
+  @ApiOperation({
+    summary: 'Preview subscription before creation',
+    description:
+      'Recalculates subscription preview details using the requested product, units, frequency, start date, and custom weekday schedule.',
+  })
+  @ApiBody({
+    type: RecalculateSubscriptionPreviewDto,
+    description:
+      'Recalculation data including productId and optional frequency, start_date, and custom_days.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription preview recalculated successfully.',
+    type: RecalculateSubscriptionPreviewResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid recalculation input.',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Product not found.',
+  })
+  @Post('preview')
+  async calculateSubscriptionPreview(
+    @Body(
+      new ValidationPipe({
+        transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    dto: RecalculateSubscriptionPreviewDto,
+  ) {
+    return this.customerSubscriptionService.calculateSubscriptionPreview(dto);
+  }
 
   /**
    * Creates a new subscription for the authenticated customer.

@@ -467,7 +467,8 @@ export class CustomerOrderService extends OrderService {
           delivery_status: OrderStatus.CANCELLED,
           cancelledAt: new Date(),
           cancelReason: dto.cancelReason,
-          payment_status: hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
+          // payment_status: hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
+          cancellation_origin:'CUSTOMER'
         },
         include: {
           customer: true,

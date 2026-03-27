@@ -299,8 +299,7 @@ export class SubscriptionNotificationOrchestrator {
           currentBalance: formattedCurrentBalance,
           requiredAmount: formattedRequiredAmount,
           shortfall: formattedShortfall,
-          supportEmail:
-            process.env.SUPPORT_EMAIL || 'support@droptro.com',
+          supportEmail: process.env.SUPPORT_EMAIL || 'support@droptro.com',
           manageUrl: process.env.CUSTOMER_PORTAL_URL || '',
         }),
       );

@@ -13,7 +13,6 @@ import { PaymentModeService } from './services/payment-mode.service';
 import { SubscriptionValidationService } from './services/subscription-validation.service';
 import { SubscriptionRepositoryService } from './repositories/subscription.repository';
 import { DeliveryFrequencyFactoryService } from './services/delivery-frequency/delivery-frequency.factory';
-import { PriceCalculatorFactoryService } from './services/price-calculation/price-calculator.factory';
 import { JsonPaymentModeRepository } from './services/payment-mode/payment-mode.repository';
 import { OnPaymentSucceededSubscriptionHandler } from './services/handlers/on-payment-success-subscription.handler';
 import { CqrsModule } from '@nestjs/cqrs';
@@ -36,7 +35,6 @@ import { CqrsModule } from '@nestjs/cqrs';
     SubscriptionValidationService,
     SubscriptionRepositoryService,
     DeliveryFrequencyFactoryService,
-    PriceCalculatorFactoryService,
     JsonPaymentModeRepository,
     OnPaymentSucceededSubscriptionHandler,
   ],

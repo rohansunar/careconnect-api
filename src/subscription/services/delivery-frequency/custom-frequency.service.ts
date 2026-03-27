@@ -1,13 +1,16 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { DayOfWeek } from '../../interfaces/delivery-frequency.interface';
 import { DeliveryFrequencyStrategy } from '../../interfaces/delivery-frequency-strategy.interface';
+import { getAppTimezone } from '../../../common/utils/timezone.utils';
 
 /**
  * Strategy implementation for custom day delivery frequency.
  * Handles all logic related to custom day subscription deliveries.
  */
-@Injectable()
 export class CustomFrequencyService implements DeliveryFrequencyStrategy {
+  private readonly appTimezone = getAppTimezone();
+
   constructor(private readonly customDays: DayOfWeek[]) {
     if (!customDays || customDays.length === 0) {
       throw new BadRequestException(
@@ -23,43 +26,29 @@ export class CustomFrequencyService implements DeliveryFrequencyStrategy {
    * @returns The next delivery date
    */
   getNextDeliveryDate(startDate: Date): Date {
-    const currentDate = new Date(startDate);
-    const dayIndex = currentDate.getDay();
+    const dayNamesByWeekday: Record<number, DayOfWeek> = {
+      1: DayOfWeek.MONDAY,
+      2: DayOfWeek.TUESDAY,
+      3: DayOfWeek.WEDNESDAY,
+      4: DayOfWeek.THURSDAY,
+      5: DayOfWeek.FRIDAY,
+      6: DayOfWeek.SATURDAY,
+      7: DayOfWeek.SUNDAY,
+    };
+    const startDateTime = DateTime.fromJSDate(startDate, {
+      zone: this.appTimezone,
+    });
 
-    const dayNames: DayOfWeek[] = [
-      DayOfWeek.SUNDAY,
-      DayOfWeek.MONDAY,
-      DayOfWeek.TUESDAY,
-      DayOfWeek.WEDNESDAY,
-      DayOfWeek.THURSDAY,
-      DayOfWeek.FRIDAY,
-      DayOfWeek.SATURDAY,
-    ];
+    for (let daysToAdd = 1; daysToAdd <= 7; daysToAdd++) {
+      const nextDate = startDateTime.plus({ days: daysToAdd });
 
-    const currentDayName = dayNames[dayIndex];
-    const currentDayIndexInCustom = this.customDays.indexOf(currentDayName);
-
-    if (currentDayIndexInCustom !== -1) {
-      currentDate.setDate(currentDate.getDate() + 1);
-    } else {
-      let daysToAdd = 1;
-      let nextDayIndex = (dayIndex + 1) % 7;
-      let found = false;
-
-      while (!found && daysToAdd < 7) {
-        const nextDayName = dayNames[nextDayIndex];
-        if (this.customDays.includes(nextDayName)) {
-          found = true;
-        } else {
-          daysToAdd++;
-          nextDayIndex = (nextDayIndex + 1) % 7;
-        }
+      const nextDayName = dayNamesByWeekday[nextDate.weekday];
+      if (this.customDays.includes(nextDayName)) {
+        return nextDate.toJSDate();
       }
-
-      currentDate.setDate(currentDate.getDate() + daysToAdd);
     }
 
-    return currentDate;
+    throw new BadRequestException('Unable to calculate next delivery date');
   }
 
   /**

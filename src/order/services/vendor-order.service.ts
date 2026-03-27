@@ -20,6 +20,88 @@ import { OrderDeliveredEvent } from '../events/order-delivered.event';
 import { IDistance } from '../../search/interfaces/search.interfaces';
 
 /**
+ * Interface for order with distance result from raw SQL query
+ */
+export interface OrderWithDistanceResult {
+  id: string;
+  orderNo: string;
+  customerId: string;
+  vendorId: string;
+  addressId: string;
+  cartId: string | null;
+  total_amount: unknown;
+  payment_status: string;
+  riderId: string | null;
+  created_at: Date;
+  updated_at: Date;
+  payment_mode: string;
+  subscriptionId: string | null;
+  delivery_status: string;
+  delivery_otp: string | null;
+  otp_verified: boolean;
+  otp_generated_at: Date | null;
+  cancelledAt: Date | null;
+  cancelReason: string | null;
+  cancellation_origin: string | null;
+  paymentId: string | null;
+  distanceKm: number | null;
+  customer: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+  } | null;
+  vendor: {
+    id: string;
+    name: string | null;
+    phone: string | null;
+  } | null;
+  address: {
+    id: string;
+    label: string | null;
+    address: string | null;
+    pincode: string | null;
+    isDefault: boolean | null;
+    is_active: boolean | null;
+    isServiceable: boolean | null;
+    location: {
+      id: string;
+      name: string | null;
+      state: string | null;
+      country: string | null;
+    } | null;
+  } | null;
+  rider: {
+    id: string;
+    name: string | null;
+  } | null;
+  orderItems: Array<{
+    id: string;
+    price: unknown;
+    quantity: number;
+    product: {
+      id: string;
+      name: string | null;
+      categoryId: string | null;
+    };
+  }>;
+  payment: {
+    id: string;
+    status: string | null;
+  } | null;
+}
+
+/**
+ * Interface for paginated orders response
+ */
+export interface PaginatedOrdersResponse {
+  orders: Array<Record<string, unknown>>;
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
  * Platform fee calculation result
  */
 export interface PlatformFeeResult {
@@ -202,7 +284,7 @@ export class VendorOrderService extends OrderService {
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(
         `Failed to fetch orders for vendor ${user.id}: ${errorMessage}`,
-        error.stack,
+        error instanceof Error ? error.stack : undefined,
       );
       throw error;
     }
@@ -220,9 +302,49 @@ export class VendorOrderService extends OrderService {
     vendorId: string,
     skip: number,
     limit: number,
-  ): Promise<Array<Record<string, unknown>>> {
-    // Raw SQL query to fetch orders with distance calculation
-    const query = `
+  ): Promise<OrderWithDistanceResult[]> {
+    const query = this.buildOrdersWithDistanceQuery();
+
+    try {
+      const result = await this.prisma.$queryRawUnsafe<OrderWithDistanceResult[]>(
+        query,
+        vendorId,
+        limit,
+        skip,
+      );
+
+      return result;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to fetch orders with distance for vendor ${vendorId}: ${errorMessage}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Builds the complete SQL query for fetching orders with distance calculation.
+   * @returns The complete SQL query string
+   */
+  private buildOrdersWithDistanceQuery(): string {
+    const selectClause = this.buildSelectClause();
+    const fromClause = this.buildFromClause();
+    const whereClause = this.buildWhereClause();
+    const orderByClause = this.buildOrderByClause();
+    const limitOffsetClause = this.buildLimitOffsetClause();
+
+    return `${selectClause} ${fromClause} ${whereClause} ${orderByClause} ${limitOffsetClause}`;
+  }
+
+  /**
+   * Builds the SELECT clause for the orders query.
+   * @returns The SELECT clause SQL fragment
+   */
+  private buildSelectClause(): string {
+    return `
       SELECT 
         o."id",
         o."orderNo",
@@ -245,28 +367,60 @@ export class VendorOrderService extends OrderService {
         o."cancelReason",
         o."cancellation_origin",
         o."paymentId",
-        -- Calculate distance in kilometers between vendor and customer addresses
-        COALESCE(
+        ${this.buildDistanceColumn()},
+        ${this.buildCustomerJson()},
+        ${this.buildVendorJson()},
+        ${this.buildAddressJson()},
+        ${this.buildRiderJson()},
+        ${this.buildOrderItemsJson()},
+        ${this.buildPaymentJson()}
+    `;
+  }
+
+  /**
+   * Builds the distance calculation column using PostGIS.
+   * @returns The distance column SQL fragment
+   */
+  private buildDistanceColumn(): string {
+    return `COALESCE(
           ST_Distance(
             va."geopoint",
             ca."geopoint"
           ) / 1000.0,
           NULL
-        ) AS "distanceKm",
-        -- Customer relation
-        json_build_object(
+        ) AS "distanceKm"`;
+  }
+
+  /**
+   * Builds the customer JSON column.
+   * @returns The customer JSON SQL fragment
+   */
+  private buildCustomerJson(): string {
+    return `json_build_object(
           'id', c."id",
           'name', c."name",
           'phone', c."phone"
-        ) AS "customer",
-        -- Vendor relation
-        json_build_object(
+        ) AS "customer"`;
+  }
+
+  /**
+   * Builds the vendor JSON column.
+   * @returns The vendor JSON SQL fragment
+   */
+  private buildVendorJson(): string {
+    return `json_build_object(
           'id', v."id",
           'name', v."name",
           'phone', v."phone"
-        ) AS "vendor",
-        -- Address (customer address) relation
-        json_build_object(
+        ) AS "vendor"`;
+  }
+
+  /**
+   * Builds the address (customer address) JSON column.
+   * @returns The address JSON SQL fragment
+   */
+  private buildAddressJson(): string {
+    return `json_build_object(
           'id', ca."id",
           'label', ca."label",
           'address', ca."address",
@@ -280,16 +434,28 @@ export class VendorOrderService extends OrderService {
             'state', l."state",
             'country', l."country"
           )
-        ) AS "address",
-        -- Rider relation
-        CASE WHEN o."riderId" IS NOT NULL THEN
+        ) AS "address"`;
+  }
+
+  /**
+   * Builds the rider JSON column (nullable).
+   * @returns The rider JSON SQL fragment
+   */
+  private buildRiderJson(): string {
+    return `CASE WHEN o."riderId" IS NOT NULL THEN
           json_build_object(
             'id', r."id",
             'name', r."name"
           )
-        ELSE NULL END AS "rider",
-        -- Order items
-        COALESCE(
+        ELSE NULL END AS "rider"`;
+  }
+
+  /**
+   * Builds the order items JSON column with subquery.
+   * @returns The order items JSON SQL fragment
+   */
+  private buildOrderItemsJson(): string {
+    return `COALESCE(
           (
             SELECT json_agg(
               json_build_object(
@@ -308,33 +474,60 @@ export class VendorOrderService extends OrderService {
             WHERE oi."orderId" = o."id"
           ),
           '[]'::json
-        ) AS "orderItems",
-        -- Payment relation
-        CASE WHEN o."paymentId" IS NOT NULL THEN
+        ) AS "orderItems"`;
+  }
+
+  /**
+   * Builds the payment JSON column (nullable).
+   * @returns The payment JSON SQL fragment
+   */
+  private buildPaymentJson(): string {
+    return `CASE WHEN o."paymentId" IS NOT NULL THEN
           json_build_object(
             'id', pay."id",
             'status', pay."status"
           )
-        ELSE NULL END AS "payment"
-      FROM "Order" o
+        ELSE NULL END AS "payment"`;
+  }
+
+  /**
+   * Builds the FROM clause with all required joins.
+   * @returns The FROM clause SQL fragment
+   */
+  private buildFromClause(): string {
+    return `FROM "Order" o
       JOIN "Customer" c ON o."customerId" = c."id"
       JOIN "Vendor" v ON o."vendorId" = v."id"
       JOIN "CustomerAddress" ca ON o."addressId" = ca."id"
       LEFT JOIN "Location" l ON ca."locationId" = l."id"
       LEFT JOIN "VendorAddress" va ON v."id" = va."vendorId"
       LEFT JOIN "Rider" r ON o."riderId" = r."id"
-      LEFT JOIN "Payment" pay ON o."paymentId" = pay."id"
-      WHERE o."vendorId" = $1
-        AND NOT (o."payment_mode" = 'ONLINE' AND o."payment_status" = 'PENDING')
-      ORDER BY o."created_at" DESC
-      LIMIT $2 OFFSET $3
-    `;
+      LEFT JOIN "Payment" pay ON o."paymentId" = pay."id"`;
+  }
 
-    const result = await this.prisma.$queryRawUnsafe<
-      Array<Record<string, unknown>>
-    >(query, vendorId, limit, skip);
+  /**
+   * Builds the WHERE clause for filtering orders.
+   * @returns The WHERE clause SQL fragment
+   */
+  private buildWhereClause(): string {
+    return `WHERE o."vendorId" = $1
+        AND NOT (o."payment_mode" = 'ONLINE' AND o."payment_status" = 'PENDING')`;
+  }
 
-    return result;
+  /**
+   * Builds the ORDER BY clause.
+   * @returns The ORDER BY clause SQL fragment
+   */
+  private buildOrderByClause(): string {
+    return 'ORDER BY o."created_at" DESC';
+  }
+
+  /**
+   * Builds the LIMIT and OFFSET clause.
+   * @returns The LIMIT/OFFSET clause SQL fragment
+   */
+  private buildLimitOffsetClause(): string {
+    return 'LIMIT $2 OFFSET $3';
   }
 
   /**
@@ -407,6 +600,9 @@ export class VendorOrderService extends OrderService {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to mark order as out for delivery: ${errorMessage}`,
+      );
       throw new InternalServerErrorException(
         'Failed to mark order as out for delivery',
       );
@@ -418,7 +614,7 @@ export class VendorOrderService extends OrderService {
     );
 
     // Send notifications asynchronously (outside transaction)
-    this.notificationOrchestrator
+    void this.notificationOrchestrator
       .sendOrderOutForDeliveryNotification(orderId)
       .catch((error) => {
         this.logger.error(
@@ -871,7 +1067,7 @@ export class VendorOrderService extends OrderService {
     }
 
     // Send notifications asynchronously (outside transaction)
-    this.sendAssignmentNotifications(
+    void this.sendAssignmentNotifications(
       dto.orderIds,
       dto.riderId,
       rider,
@@ -1222,7 +1418,7 @@ export class VendorOrderService extends OrderService {
     );
 
     // Send notifications asynchronously (outside transaction)
-    this.sendRiderRevertNotifications(orderId, revertedRider, correlationId);
+    void this.sendRiderRevertNotifications(orderId, revertedRider, correlationId);
 
     return { success: true };
   }

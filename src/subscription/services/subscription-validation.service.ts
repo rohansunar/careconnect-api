@@ -2,11 +2,16 @@ import {
   Injectable,
   NotFoundException,
   InternalServerErrorException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import type { User } from '../../common/interfaces/user.interface';
 import { DeliveryFrequencyService } from './delivery-frequency.service';
+import {
+  DayOfWeek,
+  SubscriptionFrequency,
+} from '../interfaces/delivery-frequency.interface';
 import {
   SubscriptionValidator,
   ValidationResult,
@@ -22,6 +27,42 @@ export class SubscriptionValidationService implements SubscriptionValidator {
     private readonly prisma: PrismaService,
     private readonly deliveryFrequencyService: DeliveryFrequencyService,
   ) {}
+
+  async getSchedulableProduct(productId: string) {
+    try {
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, is_schedulable: true },
+      });
+
+      if (!product) {
+        throw new NotFoundException('Product not found or cannot be subscribed');
+      }
+
+      if (product.subscription_price === null) {
+        throw new BadRequestException(
+          'Subscription price is not configured for this product',
+        );
+      }
+
+      return product;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Failed to validate product');
+    }
+  }
+
+  validateDeliveryConfiguration(
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): void {
+    this.deliveryFrequencyService.validateFrequency(frequency, customDays);
+  }
 
   /**
    * Validates subscription inputs and retrieves related entities.
@@ -48,22 +89,18 @@ export class SubscriptionValidationService implements SubscriptionValidator {
       return { isValid: false, errors: ['Customer Address not found'] };
     }
 
-    const product = await this.prisma.product.findUnique({
-      where: { id: dto.productId, is_schedulable: true },
-    });
-
-    if (!product) {
+    let product;
+    try {
+      product = await this.getSchedulableProduct(dto.productId);
+    } catch (error) {
       return {
         isValid: false,
-        errors: ['Product not found or cannot be subscribed'],
+        errors: [error.message],
       };
     }
 
     try {
-      this.deliveryFrequencyService.validateFrequency(
-        dto.frequency,
-        dto.custom_days,
-      );
+      this.validateDeliveryConfiguration(dto.frequency, dto.custom_days);
     } catch (error) {
       return { isValid: false, errors: [error.message] };
     }

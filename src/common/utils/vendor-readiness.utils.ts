@@ -1,17 +1,5 @@
-/**
- * Utility functions for vendor operations.
- * These functions are framework-agnostic and can be reused across the application.
- */
-
 import { DateTime } from 'luxon';
-
-/**
- * Gets the timezone from environment variable, defaulting to Asia/Kolkata.
- * Uses the TIMEZONE env variable if available, otherwise falls back to 'Asia/Kolkata'.
- */
-function getTimezone(): string {
-  return process.env.TIMEZONE || 'Asia/Kolkata';
-}
+import { getTimezone } from './timezone.utils';
 
 /**
  * Checks if a vendor is ready to accept orders based on their operating hours.
@@ -28,7 +16,6 @@ export function isVendorReadyToAcceptOrders(
   openingTime: string,
   closingTime: string,
 ): boolean {
-  // Get current time in the configured timezone using luxon
   const timezone = getTimezone();
   const now = DateTime.now().setZone(timezone);
 

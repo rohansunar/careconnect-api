@@ -53,7 +53,7 @@ export class SubscriptionRepositoryService implements SubscriptionRepository {
         orderBy: { created_at: 'desc' },
       });
       return results.map(this.mapToSubscription);
-    } catch (error) {
+    } catch {
       return [];
     }
   }

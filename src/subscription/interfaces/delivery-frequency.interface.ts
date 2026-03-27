@@ -44,6 +44,20 @@ export interface DeliveryFrequencyService {
   ): void;
 
   /**
+   * Calculates the first delivery date for a new schedule starting on the provided date.
+   * If the start date itself is a valid delivery day, it is returned.
+   * @param startDate - The schedule start date
+   * @param frequency - The subscription frequency type
+   * @param customDays - Optional array of days for custom frequency
+   * @returns The first delivery date for the schedule
+   */
+  getFirstDeliveryDate(
+    startDate: Date,
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): Date;
+
+  /**
    * Calculates the next delivery date based on the start date and frequency.
    * For custom days, finds the next valid day in the custom schedule.
    * @param startDate - The starting date for the subscription

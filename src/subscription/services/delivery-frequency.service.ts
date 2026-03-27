@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { DeliveryFrequencyFactoryService } from './delivery-frequency/delivery-frequency.factory';
 import {
   DayOfWeek,
   SubscriptionFrequency,
 } from '../interfaces/delivery-frequency.interface';
 import { DeliveryFrequencyService as IDeliveryFrequencyService } from '../interfaces/delivery-frequency.interface';
+import { getAppTimezone } from '../../common/utils/timezone.utils';
 
 /**
  * Service for managing and validating delivery frequency logic.
@@ -13,6 +15,8 @@ import { DeliveryFrequencyService as IDeliveryFrequencyService } from '../interf
  */
 @Injectable()
 export class DeliveryFrequencyService implements IDeliveryFrequencyService {
+  private readonly appTimezone = getAppTimezone();
+
   constructor(
     private readonly deliveryFrequencyFactory: DeliveryFrequencyFactoryService,
   ) {}
@@ -33,6 +37,44 @@ export class DeliveryFrequencyService implements IDeliveryFrequencyService {
       customDays,
     );
     strategy.validate();
+  }
+
+  getFirstDeliveryDate(
+    startDate: Date,
+    frequency: SubscriptionFrequency,
+    customDays?: DayOfWeek[],
+  ): Date {
+    this.validateFrequency(frequency, customDays);
+
+    const startDateTime = DateTime.fromJSDate(startDate, {
+      zone: this.appTimezone,
+    }).startOf('day');
+
+    if (frequency !== SubscriptionFrequency.CUSTOM_DAYS) {
+      return startDateTime.toJSDate();
+    }
+
+    const dayOfWeekByWeekday: Record<number, DayOfWeek> = {
+      1: DayOfWeek.MONDAY,
+      2: DayOfWeek.TUESDAY,
+      3: DayOfWeek.WEDNESDAY,
+      4: DayOfWeek.THURSDAY,
+      5: DayOfWeek.FRIDAY,
+      6: DayOfWeek.SATURDAY,
+      7: DayOfWeek.SUNDAY,
+    };
+
+    const startDay = dayOfWeekByWeekday[startDateTime.weekday];
+
+    if (customDays?.includes(startDay)) {
+      return startDateTime.toJSDate();
+    }
+
+    return this.getNextDeliveryDate(
+      startDateTime.toJSDate(),
+      frequency,
+      customDays,
+    );
   }
 
   /**

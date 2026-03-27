@@ -7,6 +7,7 @@ import {
   IProximitySearchResult,
   IDistance,
 } from '../interfaces/search.interfaces';
+import { isVendorReadyToAcceptOrders } from '../../common/utils/vendor-readiness.utils';
 
 /**
  * Repository for product-related database operations, specifically for proximity searches.
@@ -44,6 +45,9 @@ export class ProductRepository implements IProductRepository {
       const resultsQuery = `
         SELECT
           p.*,
+          v."business_name" as "vendorBusinessName",
+          v."openingTime",
+          v."closingTime",
           ST_Distance(va."geopoint", ST_GeogFromText(${customerGeoPoint})) AS distance
         FROM "Product" p
         JOIN "Vendor" v ON v.id = p."vendorId"
@@ -144,10 +148,22 @@ export class ProductRepository implements IProductRepository {
         );
       }
 
+      // Determine if vendor is ready to accept orders based on IST operating hours
+      const openingTime = product.openingTime || '09:00';
+      const closingTime = product.closingTime || '20:00';
+      const isReadyToAcceptOrders = isVendorReadyToAcceptOrders(
+        openingTime,
+        closingTime,
+      );
+
       return {
         ...product,
         distance: this.formatDistance(distance / 1000),
         percentageDecrease,
+        vendorBusinessName: product.vendorBusinessName || null,
+        openingTime,
+        closingTime,
+        isReadyToAcceptOrders,
       };
     });
   }

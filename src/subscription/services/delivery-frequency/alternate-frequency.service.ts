@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { DeliveryFrequencyStrategy } from '../../interfaces/delivery-frequency-strategy.interface';
+import { getAppTimezone } from '../../../common/utils/timezone.utils';
 
 /**
  * Strategy implementation for alternate day delivery frequency.
  * Handles all logic related to alternate day subscription deliveries.
  */
-@Injectable()
 export class AlternateFrequencyService implements DeliveryFrequencyStrategy {
-  constructor() {}
+  private readonly appTimezone = getAppTimezone();
 
   /**
    * Gets the next delivery date for alternate frequency (2 days later).
@@ -15,9 +15,11 @@ export class AlternateFrequencyService implements DeliveryFrequencyStrategy {
    * @returns The next delivery date
    */
   getNextDeliveryDate(startDate: Date): Date {
-    const nextDate = new Date(startDate);
-    nextDate.setDate(nextDate.getDate() + 2);
-    return nextDate;
+    return DateTime.fromJSDate(startDate, {
+      zone: this.appTimezone,
+    })
+      .plus({ days: 2 })
+      .toJSDate();
   }
 
   /**

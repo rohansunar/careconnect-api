@@ -17,8 +17,6 @@ import { CustomFrequencyService } from './custom-frequency.service';
  */
 @Injectable()
 export class DeliveryFrequencyFactoryService implements DeliveryFrequencyFactory {
-  constructor() {}
-
   /**
    * Creates a delivery frequency strategy based on the specified frequency type.
    * @param frequency - The subscription frequency type
