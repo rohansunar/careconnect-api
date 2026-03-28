@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from './order.service';
 import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
@@ -27,6 +28,7 @@ import {
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentService } from '../../payment/services/payment.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
+import { OrderDeliveredEvent } from '../events/order-delivered.event';
 import { Decimal } from '@prisma/client/runtime/library';
 
 /**
@@ -69,6 +71,7 @@ export class CustomerOrderService extends OrderService {
     orderNumberService: OrderNumberService,
     private paymentService: PaymentService,
     private orderNotificationOrchestrator: OrderNotificationOrchestrator,
+    private eventBus: EventBus,
   ) {
     super(prisma, cartService, orderNumberService);
   }
@@ -423,87 +426,115 @@ export class CustomerOrderService extends OrderService {
 
   /**
    * Cancels an order with proper validation and refund logic.
+   * Only DB operations are inside transaction - external calls (refund, notifications) are outside.
    * @param orderId - The unique identifier of the order
    * @param dto - The cancellation data
    * @param currentUser - The authenticated customer
    * @returns The cancelled order with relations
    */
-  async cancelOrder(orderId: string, dto: CancelOrderDto, currentUser: User) {
-    return this.prisma.$transaction(async (tx) => {
-      // Find the order with related data
-      const order = await tx.order.findUnique({
-        where: { id: orderId },
-        include: {
-          customer: true,
-          vendor: true,
-          address: true,
-          payment: true,
-        },
-      });
+  async cancelOrder(
+    orderId: string,
+    dto: CancelOrderDto,
+    currentUser: User,
+    retryCount = 0,
+  ): Promise<{ status: number; message: string }> {
+    const maxRetries = 3;
 
-      if (!order) {
-        throw new NotFoundException('Order not found');
-      }
+    try {
+      // Step 1: Execute DB operations in transaction (fast)
+      const { updatedOrder, hasCompletedPayment, completedPayment } =
+        await this.prisma.$transaction(
+          async (tx) => {
+            const order = await tx.order.findUnique({
+              where: { id: orderId },
+              include: {
+                customer: true,
+                vendor: true,
+                address: true,
+                payment: true,
+              },
+            });
 
-      // Check if the order belongs to the authenticated customer
-      if (order.customerId !== currentUser.id) {
-        throw new ForbiddenException(
-          'You are not authorized to cancel this order',
+            if (!order) {
+              throw new NotFoundException('Order not found');
+            }
+
+            if (order.customerId !== currentUser.id) {
+              throw new ForbiddenException(
+                'You are not authorized to cancel this order',
+              );
+            }
+
+            this.validateOrderCancellation(order);
+
+            const payment = order.payment;
+            const hasCompletedPayment = payment?.status === PaymentStatus.PAID;
+
+            const updatedOrder = await tx.order.update({
+              where: { id: orderId },
+              data: {
+                delivery_status: OrderStatus.CANCELLED,
+                cancelledAt: new Date(),
+                cancelReason: dto.cancelReason,
+                cancellation_origin: 'CUSTOMER',
+              },
+              include: {
+                customer: true,
+                vendor: true,
+                address: true,
+                payment: true,
+              },
+            });
+
+            return {
+              updatedOrder,
+              hasCompletedPayment,
+              completedPayment: payment,
+            };
+          },
+          { timeout: 5000 }, // 5s timeout for DB ops only
         );
-      }
 
-      // Check if order can be cancelled
-      this.validateOrderCancellation(order);
-
-      // Find completed payment that needs refund
-      const completedPayment = order.payment;
-      const hasCompletedPayment =
-        completedPayment?.status === PaymentStatus.PAID;
-
-      // Update order status and cancellation details
-      const updatedOrder = await tx.order.update({
-        where: { id: orderId },
-        data: {
-          delivery_status: OrderStatus.CANCELLED,
-          cancelledAt: new Date(),
-          cancelReason: dto.cancelReason,
-          // payment_status: hasCompletedPayment ? 'REFUNDED' : 'CANCELLED',
-          cancellation_origin:'CUSTOMER'
-        },
-        include: {
-          customer: true,
-          vendor: true,
-          address: true,
-          payment: true,
-        },
-      });
-
-      // Process refund for completed payment
-      if (hasCompletedPayment && completedPayment) {
-        try {
-          await this.paymentService.initiateRefund(
-            completedPayment.id,
-            Number(completedPayment.amount),
-            dto.cancelReason,
-          );
-        } catch (error) {
-          console.error(
-            `Failed to initiate refund for payment ${completedPayment.id}:`,
-            error,
-          );
-          // Continue with cancellation even if refund fails
-          // In a real scenario, you might want to handle this differently
-        }
-      }
-
-      // Send cancellation notification
-      await this.sendOrderCancellationNotification(updatedOrder);
+      // Step 3: Send notifications OUTSIDE transaction (can be slow)
+      this.handleNotificationAsync(updatedOrder.id);
 
       return {
         status: 200,
         message: 'Order Cancelled',
       };
-    });
+    } catch (error) {
+      // Handle transaction timeout with retry
+      if (error.code === 'P2028' && retryCount < maxRetries) {
+        this.logger.warn(
+          `Transaction timeout on cancel order ${orderId}, retry ${retryCount + 1}/${maxRetries}`,
+        );
+        await this.delay(Math.pow(2, retryCount) * 1000);
+        return this.cancelOrder(orderId, dto, currentUser, retryCount + 1);
+      }
+      throw error;
+    }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private async handleNotificationAsync(orderId: string): Promise<void> {
+    try {
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { customer: true, vendor: true, payment: true },
+      });
+      if (order) {
+        await this.sendOrderCancellationNotification(
+          order as unknown as OrderWithRelations,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to send cancellation notification for order ${orderId}: ${error.message}`,
+      );
+    }
   }
 
   /**
@@ -544,5 +575,72 @@ export class CustomerOrderService extends OrderService {
         `Failed to send cancellation notifications for order ${order.orderNo}: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Confirms an order for the authenticated customer.
+   * Validates order ownership, payment mode, and current status before confirming.
+   * @param orderId - The unique identifier of the order
+   * @param dto - The confirmation data
+   * @param user - The authenticated customer user
+   * @returns Confirmation result
+   */
+  async confirmOrder(orderId: string, user: User) {
+    const order = await super.findOne(orderId);
+
+    if (order.customerId !== user.id) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    if (order.payment_mode === PaymentMode.COD) {
+      throw new BadRequestException('COD orders do not require confirmation');
+    }
+
+    if (order.delivery_status === OrderStatus.DELIVERED) {
+      throw new BadRequestException('Order is already delivered');
+    }
+
+    if (order.delivery_status !== OrderStatus.OUT_FOR_DELIVERY) {
+      throw new BadRequestException(
+        `Order cannot be delivery in its ${order.delivery_status} state`,
+      );
+    }
+
+    const confirmedOrder = await this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        delivery_status: OrderStatus.DELIVERED,
+      },
+      include: {
+        orderItems: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (confirmedOrder && confirmedOrder.orderItems.length > 0) {
+      this.eventBus.publish(
+        new OrderDeliveredEvent(
+          confirmedOrder.id,
+          confirmedOrder.orderNo,
+          confirmedOrder.vendorId,
+          confirmedOrder.orderItems.map((item) => ({
+            id: item.id,
+            price: item.price,
+            quantity: item.quantity,
+            product: { categoryId: item.product.categoryId },
+          })),
+          confirmedOrder.payment_mode,
+          new Date(),
+        ),
+      );
+      this.logger.log(
+        `Published OrderDeliveredEvent for order ${confirmedOrder.orderNo}`,
+      );
+    }
+
+    return { success: true, message: 'Order Delivered' };
   }
 }
