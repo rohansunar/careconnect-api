@@ -1,26 +1,26 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { SearchService } from '../services/search.service';
-import { SearchQueryDto } from '../dto/search-query.dto';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { Controller, Get, Query } from '@nestjs/common';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { SearchQueryDto } from '../dto/search-query.dto';
+import { SearchService } from '../services/search.service';
 
 @ApiTags('Search')
 @Controller('search')
-@Roles('customer')
+@Roles('user')
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 
   /**
    * Proximity-based product search endpoint
-   * Business logic rationale: Provide customers with ability to search products by proximity
-   * Security consideration: Customer authentication required
+   * Business logic rationale: Provide users with ability to search products by proximity
+   * Security consideration: User authentication required
    * Design decision: Supports pagination for proximity search
    */
   @ApiOperation({
     summary: 'Search products by proximity',
     description:
-      "Search products based on proximity to customer's location, with pagination.",
+      "Search products based on proximity to user's location, with pagination.",
   })
   @ApiResponse({
     status: 200,
@@ -33,11 +33,11 @@ export class SearchController {
   })
   @ApiResponse({
     status: 404,
-    description: 'CUSTOMER_NOT_FOUND',
+    description: 'USER_NOT_FOUND',
   })
   @ApiResponse({
     status: 404,
-    description: 'CUSTOMER_ADDRESS_NOT_FOUND',
+    description: 'USER_ADDRESS_NOT_FOUND',
   })
   @ApiResponse({
     status: 503,
@@ -56,8 +56,8 @@ export class SearchController {
   @Get('products')
   async searchProducts(
     @Query() queryDto: SearchQueryDto,
-    @CurrentUser() customer: any,
+    @CurrentUser() user: any,
   ) {
-    return this.searchService.searchProducts(queryDto, customer);
+    return this.searchService.searchProducts(queryDto, user);
   }
 }

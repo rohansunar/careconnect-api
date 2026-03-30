@@ -7,9 +7,9 @@ export interface IDistance {
 }
 
 /**
- * Represents a customer's geographical location.
+ * Represents a user's geographical location.
  */
-export interface ICustomerAddress {
+export interface IUserAddress {
   lat: number;
   lng: number;
   isServiceable: boolean;
@@ -17,7 +17,7 @@ export interface ICustomerAddress {
 }
 
 /**
- * Result of a proximity search, representing a product with its distance from the customer's location.
+ * Result of a proximity search, representing a product with its distance from the user's location.
  */
 export interface IProximitySearchResult {
   id: string;
@@ -44,10 +44,10 @@ export interface IProximitySearchResult {
 }
 
 /**
- * Abstraction for retrieving customer address.
+ * Abstraction for retrieving user address.
  */
-export interface ICustomerAddressRetriever {
-  getCustomerAddress(customerId: string): Promise<ICustomerAddress | null>;
+export interface IUserAddressRetriever {
+  getUserAddress(userId: string): Promise<IUserAddress | null>;
 }
 
 /**
@@ -55,7 +55,7 @@ export interface ICustomerAddressRetriever {
  */
 export interface IProductRepository {
   findProductsWithinRadius(
-    customerLocation: ICustomerAddress,
+    userLocation: IUserAddress,
     radiusKm: number,
     page: number,
     limit: number,

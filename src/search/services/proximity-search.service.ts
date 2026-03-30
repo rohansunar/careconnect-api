@@ -1,6 +1,6 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { SearchQueryDto } from '../dto/search-query.dto';
-import { CustomerAddressRetriever } from './customer-address-retriever';
+import { UserAddressRetriever } from './user-address-retriever';
 import { ProductRepository } from './product-repository';
 import type { IProximitySearchResult } from '../interfaces/search.interfaces';
 
@@ -15,20 +15,20 @@ export class ProximitySearchService {
   private readonly DEFAULT_RADIUS_KM = 50;
 
   constructor(
-    private customerAddressRetriever: CustomerAddressRetriever,
+    private userAddressRetriever: UserAddressRetriever,
     private productRepository: ProductRepository,
   ) {}
 
   /**
-   * Searches for products based on proximity to customer's location.
+   * Searches for products based on proximity to user's location.
    * @param query Search query parameters
-   * @param customerId Customer's ID
+   * @param userId User's ID
    * @returns Paginated search results with products and distances
    * @throws HttpException with 404 if address not found, 503 if service unavailable
    */
   async searchProducts(
     query: SearchQueryDto,
-    customerId: string,
+    userId: string,
   ): Promise<{
     data: IProximitySearchResult[];
     pagination: {
@@ -40,11 +40,11 @@ export class ProximitySearchService {
   }> {
     // Input validation
     if (
-      !customerId ||
-      typeof customerId !== 'string' ||
-      customerId.trim() === ''
+      !userId ||
+      typeof userId !== 'string' ||
+      userId.trim() === ''
     ) {
-      throw new HttpException('Invalid customerId', HttpStatus.BAD_REQUEST);
+      throw new HttpException('Invalid userId', HttpStatus.BAD_REQUEST);
     }
     if (
       query.page !== undefined &&
@@ -65,19 +65,19 @@ export class ProximitySearchService {
       );
     }
 
-    const customer =
-      await this.customerAddressRetriever.getCustomer(customerId);
+    const user =
+      await this.userAddressRetriever.getUser(userId);
 
-    if (!customer) {
-      throw new HttpException('CUSTOMER_NOT_FOUND', HttpStatus.NOT_FOUND);
+    if (!user) {
+      throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
     const address =
-      await this.customerAddressRetriever.getCustomerAddress(customerId);
+      await this.userAddressRetriever.getUserAddress(userId);
 
     if (!address) {
       throw new HttpException(
-        'CUSTOMER_ADDRESS_NOT_FOUND',
+        'USER_ADDRESS_NOT_FOUND',
         HttpStatus.NOT_FOUND,
       );
     }

@@ -12,12 +12,12 @@ import {
  */
 export class InsufficientBalanceError extends Error {
   constructor(
-    customerId: string,
+    userId: string,
     requestedAmount: number,
     availableBalance: number,
   ) {
     super(
-      `Insufficient balance for customer ${customerId}. Requested: ${requestedAmount}, Available: ${availableBalance}`,
+      `Insufficient balance for user ${userId}. Requested: ${requestedAmount}, Available: ${availableBalance}`,
     );
     this.name = 'InsufficientBalanceError';
   }
@@ -39,14 +39,14 @@ export class DuplicateTransactionError extends Error {
  * Custom error for wallet not found
  */
 export class WalletNotFoundError extends Error {
-  constructor(customerId: string) {
-    super(`Wallet not found for customer: ${customerId}`);
+  constructor(userId: string) {
+    super(`Wallet not found for user: ${userId}`);
     this.name = 'WalletNotFoundError';
   }
 }
 
 /**
- * Service for managing customer wallet operations
+ * Service for managing user wallet operations
  * Handles credit, debit, and balance retrieval with proper atomicity
  */
 @Injectable()
@@ -54,9 +54,9 @@ export class WalletService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Deduct amount from customer wallet
+   * Deduct amount from user wallet
    * Uses Prisma transaction for atomicity
-   * @param customerId - Customer ID
+   * @param userId - User ID
    * @param amount - Amount to deduct
    * @param orderId - Optional order ID for reference
    * @param description - Optional description
@@ -65,7 +65,7 @@ export class WalletService {
    * @returns Transaction details and new balance
    */
   async deductFromWallet(
-    customerId: string,
+    userId: string,
     amount: number,
     orderId?: string,
     description?: string,
@@ -77,7 +77,7 @@ export class WalletService {
       const existingTransaction = await this.prisma.walletTransaction.findFirst(
         {
           where: {
-            wallet: { customerId },
+            wallet: { customerId: userId },
             idempotencyKey,
           },
         },
@@ -92,12 +92,12 @@ export class WalletService {
     const result = await this.prisma.$transaction(async (tx) => {
       // Get wallet with lock for update
       const wallet = await tx.customerWallet.findUnique({
-        where: { customerId },
+        where: { customerId: userId },
         select: { id: true, balance: true },
       });
 
       if (!wallet) {
-        throw new WalletNotFoundError(customerId);
+        throw new WalletNotFoundError(userId);
       }
 
       // Convert amount to Decimal for precise comparison
@@ -107,7 +107,7 @@ export class WalletService {
       // Check sufficient balance
       if (currentBalance.lessThan(amountDecimal)) {
         throw new InsufficientBalanceError(
-          customerId,
+          userId,
           amount,
           parseFloat(currentBalance.toString()),
         );
@@ -147,9 +147,9 @@ export class WalletService {
   }
 
   /**
-   * Credit amount to customer wallet
+   * Credit amount to user wallet
    * Uses Prisma transaction for atomicity
-   * @param customerId - Customer ID
+   * @param userId - User ID
    * @param amount - Amount to credit
    * @param orderId - Optional order ID for reference
    * @param description - Optional description
@@ -158,19 +158,18 @@ export class WalletService {
    * @returns Transaction details and new balance
    */
   async creditToWallet(
-    customerId: string,
+    userId: string,
     amount: number,
     orderId?: string,
     description?: string,
     idempotencyKey?: string,
     referenceType?: string,
   ): Promise<{ transactionId: string; newBalance: Decimal }> {
-    // Check for duplicate transaction if idempotency key provided
     if (idempotencyKey) {
       const existingTransaction = await this.prisma.walletTransaction.findFirst(
         {
           where: {
-            wallet: { customerId },
+            wallet: { customerId: userId },
             idempotencyKey,
           },
         },
@@ -181,19 +180,16 @@ export class WalletService {
       }
     }
 
-    // Use Prisma transaction for atomic operation
     const result = await this.prisma.$transaction(async (tx) => {
-      // Get wallet (create if doesn't exist)
       let wallet = await tx.customerWallet.findUnique({
-        where: { customerId },
+        where: { customerId: userId },
         select: { id: true, balance: true },
       });
 
-      // Create wallet if it doesn't exist
       if (!wallet) {
         wallet = await tx.customerWallet.create({
           data: {
-            customerId,
+            customerId: userId,
             balance: 0,
           },
           select: { id: true, balance: true },
@@ -238,13 +234,13 @@ export class WalletService {
   }
 
   /**
-   * Get wallet by customer ID
-   * @param customerId - Customer ID
+   * Get wallet by user ID
+   * @param userId - User ID
    * @returns Wallet balance details
    */
-  async getWalletByCustomerId(customerId: string): Promise<WalletBalanceDto> {
+  async getWalletByUserId(userId: string): Promise<WalletBalanceDto> {
     const wallet = await this.prisma.customerWallet.findUnique({
-      where: { customerId },
+      where: { customerId: userId },
       select: {
         customerId: true,
         balance: true,
@@ -254,9 +250,8 @@ export class WalletService {
     });
 
     if (!wallet) {
-      // Return default wallet balance if not exists
       return {
-        customerId,
+        customerId: userId,
         balance: 0,
         currency: 'INR',
         createdAt: new Date(),
@@ -274,19 +269,19 @@ export class WalletService {
   }
 
   /**
-   * Get wallet transaction history for a customer
-   * @param customerId - Customer ID
+   * Get wallet transaction history for a user
+   * @param userId - User ID
    * @param limit - Number of transactions to retrieve
    * @param offset - Offset for pagination
    * @returns Array of wallet transactions
    */
   async getTransactionHistory(
-    customerId: string,
+    userId: string,
     limit: number = 10,
     offset: number = 0,
   ): Promise<any[]> {
     const wallet = await this.prisma.customerWallet.findUnique({
-      where: { customerId },
+      where: { customerId: userId },
       select: { id: true },
     });
 

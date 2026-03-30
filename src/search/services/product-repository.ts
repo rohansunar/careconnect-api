@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { ProductApprovalStatus } from '@prisma/client';
 import {
-  ICustomerAddress,
+  IUserAddress,
   IProductRepository,
   IProximitySearchResult,
   IDistance,
@@ -19,26 +19,26 @@ export class ProductRepository implements IProductRepository {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Finds products within a given radius from the customer's location, with pagination.
-   * @param customerLocation Customer's location
+   * Finds products within a given radius from the user's location, with pagination.
+   * @param userLocation User's location
    * @param radiusKm Search radius in kilometers
    * @param page Page number (1-based)
    * @param limit Number of items per page
    * @returns Paginated results with products including distances
    */
   async findProductsWithinRadius(
-    customerLocation: ICustomerAddress,
+    userLocation: IUserAddress,
     radiusKm: number,
     page: number,
     limit: number,
   ): Promise<{ results: IProximitySearchResult[]; total: number }> {
     const offset = (page - 1) * limit;
-    const customerGeoPoint = `'SRID=4326;POINT(${customerLocation.lng} ${customerLocation.lat})'`;
+    const userGeoPoint = `'SRID=4326;POINT(${userLocation.lng} ${userLocation.lat})'`;
     const maxDeliveryRadiusMeters = radiusKm * 1000;
 
     try {
       const whereClause = this.buildWhereClause(
-        customerGeoPoint,
+        userGeoPoint,
         maxDeliveryRadiusMeters,
       );
 
@@ -48,7 +48,7 @@ export class ProductRepository implements IProductRepository {
           v."business_name" as "vendorBusinessName",
           v."openingTime",
           v."closingTime",
-          ST_Distance(va."geopoint", ST_GeogFromText(${customerGeoPoint})) AS distance
+          ST_Distance(va."geopoint", ST_GeogFromText(${userGeoPoint})) AS distance
         FROM "Product" p
         JOIN "Vendor" v ON v.id = p."vendorId"
         JOIN "VendorAddress" va ON va."vendorId" = v.id
@@ -87,12 +87,12 @@ export class ProductRepository implements IProductRepository {
 
   /**
    * Builds the common WHERE clause for product proximity queries.
-   * @param customerGeoPoint Customer's geopoint
+   * @param userGeoPoint User's geopoint
    * @param maxDeliveryRadiusMeters Maximum delivery radius in meters
    * @returns SQL WHERE clause string
    */
   private buildWhereClause(
-    customerGeoPoint: string,
+    userGeoPoint: string,
     maxDeliveryRadiusMeters: number,
   ): string {
     return `
@@ -101,7 +101,7 @@ export class ProductRepository implements IProductRepository {
       AND v."is_active" = TRUE
       AND v."is_available_today" = TRUE
       AND va."is_active" = TRUE
-      AND ST_DWithin(va."geopoint", ST_GeogFromText(${customerGeoPoint}), ${maxDeliveryRadiusMeters})
+      AND ST_DWithin(va."geopoint", ST_GeogFromText(${userGeoPoint}), ${maxDeliveryRadiusMeters})
     `;
   }
 

@@ -9,18 +9,18 @@ export class SearchService {
   constructor(private proximitySearchService: ProximitySearchService) {}
 
   /**
-   * Searches for products based on proximity to customer's location.
+   * Searches for products based on proximity to user's location.
    * @param query - Search query DTO containing search parameters
-   * @param customer - Customer object with id
+   * @param user - User object with id
    * @returns Paginated list of products with distances
    */
-  async searchProducts(query: SearchQueryDto, customer: { id: any }) {
+  async searchProducts(query: SearchQueryDto, user: { id: any }) {
     this.logger.log(
       `Product Search Request with Query: ${query.limit} ${query.page}`,
     );
     return this.proximitySearchService.searchProducts(
       query,
-      String(customer.id),
+      String(user.id),
     );
   }
 }

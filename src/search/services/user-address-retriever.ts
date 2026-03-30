@@ -1,45 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import {
-  ICustomerAddress,
-  ICustomerAddressRetriever,
+  IUserAddress,
+  IUserAddressRetriever,
 } from '../interfaces/search.interfaces';
 
 /**
- * Retrieves customer's default active address from the database.
+ * Retrieves user's default active address from the database.
  */
 @Injectable()
-export class CustomerAddressRetriever implements ICustomerAddressRetriever {
-  private readonly logger = new Logger(CustomerAddressRetriever.name);
+export class UserAddressRetriever implements IUserAddressRetriever {
+  private readonly logger = new Logger(UserAddressRetriever.name);
 
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Retrieves the customer's default active address.
-   * @param customerId The customer's ID
-   * @returns Customer's address or null if not found
+   * Retrieves the user's default active address.
+   * @param userId The user's ID
+   * @returns User's address or null if not found
    */
-  async getCustomer(customerId: string): Promise<{ name: string } | null> {
+  async getUser(userId: string): Promise<{ name: string } | null> {
     try {
       return await this.prisma.customer.findUnique({
-        where: { id: customerId },
+        where: { id: userId },
       });
     } catch (error) {
-      this.logger.error('Error fetching customer:', error);
+      this.logger.error('Error fetching user:', error);
       return null;
     }
   }
 
   /**
-   * Retrieves the customer's default active address.
-   * @param customerId The customer's ID
-   * @returns Customer's address or null if not found
+   * Retrieves the user's default active address.
+   * @param userId The user's ID
+   * @returns User's address or null if not found
    */
-  async getCustomerAddress(
-    customerId: string,
-  ): Promise<ICustomerAddress | null> {
+  async getUserAddress(
+    userId: string,
+  ): Promise<IUserAddress | null> {
     try {
-      const address = await this.prisma.$queryRaw<ICustomerAddress[]>`
+      const address = await this.prisma.$queryRaw<IUserAddress[]>`
         SELECT
           ca.id,
           ca."isServiceable",
@@ -49,7 +49,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
         FROM "CustomerAddress" ca
         LEFT JOIN "Location" l
           ON l.id = ca."locationId"
-        WHERE ca."customerId" = ${customerId}
+        WHERE ca."customerId" = ${userId}
         AND ca."is_active" = true AND ca."isDefault" = true;`;
 
       if (
@@ -66,7 +66,7 @@ export class CustomerAddressRetriever implements ICustomerAddressRetriever {
       }
       return null;
     } catch (error) {
-      this.logger.error('Error fetching customer address:', error);
+      this.logger.error('Error fetching user address:', error);
       return null;
     }
   }

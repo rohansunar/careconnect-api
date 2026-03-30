@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { SearchService } from './services/search.service';
 import { SearchController } from './controllers/search.controller';
 import { ProximitySearchService } from './services/proximity-search.service';
-import { CustomerAddressRetriever } from './services/customer-address-retriever';
+import { UserAddressRetriever } from './services/user-address-retriever';
 import { ProductRepository } from './services/product-repository';
 
 @Module({
@@ -11,7 +11,7 @@ import { ProductRepository } from './services/product-repository';
   providers: [
     SearchService,
     ProximitySearchService,
-    CustomerAddressRetriever,
+    UserAddressRetriever,
     ProductRepository,
   ],
   exports: [SearchService],
