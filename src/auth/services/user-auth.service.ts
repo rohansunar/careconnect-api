@@ -12,14 +12,13 @@ import { OtpResponseDto } from '../dtos/request-otp.dto';
 import { JwtTokenService } from './jwt-token.service';
 
 /**
- * CustomerAuthService handles authentication for customers using OTP-based login.
+ * UserAuthService handles authentication for users using OTP-based login.
  */
 @Injectable()
-export class CustomerAuthService {
-  private readonly logger = new Logger(CustomerAuthService.name);
+export class UserAuthService {
+  private readonly logger = new Logger(UserAuthService.name);
 
-  // Token expiration time in seconds (10 hours)
-  private readonly CUSTOMER_JWT_EXPIRES_IN = 36000;
+  private readonly USER_JWT_EXPIRES_IN = 36000;
 
   constructor(
     private readonly jwtTokenService: JwtTokenService,
@@ -28,7 +27,7 @@ export class CustomerAuthService {
   ) {}
 
   /**
-   * Requests an OTP for customer login authentication.
+   * Requests an OTP for user login authentication.
    * @param phone - The phone number to send the OTP to.
    * @returns A response indicating success and OTP expiration time.
    */
@@ -44,11 +43,11 @@ export class CustomerAuthService {
   }
 
   /**
-   * Verifies the OTP and creates or updates the customer record, then generates a JWT token.
+   * Verifies the OTP and creates or updates the user record, then generates a JWT token.
    * @param dto - The data transfer object containing phone and OTP code.
-   * @returns A response with the JWT token, customer details, and expiration time.
+   * @returns A response with the JWT token, user details, and expiration time.
    */
-  async verifyOtpAndCreateCustomer(
+  async verifyOtpAndCreateUser(
     dto: VerifyOtpDto,
   ): Promise<VerifyOtpResponseDto> {
     try {
@@ -58,15 +57,13 @@ export class CustomerAuthService {
         `OTP verification initiated for phone: ${phone}, purpose: ${OtpPurpose.CUSTOMER_LOGIN}`,
       );
 
-      // Verify the OTP code for customer login
       await this.otpService.verifyOtp({
         phone,
         code,
         purpose: OtpPurpose.CUSTOMER_LOGIN,
       });
 
-      // Create or update the customer record (upsert: update if exists, create if not)
-      const customer = await this.prisma.customer.upsert({
+      const user = await this.prisma.customer.upsert({
         where: { phone },
         update: {
           updated_at: new Date(),
@@ -77,43 +74,41 @@ export class CustomerAuthService {
         },
       });
 
-      // Check if customer has an existing wallet, create one if not
       const existingWallet = await this.prisma.customerWallet.findUnique({
-        where: { customerId: customer.id },
+        where: { customerId: user.id },
       });
 
       if (!existingWallet) {
         await this.prisma.customerWallet.create({
           data: {
-            customerId: customer.id,
+            customerId: user.id,
             balance: 0,
           },
         });
-        this.logger.log(`Wallet created for customer: ${customer.id}`);
+        this.logger.log(`Wallet created for user: ${user.id}`);
       }
 
-      // Generate JWT token with customer information
       const payload = {
-        sub: customer.id.toString(),
-        phone: customer.phone,
-        name: customer.name,
+        sub: user.id.toString(),
+        phone: user.phone,
+        name: user.name,
       };
 
       const token = this.jwtTokenService.generateToken(payload, 'customer');
 
       return {
         token,
-        data: customer,
-        expiresIn: this.CUSTOMER_JWT_EXPIRES_IN,
+        data: user,
+        expiresIn: this.USER_JWT_EXPIRES_IN,
       };
     } catch (error) {
-      this.logger.error('Error in verifyOtpAndCreateCustomer:', error);
+      this.logger.error('Error in verifyOtpAndCreateUser:', error);
 
       if (error instanceof HttpException) {
         throw error;
       }
       throw new BadRequestException(
-        'Failed to verify OTP and create customer. Please try again.',
+        'Failed to verify OTP and create user. Please try again.',
       );
     }
   }

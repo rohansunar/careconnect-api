@@ -10,7 +10,7 @@ export enum AddressLabel {
   Institution = 'Institution',
 }
 
-export class UpdateCustomerAddressDto extends UpdateAddressDto {
+export class UpdateUserAddressDto extends UpdateAddressDto {
   @ApiPropertyOptional({
     enum: AddressLabel,
     description: 'Label for the address (e.g., Home, Office)',

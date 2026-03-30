@@ -90,7 +90,7 @@ export class WalletPaymentController {
   /**
    * Get the last 20 transactions for a customer's wallet
    * Returns transactions in reverse chronological order (newest first)
-   * @param customerId - Customer ID query parameter
+   * @param customerId - User ID query parameter
    * @returns Array of up to 20 wallet transactions
    */
   @ApiOperation({
@@ -101,7 +101,7 @@ export class WalletPaymentController {
   @ApiQuery({
     name: 'customerId',
     type: String,
-    description: 'Customer ID to retrieve transactions for',
+    description: 'User ID to retrieve transactions for',
     required: true,
   })
   @ApiResponse({

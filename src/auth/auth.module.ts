@@ -7,8 +7,8 @@ import { OtpModule } from '../otp/otp.module';
 import { RolesGuard } from './guards/roles.guard';
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { AdminAuthService } from './services/admin-auth.service';
-import { CustomerAuthController } from './controllers/customer-auth.controller';
-import { CustomerAuthService } from './services/customer-auth.service';
+import { UserAuthController } from './controllers/user-auth.controller';
+import { UserAuthService } from './services/user-auth.service';
 import { UnifiedJwtStrategy } from './strategies/unified-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtTokenService } from './services/jwt-token.service';
@@ -17,7 +17,7 @@ import { JwtTokenService } from './services/jwt-token.service';
  * AuthModule provides unified JWT authentication for all user types.
  *
  * Architecture:
- * - Single UnifiedJwtStrategy for all user types (vendor, customer, rider, admin)
+ * - Single UnifiedJwtStrategy for all user types (vendor, user, rider, admin)
  * - Single JwtAuthGuard for authentication
  * - Single RolesGuard for authorization
  * - Role-based access control using @Roles decorator
@@ -38,7 +38,7 @@ import { JwtTokenService } from './services/jwt-token.service';
   ],
   providers: [
     AdminAuthService,
-    CustomerAuthService,
+    UserAuthService,
     PrismaService,
     UnifiedJwtStrategy,
     JwtAuthGuard,
@@ -47,7 +47,7 @@ import { JwtTokenService } from './services/jwt-token.service';
   ],
   controllers: [
     AdminAuthController,
-    CustomerAuthController,
+    UserAuthController,
   ],
   exports: [JwtAuthGuard, RolesGuard, JwtTokenService],
 })

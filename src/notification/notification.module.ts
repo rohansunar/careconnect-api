@@ -10,24 +10,11 @@ import {
   PushChannelService,
 } from './services/channels';
 
-// Orchestrators
-import {
-  OrderNotificationOrchestrator,
-  SubscriptionNotificationOrchestrator,
-} from './services/orchestrators';
-
-// Event Handlers
-import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-payment-succeeded-notification.handler';
-
 /**
  * NotificationModule
  *
  * Modern notification system with clean architecture:
  * - Channel Services: Handle specific communication channels (email, SMS, WhatsApp, push)
- * - Orchestrators: Coordinate multi-channel notifications for business flows
- * - Event Handlers: React to domain events and trigger notifications
- *
- * All legacy services have been removed for a lean, maintainable codebase.
  */
 @Module({
   imports: [ConfigModule, CqrsModule],
@@ -37,13 +24,6 @@ import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-pa
     SmsChannelService,
     WhatsAppChannelService,
     PushChannelService,
-
-    // Orchestrators
-    OrderNotificationOrchestrator,
-    SubscriptionNotificationOrchestrator,
-
-    // Event Handlers
-    OnPaymentSucceededNotificationHandler,
   ],
   exports: [
     // Export channel services for direct use
@@ -51,10 +31,6 @@ import { OnPaymentSucceededNotificationHandler } from './services/handlers/on-pa
     SmsChannelService,
     WhatsAppChannelService,
     PushChannelService,
-
-    // Export orchestrators for business logic
-    OrderNotificationOrchestrator,
-    SubscriptionNotificationOrchestrator,
   ],
 })
 export class NotificationModule {}

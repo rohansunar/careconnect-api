@@ -16,8 +16,8 @@ import {
 } from '@nestjs/swagger';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
-import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
-import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
+import { CreateUserAddressDto } from '../dto/create-user-address.dto';
+import { UpdateUserAddressDto } from '../dto/update-user-address.dto';
 import { AddressService } from '../services/address.service';
 
 @ApiTags('Addresses')
@@ -30,9 +30,9 @@ export class AddressController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get all customer addresses',
+    summary: 'Get all user addresses',
     description:
-      'Retrieves all active addresses for the authenticated customer, ordered by default status (default first) and creation date (newest first). Includes location details for each address.',
+      'Retrieves all active addresses for the authenticated user, ordered by default status (default first) and creation date (newest first). Includes location details for each address.',
   })
   @ApiResponse({
     status: 200,
@@ -40,16 +40,16 @@ export class AddressController {
     type: [Object],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 404, description: 'Customer not found.' })
-  async findAll(@CurrentUser() customer: any) {
-    return this.AddressService.findAll(customer.id);
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async findAll(@CurrentUser() user: any) {
+    return this.AddressService.findAll(user.id);
   }
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Get a specific customer address',
+    summary: 'Get a specific user address',
     description:
-      'Retrieves a specific active address by ID for the authenticated customer, including location details.',
+      'Retrieves a specific active address by ID for the authenticated user, including location details.',
   })
   @ApiParam({ name: 'id', description: 'Unique identifier of the address' })
   @ApiResponse({
@@ -60,20 +60,20 @@ export class AddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
     status: 404,
-    description: 'Address not found or customer not found.',
+    description: 'Address not found or user not found.',
   })
-  async findOne(@Param('id') id: string, @CurrentUser() customer: any) {
-    return this.AddressService.findOne(customer.id, id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.AddressService.findOne(user.id, id);
   }
 
   @Post()
   @ApiOperation({
-    summary: 'Create a new customer address',
+    summary: 'Create a new user address',
     description:
-      "Creates a new address for the authenticated customer with robust validation, duplicate checking, and transactional integrity. Validates customer existence, ensures latitude and longitude are provided, checks for duplicate addresses (same address, pincode, lat, lng), and handles location serviceability. Uses database transactions for data consistency. If this is the first address, sets it as default. Logs the address creation event to 'logs/customer_address_creation.log' for auditing purposes.",
+      "Creates a new address for the authenticated user with robust validation, duplicate checking, and transactional integrity. Validates user existence, ensures latitude and longitude are provided, checks for duplicate addresses (same address, pincode, lat, lng), and handles location serviceability. Uses database transactions for data consistency. If this is the first address, sets it as default. Logs the address creation event to 'logs/user_address_creation.log' for auditing purposes.",
   })
   @ApiBody({
-    type: CreateCustomerAddressDto,
+    type: CreateUserAddressDto,
     examples: {
       'home-address': {
         summary: 'Create a home address',
@@ -101,23 +101,23 @@ export class AddressController {
       'Bad request - Latitude and longitude are required, or an address with the same details already exists.',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 404, description: 'Customer not found.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
   async create(
     @Body()
-    createDto: CreateCustomerAddressDto,
-    @CurrentUser() customer: any,
+    createDto: CreateUserAddressDto,
+    @CurrentUser() user: any,
   ) {
-    return this.AddressService.create(customer.id, createDto);
+    return this.AddressService.create(user.id, createDto);
   }
 
   @Put(':id')
   @ApiOperation({
-    summary: 'Update a customer address',
+    summary: 'Update a user address',
     description:
-      'Updates an existing address for the authenticated customer. Performs duplicate checking to prevent identical addresses. If latitude and longitude are provided, updates the associated location.',
+      'Updates an existing address for the authenticated user. Performs duplicate checking to prevent identical addresses. If latitude and longitude are provided, updates the associated location.',
   })
   @ApiBody({
-    type: UpdateCustomerAddressDto,
+    type: UpdateUserAddressDto,
     examples: {
       'office-address': {
         summary: 'Update to an office address',
@@ -148,22 +148,22 @@ export class AddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
     status: 404,
-    description: 'Address not found or customer not found.',
+    description: 'Address not found or user not found.',
   })
   async update(
     @Param('id') id: string,
     @Body()
-    updateDto: UpdateCustomerAddressDto,
-    @CurrentUser() customer: any,
+    updateDto: UpdateUserAddressDto,
+    @CurrentUser() user: any,
   ) {
-    return this.AddressService.update(customer.id, id, updateDto);
+    return this.AddressService.update(user.id, id, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Delete a customer address',
+    summary: 'Delete a user address',
     description:
-      'Soft deletes an existing address for the authenticated customer by setting is_active to false. This maintains data integrity and allows for potential recovery.',
+      'Soft deletes an existing address for the authenticated user by setting is_active to false. This maintains data integrity and allows for potential recovery.',
   })
   @ApiParam({
     name: 'id',
@@ -177,17 +177,17 @@ export class AddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
     status: 404,
-    description: 'Address not found or customer not found.',
+    description: 'Address not found or user not found.',
   })
-  async delete(@Param('id') id: string, @CurrentUser() customer: any) {
-    return this.AddressService.delete(customer.id, id);
+  async delete(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.AddressService.delete(user.id, id);
   }
 
   @Put(':id/set-default')
   @ApiOperation({
-    summary: 'Set a customer address as default',
+    summary: 'Set a user address as default',
     description:
-      'Sets an existing active address as the default for the authenticated customer. Automatically unsets the default flag from all other addresses for this customer.',
+      'Sets an existing active address as the default for the authenticated user. Automatically unsets the default flag from all other addresses for this user.',
   })
   @ApiParam({
     name: 'id',
@@ -201,12 +201,12 @@ export class AddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({
     status: 404,
-    description: 'Address not found or customer not found.',
+    description: 'Address not found or user not found.',
   })
   async setDefaultAddress(
     @Param('id') id: string,
-    @CurrentUser() customer: any,
+    @CurrentUser() user: any,
   ) {
-    return this.AddressService.setDefaultAddress(customer.id, id);
+    return this.AddressService.setDefaultAddress(user.id, id);
   }
 }

@@ -8,8 +8,8 @@ import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
-import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
+import { CreateUserAddressDto } from '../dto/create-user-address.dto';
+import { UpdateUserAddressDto } from '../dto/update-user-address.dto';
 
 @Injectable()
 export class AddressService {
@@ -18,20 +18,20 @@ export class AddressService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * Retrieves a customer address by ID, ensuring it belongs to the specified customer.
+   * Retrieves a user address by ID, ensuring it belongs to the specified user.
    * Optionally checks if the address is active.
    * Throws NotFoundException if not found.
-   * @param customerId - The customer ID.
+   * @param userId - The user ID.
    * @param addressId - The address ID.
    * @param requireActive - Whether to require the address to be active.
-   * @returns The customer address.
+   * @returns The user address.
    */
-  private async findCustomerAddress(
-    customerId: string,
+  private async findUserAddress(
+    userId: string,
     addressId: string,
     requireActive: boolean = true,
   ): Promise<any> {
-    const where: any = { id: addressId, customerId };
+    const where: any = { id: addressId, userId };
     if (requireActive) {
       where.is_active = true;
     }
@@ -46,17 +46,17 @@ export class AddressService {
    * Checks for duplicate addresses based on address, lng, lat, pincode, and locationId.
    * Excludes a specific address ID if updating.
    * Throws BadRequestException if a duplicate is found.
-   * @param customerId - The customer ID.
+   * @param userId - The user ID.
    * @param data - The address data.
    * @param excludeId - The address ID to exclude (for updates).
    */
   private async checkDuplicateAddress(
-    customerId: string,
-    data: CreateCustomerAddressDto | UpdateCustomerAddressDto,
+    userId: string,
+    data: CreateUserAddressDto | UpdateUserAddressDto,
     excludeId?: string,
   ): Promise<void> {
     const where: any = {
-      customerId,
+      userId,
       address: data.address,
       is_active: true,
     };
@@ -75,16 +75,16 @@ export class AddressService {
   }
 
   /**
-   * Validates that a customer with the given ID exists and is active.
+   * Validates that a user with the given ID exists and is active.
    * Throws NotFoundException if not found.
-   * @param customerId - The customer ID to validate.
+   * @param userId - The user ID to validate.
    */
-  private async validateCustomerExists(customerId: string): Promise<void> {
-    const customer = await this.prisma.customer.findFirst({
-      where: { id: customerId, is_active: true } as any,
+  private async validateUserExists(userId: string): Promise<void> {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, is_active: true } as any,
     });
-    if (!customer) {
-      throw new NotFoundException('Customer not found');
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
   }
 
@@ -93,7 +93,7 @@ export class AddressService {
    * Throws BadRequestException if validation fails.
    * @param data - The address data to validate.
    */
-  private validateAddressData(data: CreateCustomerAddressDto): void {
+  private validateAddressData(data: CreateUserAddressDto): void {
     if (
       data.lat === undefined ||
       data.lng === undefined ||
@@ -110,14 +110,14 @@ export class AddressService {
    * @returns The location ID and serviceability status.
    */
   private async handleLocation(
-    data: CreateCustomerAddressDto,
+    data: CreateUserAddressDto,
   ): Promise<{ id: string; isServiceable: boolean }> {
     return { id: '', isServiceable: true };
   }
 
   /**
-   * Creates the customer address using raw SQL within a transaction.
-   * @param customerId - The customer ID.
+   * Creates the user address using raw SQL within a transaction.
+   * @param userId - The user ID.
    * @param data - The address data.
    * @param locationId - The location ID.
    * @param isServiceable - Whether the location is serviceable.
@@ -125,8 +125,8 @@ export class AddressService {
    * @returns The created address ID.
    */
   private async createAddress(
-    customerId: string,
-    data: CreateCustomerAddressDto,
+    userId: string,
+    data: CreateUserAddressDto,
     locationId: string,
     isServiceable: boolean,
     isDefault: boolean,
@@ -138,8 +138,8 @@ export class AddressService {
       }[]
     >`
     INSERT INTO "CustomerAddress"
-    (id, "customerId", label, address, "locationId", pincode, geopoint, "isServiceable", "isDefault")
-    VALUES (${randomUUID()}, ${customerId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
+    (id, "userId", label, address, "locationId", pincode, geopoint, "isServiceable", "isDefault")
+    VALUES (${randomUUID()}, ${userId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
       ST_MakePoint(${Number((data.lng as number).toFixed(6))}, ${Number((data.lat as number).toFixed(6))})::geography,
       ${isServiceable}, ${isDefault}
     )
@@ -148,21 +148,21 @@ export class AddressService {
   }
 
   /**
-   * Creates a new customer address for the authenticated customer.
-   * @param customerId - The unique identifier of the customer.
+   * Creates a new user address for the authenticated user.
+   * @param userId - The unique identifier of the user.
    * @param data - The address data to create.
-   * @returns The created customer address with location relation.
+   * @returns The created user address with location relation.
    */
-  async create(customerId: string, data: CreateCustomerAddressDto) {
+  async create(userId: string, data: CreateUserAddressDto) {
     try {
-      this.logger.log(`Starting address creation for customer ${customerId}`);
+      this.logger.log(`Starting address creation for user ${userId}`);
       // Log the address creation
       try {
         const logsDir = path.join(process.cwd(), 'logs');
         await fs.mkdir(logsDir, { recursive: true });
-        const logFile = path.join(logsDir, 'customer_address_creation.log');
+        const logFile = path.join(logsDir, 'user_address_creation.log');
         const logEntry = JSON.stringify({
-          type: 'customer',
+          type: 'user',
           address: data,
           timestamp: new Date().toISOString(),
         });
@@ -171,17 +171,17 @@ export class AddressService {
         this.logger.error('Failed to log address creation', logError);
       }
 
-      // Validate customer existence
-      await this.validateCustomerExists(customerId);
-      this.logger.log(`Customer ${customerId} validated`);
+      // Validate user existence
+      await this.validateUserExists(userId);
+      this.logger.log(`User ${userId} validated`);
 
       // Check for duplicate addresses
-      await this.checkDuplicateAddress(customerId, data);
-      this.logger.log(`Duplicate check passed for customer ${customerId}`);
+      await this.checkDuplicateAddress(userId, data);
+      this.logger.log(`Duplicate check passed for user ${userId}`);
 
       // Validate address data
       this.validateAddressData(data);
-      this.logger.log(`Address data validated for customer ${customerId}`);
+      this.logger.log(`Address data validated for user ${userId}`);
 
       // Handle location
       const { id: locationId, isServiceable } = await this.handleLocation(data);
@@ -191,7 +191,7 @@ export class AddressService {
 
       // Determine if default
       const existingAddressesCount = await this.prisma.customerAddress.count({
-        where: { customerId, is_active: true },
+        where: { userId, is_active: true },
       });
       const isDefault = existingAddressesCount === 0;
       this.logger.log(`Is default address: ${isDefault}`);
@@ -199,7 +199,7 @@ export class AddressService {
       // Create address within transaction
       const result = await this.prisma.$transaction(async (tx) => {
         return await this.createAddress(
-          customerId,
+          userId,
           data,
           locationId,
           isServiceable,
@@ -208,13 +208,13 @@ export class AddressService {
       });
 
       this.logger.log(
-        `Address created successfully for customer ${customerId}`,
+        `Address created successfully for user ${userId}`,
       );
 
       return result;
     } catch (error) {
       this.logger.error(
-        `Failed to create address for customer ${customerId}: ${error.message}`,
+        `Failed to create address for user ${userId}: ${error.message}`,
         error.stack,
       );
       throw error;
@@ -222,15 +222,15 @@ export class AddressService {
   }
 
   /**
-   * Retrieves all active addresses for a specific customer.
-   * @param customerId - The unique identifier of the customer.
-   * @returns A list of customer addresses with location relations.
+   * Retrieves all active addresses for a specific user.
+   * @param userId - The unique identifier of the user.
+   * @returns A list of user addresses with location relations.
    */
-  async findAll(customerId: string) {
-    await this.validateCustomerExists(customerId);
+  async findAll(userId: string) {
+    await this.validateUserExists(userId);
     const addresses = await this.prisma.customerAddress.findMany({
       where: {
-        customerId,
+        userId,
         is_active: true,
       } as any,
       include: {
@@ -243,17 +243,17 @@ export class AddressService {
   }
 
   /**
-   * Retrieves a specific active customer address by ID for the authenticated customer.
-   * @param customerId - The unique identifier of the customer.
+   * Retrieves a specific active user address by ID for the authenticated user.
+   * @param userId - The unique identifier of the user.
    * @param addressId - The unique identifier of the address.
-   * @returns The customer address with location relation.
+   * @returns The user address with location relation.
    */
-  async findOne(customerId: string, addressId: string) {
-    await this.validateCustomerExists(customerId);
+  async findOne(userId: string, addressId: string) {
+    await this.validateUserExists(userId);
     const address = await this.prisma.customerAddress.findFirst({
       where: {
         id: addressId,
-        customerId,
+        userId,
         is_active: true,
       } as any,
       include: {
@@ -269,25 +269,25 @@ export class AddressService {
   }
 
   /**
-   * Updates an existing customer address for the authenticated customer.
-   * @param customerId - The unique identifier of the customer.
+   * Updates an existing user address for the authenticated user.
+   * @param userId - The unique identifier of the user.
    * @param addressId - The unique identifier of the address.
    * @param data - The fields to update.
-   * @returns The updated customer address with location relation.
+   * @returns The updated user address with location relation.
    */
   async update(
-    customerId: string,
+    userId: string,
     addressId: string,
-    data: UpdateCustomerAddressDto,
+    data: UpdateUserAddressDto,
   ) {
-    // 1. Validate the customer.
-    await this.validateCustomerExists(customerId);
+    // 1. Validate the user.
+    await this.validateUserExists(userId);
 
-    // 2. Find the customer address; if it does not exist, throw a human-readable error message.
-    const address = await this.findCustomerAddress(customerId, addressId);
+    // 2. Find the user address; if it does not exist, throw a human-readable error message.
+    const address = await this.findUserAddress(userId, addressId);
 
     // 3. Check for duplicate addresses with the same content, including address, latitude, longitude, and pincode but addressId.
-    await this.checkDuplicateAddress(customerId, data, addressId);
+    await this.checkDuplicateAddress(userId, data, addressId);
 
     // 4. Find the location; if it does not exist, create one.
     let locationId = address.locationId;
@@ -305,14 +305,14 @@ export class AddressService {
   }
 
   /**
-   * Deletes a customer address for the authenticated customer (soft delete).
-   * @param customerId - The unique identifier of the customer.
+   * Deletes a user address for the authenticated user (soft delete).
+   * @param userId - The unique identifier of the user.
    * @param addressId - The unique identifier of the address.
    * @returns A success message.
    */
-  async delete(customerId: string, addressId: string) {
-    await this.validateCustomerExists(customerId);
-    await this.findCustomerAddress(customerId, addressId, false);
+  async delete(userId: string, addressId: string) {
+    await this.validateUserExists(userId);
+    await this.findUserAddress(userId, addressId, false);
 
     // If Address has 0 Orders than Delete it or can it is_active
     // If Address isDefault = true than
@@ -322,23 +322,23 @@ export class AddressService {
       data: { is_active: false } as any,
     });
 
-    return { message: 'Customer address deleted successfully' };
+    return { message: 'User address deleted successfully' };
   }
 
   /**
-   * Sets a customer address as the default for the authenticated customer.
-   * @param customerId - The unique identifier of the customer.
+   * Sets a user address as the default for the authenticated user.
+   * @param userId - The unique identifier of the user.
    * @param addressId - The unique identifier of the address.
-   * @returns The updated customer address with location relation.
+   * @returns The updated user address with location relation.
    */
-  async setDefaultAddress(customerId: string, addressId: string) {
-    await this.validateCustomerExists(customerId);
-    await this.findCustomerAddress(customerId, addressId);
+  async setDefaultAddress(userId: string, addressId: string) {
+    await this.validateUserExists(userId);
+    await this.findUserAddress(userId, addressId);
 
-    // First, reset all other active addresses to non-default for this customer
+    // First, reset all other active addresses to non-default for this user
     await this.prisma.customerAddress.updateMany({
       where: {
-        customerId,
+        userId,
         id: { not: addressId },
         is_active: true,
       } as any,

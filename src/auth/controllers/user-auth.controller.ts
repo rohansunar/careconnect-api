@@ -1,15 +1,15 @@
 import { Controller, Post, Body, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CustomerAuthService } from '../services/customer-auth.service';
+import { UserAuthService } from '../services/user-auth.service';
 import { RequestOtpDto, OtpResponseDto } from '../dtos/request-otp.dto';
 import { VerifyOtpDto, VerifyOtpResponseDto } from '../dtos/verify-otp.dto';
 import { Public } from '../decorators/public.decorator';
 
 /**
- * CustomerAuthController handles authentication endpoints for customers.
+ * UserAuthController handles authentication endpoints for users.
  *
  * Design Rationale:
- * - Separate controllers for modularity: Maintaining distinct controllers for vendors and customers
+ * - Separate controllers for modularity: Maintaining distinct controllers for vendors and users
  *   ensures modularity, allowing each to evolve independently while adhering to single responsibility principle.
  *   This separation facilitates easier testing, maintenance, and scaling of authentication logic for different user types.
  * - OTP for security: One-Time Password (OTP) authentication provides enhanced security by eliminating
@@ -20,17 +20,17 @@ import { Public } from '../decorators/public.decorator';
  *   maintenance by establishing predictable patterns for similar functionality.
  */
 @ApiTags('Auth')
-@Controller('auth/customer')
-export class CustomerAuthController {
-  constructor(private readonly customerAuthService: CustomerAuthService) {}
+@Controller('auth/user')
+export class UserAuthController {
+  constructor(private readonly userAuthService: UserAuthService) {}
 
   @Public()
   @Post('request-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Send OTP for customer login',
+    summary: 'Send OTP for user login',
     description:
-      'Generate and send OTP to customer phone number for authentication',
+      'Generate and send OTP to user phone number for authentication',
   })
   @ApiBody({ type: RequestOtpDto })
   @ApiResponse({
@@ -55,12 +55,12 @@ export class CustomerAuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Customer not found',
+    description: 'User not found',
     schema: {
       type: 'object',
       properties: {
         statusCode: { type: 'number', example: 401 },
-        message: { type: 'string', example: 'Customer not found' },
+        message: { type: 'string', example: 'User not found' },
         error: { type: 'string', example: 'Unauthorized' },
       },
     },
@@ -78,20 +78,20 @@ export class CustomerAuthController {
     },
   })
   async requestOtp(@Body() dto: RequestOtpDto) {
-    return this.customerAuthService.requestOtp(dto.phone);
+    return this.userAuthService.requestOtp(dto.phone);
   }
 
   @Public()
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
-    summary: 'Verify OTP and authenticate customer',
-    description: 'Verify the OTP code and authenticate the customer if valid',
+    summary: 'Verify OTP and authenticate user',
+    description: 'Verify the OTP code and authenticate the user if valid',
   })
   @ApiBody({ type: VerifyOtpDto })
   @ApiResponse({
     status: 200,
-    description: 'OTP verified successfully, customer authenticated',
+    description: 'OTP verified successfully, user authenticated',
     type: VerifyOtpResponseDto,
   })
   @ApiResponse({
@@ -108,7 +108,7 @@ export class CustomerAuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid OTP or customer not found',
+    description: 'Invalid OTP or user not found',
     schema: {
       type: 'object',
       properties: {
@@ -119,6 +119,6 @@ export class CustomerAuthController {
     },
   })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.customerAuthService.verifyOtpAndCreateCustomer(dto);
+    return this.userAuthService.verifyOtpAndCreateUser(dto);
   }
 }

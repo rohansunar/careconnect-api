@@ -86,7 +86,7 @@ export class WalletPaymentService {
       });
 
       if (!customer) {
-        throw new BadRequestException('Customer not found');
+        throw new BadRequestException('User not found');
       }
 
       // Generate a unique order ID for this payment

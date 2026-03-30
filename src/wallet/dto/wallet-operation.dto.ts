@@ -81,12 +81,12 @@ export class CreditToWalletDto {
 }
 
 /**
- * DTO for getting wallet by customer ID
+ * DTO for getting wallet by user ID
  */
-export class GetWalletByCustomerIdDto {
+export class GetWalletByUserIdDto {
   @IsString()
   @IsNotEmpty()
-  customerId: string;
+  userId: string;
 }
 
 /**

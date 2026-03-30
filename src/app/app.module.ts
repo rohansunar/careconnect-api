@@ -5,12 +5,10 @@ import { AppService } from './services/app.service';
 import { PrismaModule } from '../common/database/prisma.module';
 import { ProductModule } from 'src/product/product.module';
 import { AuthModule } from 'src/auth/auth.module';
-import { CustomerModule } from 'src/customer/customer.module';
+import { UserModule } from 'src/user/user.module';
 import { SearchModule } from 'src/search/search.module';
-import { OrderModule } from 'src/order/order.module';
 import { PaymentModule } from 'src/payment/payment.module';
 import { AddressModule } from 'src/address/address.module';
-import { QueueModule } from 'src/queue/queue.module';
 import { TokenModule } from '../token/token.module';
 import { NotificationModule } from '../notification/notification.module';
 import { APP_GUARD } from '@nestjs/core';
@@ -31,13 +29,11 @@ import { ScheduleModule } from '@nestjs/schedule';
     LedgerModule,
     ProductModule,
     AuthModule,
-    CustomerModule,
+    UserModule,
     SearchModule,
     ScheduleModule.forRoot(),
-    OrderModule,
     PaymentModule,
     AddressModule,
-    QueueModule,
     TokenModule,
     NotificationModule,
   ],

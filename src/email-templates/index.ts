@@ -11,14 +11,3 @@ export * from './types';
 
 // Utilities
 export * from './utils';
-
-// Templates
-export {
-  AdminOrderConfirmationTemplate,
-  VendorOrderConfirmationTemplate,
-  AdminVendorUnavailableTemplate,
-} from './templates';
-
-export type { AdminOrderConfirmationTemplateProps } from './templates/orders/admin-order-confirmation';
-export type { VendorOrderConfirmationTemplateProps } from './templates/orders/vendor-order-confirmation';
-export type { AdminVendorUnavailableTemplateProps } from './templates/orders/admin-vendor-unavailable';
