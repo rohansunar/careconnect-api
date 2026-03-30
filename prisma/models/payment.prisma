@@ -22,6 +22,5 @@ model Payment {
   updated_at            DateTime @default(now())
 
   orders                Order[] @relation("orderPayment")
-  subscriptions         Subscription[] @relation("subscriptionPayment")
 }
 

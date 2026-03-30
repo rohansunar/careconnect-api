@@ -14,8 +14,6 @@ model Product {
   images      String[]
   description String?
   created_at  DateTime   @default(now())
-  vendorId    String
-  vendor      Vendor     @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   price       Decimal    @db.Decimal(10, 2)  
   subscription_price     Decimal? @db.Decimal(10,2)
   is_active   Boolean    @default(true)
@@ -24,15 +22,8 @@ model Product {
   approved_at DateTime?
   is_schedulable Boolean @default(false) // Vendor can select for scheduling
   updated_at  DateTime   @default(now())
- 
-  subscriptions Subscription[]
-  cartItems CartItem[]
-  orderItems OrderItem[]
   
   @@index([categoryId])
-  @@index([vendorId])
   @@index([is_active])
   @@index([created_at])
-  @@index([vendorId, is_active])
-  @@index([vendorId, created_at])
 }

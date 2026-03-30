@@ -1,7 +1,7 @@
 model BankAccount {
-  id                String   @id @default(uuid())
-  vendorId          String
-  vendor            Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid())
+  userId             String
+  user               User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   accountNumber      String
   ifscCode           String
   bankName           String
@@ -13,6 +13,6 @@ model BankAccount {
   updatedAt          DateTime @default(now())
 
   /// Constraints & indexes
-  @@index([vendorId])
+  @@index([userId])
   @@unique([accountNumber])
 }

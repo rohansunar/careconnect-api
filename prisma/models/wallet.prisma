@@ -1,4 +1,4 @@
-model allet {
+model Wallet {
   /// Primary identifier
   id         String   @id @default(uuid())
 

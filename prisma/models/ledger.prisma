@@ -24,16 +24,7 @@ model Ledger {
 
   createdAt    DateTime @default(now())
 
-  /// Relation to Vendor (on delete -> CASCADE)
-  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  
-  /// Relation to OrderItem (on delete -> CASCADE)
-  orderItem    OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-
-  // sourceEventId   String   // paymentId / refundId // ✅ Schema-level Idempotency (Best Practice)
-
   /// Indexes for efficient queries
-  // @@unique([orderItemId, type, feeType, sourceEventId])
   @@index([vendorId])
   @@index([orderItemId])
   @@index([type])

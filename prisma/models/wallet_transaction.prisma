@@ -31,9 +31,9 @@ enum ReferenceType {
 model WalletTransaction {
   id              String                 @id @default(uuid())
 
-  /// Foreign key to CustomerWallet
+  /// Foreign key to Wallet
   walletId        String
-  wallet          CustomerWallet         @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet          Wallet         @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   /// Transaction amount
   amount          Decimal                @db.Decimal(14, 2)

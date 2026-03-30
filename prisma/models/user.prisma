@@ -10,4 +10,5 @@ model User {
   addresses      Address[]
   notifications  Notification[]
   wallet         Wallet?
+  bankAccounts   BankAccount[]
 }

@@ -28,17 +28,12 @@ model Order {
   id                    String   @id @default(uuid())
   orderNo               String   @unique
   userId            String
-  customer              Customer @relation("orders", fields: [userId], references: [id])
   vendorId              String
-  vendor                Vendor @relation("orders", fields: [vendorId], references: [id])
   addressId             String
-  address               CustomerAddress @relation("orders", fields: [addressId], references: [id])
   cartId                String?
-  cart                  Cart? @relation("orders", fields: [cartId], references: [id])
   total_amount          Decimal  @db.Decimal(10, 2)
   payment_status        String   @db.VarChar(32) @default("PENDING")
   riderId              String?
-  rider                 Rider?   @relation("orderAssignments", fields: [riderId], references: [id])
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
   payment_mode          PaymentMode
@@ -53,7 +48,6 @@ model Order {
   paymentId             String?
   payment               Payment? @relation("orderPayment", fields: [paymentId], references: [id])
 
-  orderItems  OrderItem[]
   @@index([orderNo])
   @@index([riderId])
   @@index([vendorId, delivery_status])
