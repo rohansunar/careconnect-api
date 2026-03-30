@@ -5,7 +5,6 @@ import { PaymentController } from './controllers/payment.controller';
 import { PaymentService } from './services/payment.service';
 import { PaymentProviderService } from './services/payment-provider.service';
 import { WebhookIdempotencyService } from './services/webhook-idempotency.service';
-import { OnPaymentSucceededWalletHandler } from './services/handlers/on-payment-succeeded-wallet.handler';
 import { CqrsModule } from '@nestjs/cqrs';
 
 /**
@@ -29,7 +28,6 @@ import { CqrsModule } from '@nestjs/cqrs';
     PaymentService,
     PaymentProviderService,
     WebhookIdempotencyService,
-    OnPaymentSucceededWalletHandler,
   ],
   exports: [PaymentService, PaymentProviderService, WebhookIdempotencyService],
 })

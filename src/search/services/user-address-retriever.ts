@@ -21,7 +21,7 @@ export class UserAddressRetriever implements IUserAddressRetriever {
    */
   async getUser(userId: string): Promise<{ name: string } | null> {
     try {
-      return await this.prisma.customer.findUnique({
+      return await this.prisma.user.findUnique({
         where: { id: userId },
       });
     } catch (error) {

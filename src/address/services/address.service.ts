@@ -35,7 +35,7 @@ export class AddressService {
     if (requireActive) {
       where.is_active = true;
     }
-    const address = await this.prisma.customerAddress.findFirst({ where });
+    const address = await this.prisma.address.findFirst({ where });
     if (!address) {
       throw new NotFoundException('Customer address not found');
     }
@@ -66,7 +66,7 @@ export class AddressService {
     if (data.pincode) {
       where.pincode = data.pincode;
     }
-    const duplicate = await this.prisma.customerAddress.findFirst({ where });
+    const duplicate = await this.prisma.address.findFirst({ where });
     if (duplicate) {
       throw new BadRequestException(
         'An address with the same pincode, lng, lat, and address already exists. Please provide a different address.',
@@ -137,7 +137,7 @@ export class AddressService {
         id: string;
       }[]
     >`
-    INSERT INTO "CustomerAddress"
+    INSERT INTO "address"
     (id, "userId", label, address, "locationId", pincode, geopoint, "isServiceable", "isDefault")
     VALUES (${randomUUID()}, ${userId},${labelValue}::"AddressLabel",${data.address},${locationId}, ${data.pincode},
       ST_MakePoint(${Number((data.lng as number).toFixed(6))}, ${Number((data.lat as number).toFixed(6))})::geography,
@@ -190,7 +190,7 @@ export class AddressService {
       );
 
       // Determine if default
-      const existingAddressesCount = await this.prisma.customerAddress.count({
+      const existingAddressesCount = await this.prisma.address.count({
         where: { userId, is_active: true },
       });
       const isDefault = existingAddressesCount === 0;
@@ -228,14 +228,11 @@ export class AddressService {
    */
   async findAll(userId: string) {
     await this.validateUserExists(userId);
-    const addresses = await this.prisma.customerAddress.findMany({
+    const addresses = await this.prisma.address.findMany({
       where: {
         userId,
         is_active: true,
       } as any,
-      include: {
-        location: { select: { name: true, state:true } },
-      },
       orderBy: [{ isDefault: 'desc' }, { created_at: 'desc' }],
     });
 
@@ -250,15 +247,12 @@ export class AddressService {
    */
   async findOne(userId: string, addressId: string) {
     await this.validateUserExists(userId);
-    const address = await this.prisma.customerAddress.findFirst({
+    const address = await this.prisma.address.findFirst({
       where: {
         id: addressId,
         userId,
         is_active: true,
       } as any,
-      include: {
-        location: true,
-      },
     });
 
     if (!address) {
@@ -297,10 +291,9 @@ export class AddressService {
     (data as any).locationId = locationId;
     const { city, state, ...updateData } = data;
 
-    return await this.prisma.customerAddress.update({
+    return await this.prisma.address.update({
       where: { id: addressId },
       data: updateData,
-      include: { location: true },
     });
   }
 
@@ -317,7 +310,7 @@ export class AddressService {
     // If Address has 0 Orders than Delete it or can it is_active
     // If Address isDefault = true than
     // Soft delete by setting is_active to false
-    await this.prisma.customerAddress.update({
+    await this.prisma.address.update({
       where: { id: addressId },
       data: { is_active: false } as any,
     });
@@ -336,7 +329,7 @@ export class AddressService {
     await this.findUserAddress(userId, addressId);
 
     // First, reset all other active addresses to non-default for this user
-    await this.prisma.customerAddress.updateMany({
+    await this.prisma.address.updateMany({
       where: {
         userId,
         id: { not: addressId },
@@ -348,7 +341,7 @@ export class AddressService {
     });
 
     // Then set the selected address as default
-    return await this.prisma.customerAddress.update({
+    return await this.prisma.address.update({
       where: { id: addressId },
       data: {
         isDefault: true,
@@ -362,7 +355,7 @@ export class AddressService {
    * @throws BadRequestException if address doesn't exist
    */
   async validateAddress(addressId: string): Promise<void> {
-    const address = await this.prisma.customerAddress.findUnique({
+    const address = await this.prisma.address.findUnique({
       where: { id: addressId },
     });
 

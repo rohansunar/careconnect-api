@@ -77,7 +77,7 @@ export class WalletService {
       const existingTransaction = await this.prisma.walletTransaction.findFirst(
         {
           where: {
-            wallet: { customerId: userId },
+            wallet: { userId: userId },
             idempotencyKey,
           },
         },
@@ -91,8 +91,8 @@ export class WalletService {
     // Use Prisma transaction for atomic operation
     const result = await this.prisma.$transaction(async (tx) => {
       // Get wallet with lock for update
-      const wallet = await tx.customerWallet.findUnique({
-        where: { customerId: userId },
+      const wallet = await tx.wallet.findUnique({
+        where: { userId: userId },
         select: { id: true, balance: true },
       });
 
@@ -117,7 +117,7 @@ export class WalletService {
       const newBalance = currentBalance.minus(amountDecimal);
 
       // Update wallet balance
-      await tx.customerWallet.update({
+      await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: newBalance },
       });
@@ -169,7 +169,7 @@ export class WalletService {
       const existingTransaction = await this.prisma.walletTransaction.findFirst(
         {
           where: {
-            wallet: { customerId: userId },
+            wallet: { userId: userId },
             idempotencyKey,
           },
         },
@@ -181,15 +181,15 @@ export class WalletService {
     }
 
     const result = await this.prisma.$transaction(async (tx) => {
-      let wallet = await tx.customerWallet.findUnique({
-        where: { customerId: userId },
+      let wallet = await tx.wallet.findUnique({
+        where: { userId: userId },
         select: { id: true, balance: true },
       });
 
       if (!wallet) {
-        wallet = await tx.customerWallet.create({
+        wallet = await tx.wallet.create({
           data: {
-            customerId: userId,
+            userId: userId,
             balance: 0,
           },
           select: { id: true, balance: true },
@@ -204,7 +204,7 @@ export class WalletService {
       const newBalance = currentBalance.plus(amountDecimal);
 
       // Update wallet balance
-      await tx.customerWallet.update({
+      await tx.wallet.update({
         where: { id: wallet.id },
         data: { balance: newBalance },
       });
@@ -239,10 +239,10 @@ export class WalletService {
    * @returns Wallet balance details
    */
   async getWalletByUserId(userId: string): Promise<WalletBalanceDto> {
-    const wallet = await this.prisma.customerWallet.findUnique({
-      where: { customerId: userId },
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId: userId },
       select: {
-        customerId: true,
+        userId: true,
         balance: true,
         createdAt: true,
         updatedAt: true,
@@ -251,7 +251,7 @@ export class WalletService {
 
     if (!wallet) {
       return {
-        customerId: userId,
+        userId: userId,
         balance: 0,
         currency: 'INR',
         createdAt: new Date(),
@@ -260,7 +260,7 @@ export class WalletService {
     }
 
     return {
-      customerId: wallet.customerId,
+      userId: wallet.userId,
       balance: parseFloat((wallet.balance as unknown as Decimal).toString()),
       currency: 'INR',
       createdAt: wallet.createdAt,
@@ -280,8 +280,8 @@ export class WalletService {
     limit: number = 10,
     offset: number = 0,
   ): Promise<any[]> {
-    const wallet = await this.prisma.customerWallet.findUnique({
-      where: { customerId: userId },
+    const wallet = await this.prisma.wallet.findUnique({
+      where: { userId: userId },
       select: { id: true },
     });
 

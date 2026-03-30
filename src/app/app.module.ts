@@ -15,7 +15,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CqrsModule } from '@nestjs/cqrs';
-import { LedgerModule } from 'src/ledger/ledger.module';
 import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
@@ -26,7 +25,6 @@ import { ScheduleModule } from '@nestjs/schedule';
     }),
     CqrsModule,
     PrismaModule,
-    LedgerModule,
     ProductModule,
     AuthModule,
     UserModule,

@@ -54,15 +54,14 @@ async function bootstrap() {
 
   // Swagger/OpenAPI Documentation Setup
   const config = new DocumentBuilder()
-    .setTitle('Water Jar API')
+    .setTitle('Health API')
     .setDescription(
-      `Comprehensive API for the Water Jar Delivery Platform.
-       This API provides endpoints for user authentication, order management, delivery tracking, vendor operations, and administrative functions.
-       The platform supports customers, vendors, delivery riders, and administrators with role-based access control.`,
+      `Comprehensive API for the Health Platform.
+       This API provides endpoints for user authentication, Booking management,  and administrative functions.
+       The platform supports customers and administrators with role-based access control.`,
     )
     .setVersion('1.0.0')
     .addBearerAuth()
-    // .addTag('Vendors', 'Vendor operations and product management')
     .addTag('Auth')
     .build();
 
@@ -74,7 +73,7 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(
-    `Water Jar Delivery API is running on: http://localhost:${process.env.PORT}`,
+    `Health API is running on: http://localhost:${process.env.PORT}`,
   );
 }
 

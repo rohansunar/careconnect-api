@@ -103,7 +103,7 @@ export class WalletOperationResponseDto {
  * DTO for wallet balance response
  */
 export class WalletBalanceDto {
-  customerId: string;
+  userId: string;
   balance: number;
   currency: string;
   createdAt: Date;

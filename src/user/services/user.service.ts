@@ -18,7 +18,7 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
-      const user = await this.prisma.customer.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
           wallet: {
@@ -96,7 +96,7 @@ export class UserService {
         throw new BadRequestException('Invalid phone number format');
       }
 
-      const user = await this.prisma.customer.update({
+      const user = await this.prisma.user.update({
         where: { id: userId },
         data,
         select: {
@@ -128,7 +128,7 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
-      const existingUser = await this.prisma.customer.findUnique({
+      const existingUser = await this.prisma.user.findUnique({
         where: { id: userId },
       });
 
@@ -167,7 +167,7 @@ export class UserService {
         throw new BadRequestException('User ID is required');
       }
 
-      const user = await this.prisma.customer.findUnique({
+      const user = await this.prisma.user.findUnique({
         where: { id: userId },
       });
 

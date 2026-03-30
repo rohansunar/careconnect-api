@@ -63,7 +63,7 @@ export class UserAuthService {
         purpose: OtpPurpose.CUSTOMER_LOGIN,
       });
 
-      const user = await this.prisma.customer.upsert({
+      const user = await this.prisma.user.upsert({
         where: { phone },
         update: {
           updated_at: new Date(),
@@ -74,14 +74,14 @@ export class UserAuthService {
         },
       });
 
-      const existingWallet = await this.prisma.customerWallet.findUnique({
-        where: { customerId: user.id },
+      const existingWallet = await this.prisma.wallet.findUnique({
+        where: { userId: user.id },
       });
 
       if (!existingWallet) {
-        await this.prisma.customerWallet.create({
+        await this.prisma.wallet.create({
           data: {
-            customerId: user.id,
+            userId: user.id,
             balance: 0,
           },
         });
@@ -94,7 +94,7 @@ export class UserAuthService {
         name: user.name,
       };
 
-      const token = this.jwtTokenService.generateToken(payload, 'customer');
+      const token = this.jwtTokenService.generateToken(payload, 'user');
 
       return {
         token,

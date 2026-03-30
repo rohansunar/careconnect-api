@@ -22,7 +22,7 @@ import { UpdateCategoryDto } from '../dto/update-category.dto';
 
 @ApiTags('Categories')
 @Controller('categories')
-@Roles('vendor')
+@Roles('user')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 

@@ -20,8 +20,8 @@ import { Roles } from '../../auth/decorators/roles.decorator';
  */
 @ApiTags('Wallet Payments')
 @ApiBearerAuth()
-@Controller('customer/wallet/payments')
-@Roles('customer')
+@Controller('user/wallet/payments')
+@Roles('user')
 export class WalletPaymentController {
   constructor(
     private readonly walletPaymentService: WalletPaymentService,
@@ -31,14 +31,14 @@ export class WalletPaymentController {
   /**
    * Initializes a Razorpay payment for wallet top-up.
    * Creates a payment record in the database and returns the payment details.
-   * @param user - The authenticated customer user
+   * @param user - The authenticated user user
    * @param dto - The payment data including amount
-   * @returns Payment object with customer details
+   * @returns Payment object with user details
    */
   @ApiOperation({
     summary: 'Initialize payment for wallet top-up',
     description:
-      'Creates a Razorpay payment transaction for adding funds to the customer wallet.',
+      'Creates a Razorpay payment transaction for adding funds to the user wallet.',
   })
   @ApiBody({
     type: CreatePaymentDto,
@@ -63,7 +63,7 @@ export class WalletPaymentController {
           created_at: '2024-01-01T00:00:00.000Z',
           updated_at: '2024-01-01T00:00:00.000Z',
         },
-        customer: {
+        user: {
           name: 'string',
           email: 'string',
           phone: 'string',
@@ -88,7 +88,7 @@ export class WalletPaymentController {
   }
 
   /**
-   * Get the last 20 transactions for a customer's wallet
+   * Get the last 20 transactions for a user's wallet
    * Returns transactions in reverse chronological order (newest first)
    * @param customerId - User ID query parameter
    * @returns Array of up to 20 wallet transactions
@@ -96,7 +96,7 @@ export class WalletPaymentController {
   @ApiOperation({
     summary: 'Get last wallet transactions',
     description:
-      'Retrieves the most recent 20 transactions for a customer wallet in reverse chronological order.',
+      'Retrieves the most recent 20 transactions for a user wallet in reverse chronological order.',
   })
   @ApiQuery({
     name: 'customerId',
@@ -129,7 +129,7 @@ export class WalletPaymentController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Invalid customer ID.',
+    description: 'Invalid user ID.',
   })
   @ApiResponse({
     status: 500,

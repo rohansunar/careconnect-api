@@ -9,7 +9,6 @@ import { PaymentProviderService } from './payment-provider.service';
 import { WebhookIdempotencyService } from './webhook-idempotency.service';
 import {
   PaymentStatus,
-  SubscriptionStatus,
   ReferenceType,
 } from '@prisma/client';
 import { WalletService } from '../../wallet/services/wallet.service';
@@ -362,18 +361,6 @@ export class PaymentService {
           where: { id: refundedOrderId },
           data: { payment_status: 'REFUNDED' },
         });
-      }
-
-      const subscriptionId =
-        webhookData.payload?.payment?.entity?.notes?.subscribeID;
-      if (subscriptionId) {
-        await this.prisma.subscription.update({
-          where: { id: subscriptionId },
-          data: { status: SubscriptionStatus.DELETED },
-        });
-        this.logger.log(
-          `Subscription ${subscriptionId} updated to ${SubscriptionStatus.DELETED}`,
-        );
       }
 
       this.logger.log(`Payment refund processed: ${payment.id}`);

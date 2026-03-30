@@ -29,7 +29,7 @@ export interface WalletPaymentResponse {
     created_at: Date;
     updated_at: Date;
   };
-  customer: {
+  user: {
     name: string;
     email: string | null;
     phone: string;
@@ -55,14 +55,14 @@ export class WalletPaymentService {
    * Initializes a Razorpay payment for wallet top-up.
    * Creates a payment record in the database and returns payment details
    * matching the subscription creation response structure.
-   * @param user - The authenticated customer user
+   * @param user - The authenticated user user
    * @param dto - The payment data transfer object
-   * @returns Payment object with customer details
+   * @returns Payment object with user details
    * @throws BadRequestException if payment initialization fails
    */
   async initializePayment(user: User, dto: CreatePaymentDto) {
     this.logger.log(
-      `Initializing payment for customer: ${user.id} with amount: ${dto.amount}`,
+      `Initializing payment for user: ${user.id} with amount: ${dto.amount}`,
     );
 
     const amount = dto.amount;
@@ -74,8 +74,8 @@ export class WalletPaymentService {
     }
 
     try {
-      // Get customer details
-      const customer = await this.prisma.customer.findUnique({
+      // Get user details
+      const userData = await this.prisma.user.findUnique({
         where: { id: user.id },
         select: {
           id: true,
@@ -85,7 +85,7 @@ export class WalletPaymentService {
         },
       });
 
-      if (!customer) {
+      if (!userData) {
         throw new BadRequestException('User not found');
       }
 
@@ -125,15 +125,15 @@ export class WalletPaymentService {
       return {
         id: payment.id,
         payment,
-        customer: {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
+        user: {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
         },
       };
     } catch (error) {
       this.logger.error(
-        `Failed to initialize payment for customer ${user.id}: ${error.message}`,
+        `Failed to initialize payment for user ${user.id}: ${error.message}`,
         error.stack,
       );
       throw new BadRequestException(

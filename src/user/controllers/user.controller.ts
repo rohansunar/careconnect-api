@@ -21,8 +21,8 @@ import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 
 @ApiTags('User Profile')
 @ApiBearerAuth()
-@Controller('customer/me')
-@Roles('customer')
+@Controller('user/me')
+@Roles('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
