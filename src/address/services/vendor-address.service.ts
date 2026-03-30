@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { VendorAddress } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
-import { LocationService } from '../../location/services/location.service';
 import { CreateAddressDto } from '../dto/create-address.dto';
 import { UpdateAddressDto } from '../dto/update-address.dto';
 import * as fs from 'fs';
@@ -18,7 +17,6 @@ export class VendorAddressService {
 
   constructor(
     private prisma: PrismaService,
-    private locationService: LocationService,
   ) {}
 
   /**
@@ -88,12 +86,7 @@ export class VendorAddressService {
   private async handleLocation(
     data: CreateAddressDto,
   ): Promise<{ id: string; isServiceable: boolean }> {
-    return await this.locationService.findOrCreateLocation({
-      lat: data.lat as number,
-      lng: data.lng as number,
-      city: data.city,
-      state: data.state,
-    });
+    return { id: '', isServiceable: true };
   }
 
   /**

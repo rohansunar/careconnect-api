@@ -9,7 +9,6 @@ import {
 import { OrderService } from './order.service';
 import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CartService } from '../../cart/services/cart.service';
 import type { User } from '../../common/interfaces/user.interface';
 import { CancellationOrigin, OrderStatus } from '@prisma/client';
 
@@ -21,10 +20,9 @@ const OTP_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 export class RiderOrderService extends OrderService {
   constructor(
     protected readonly prisma: PrismaService,
-    cartService: CartService,
     orderNumberService: OrderNumberService,
   ) {
-    super(prisma, cartService, orderNumberService);
+    super(prisma, orderNumberService);
   }
 
   private buildIncludeQuery() {

@@ -2,17 +2,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { VendorAuthService } from './services/vendor-auth.service';
 import { PrismaService } from '../common/database/prisma.service';
 import { OtpModule } from '../otp/otp.module';
-import { VendorAuthController } from './controllers/vendor-auth.controller';
 import { RolesGuard } from './guards/roles.guard';
 import { AdminAuthController } from './controllers/admin-auth.controller';
 import { AdminAuthService } from './services/admin-auth.service';
 import { CustomerAuthController } from './controllers/customer-auth.controller';
 import { CustomerAuthService } from './services/customer-auth.service';
-import { RiderAuthController } from './controllers/rider-auth.controller';
-import { RiderAuthService } from './services/rider-auth.service';
 import { UnifiedJwtStrategy } from './strategies/unified-jwt.strategy';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtTokenService } from './services/jwt-token.service';
@@ -41,10 +37,8 @@ import { JwtTokenService } from './services/jwt-token.service';
     }),
   ],
   providers: [
-    VendorAuthService,
     AdminAuthService,
     CustomerAuthService,
-    RiderAuthService,
     PrismaService,
     UnifiedJwtStrategy,
     JwtAuthGuard,
@@ -52,10 +46,8 @@ import { JwtTokenService } from './services/jwt-token.service';
     RolesGuard,
   ],
   controllers: [
-    VendorAuthController,
     AdminAuthController,
     CustomerAuthController,
-    RiderAuthController,
   ],
   exports: [JwtAuthGuard, RolesGuard, JwtTokenService],
 })

@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CartService } from '../../cart/services/cart.service';
 import { UpdateOrderDto } from '../dto/update-order.dto';
 import { PaymentMode } from '@prisma/client';
 import { OrderNumberService } from './order-number.service';
@@ -13,8 +12,7 @@ import { OrderNumberService } from './order-number.service';
 export class OrderService {
   constructor(
     protected prisma: PrismaService,
-    protected cartService: CartService,
-    private orderNumberService: OrderNumberService,
+    private orderNumberService?: OrderNumberService,
   ) {}
 
   /**
@@ -114,7 +112,7 @@ export class OrderService {
       throw new BadRequestException('Cart is empty or not found');
     }
 
-    const orderNo = await this.orderNumberService.generateOrderNumber();
+    const orderNo = await this.orderNumberService!.generateOrderNumber();
     // Create order
     const order = await this.prisma.order.create({
       data: {

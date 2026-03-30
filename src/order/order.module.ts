@@ -1,10 +1,8 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
-import { CartModule } from '../cart/cart.module';
 import { PaymentModule } from '../payment/payment.module';
 import { NotificationModule } from '../notification/notification.module';
 import { QueueModule } from '../queue/queue.module';
-import { SubscriptionModule } from '../subscription/subscription.module';
 import { OtpModule } from '../otp/otp.module';
 import { OrderService } from './services/order.service';
 import { CustomerOrderController } from './controllers/customer-order.controller';
@@ -27,11 +25,9 @@ import { CqrsModule } from '@nestjs/cqrs';
   imports: [
     CqrsModule,
     PrismaModule,
-    CartModule,
     PaymentModule,
     NotificationModule,
     QueueModule,
-    SubscriptionModule,
     OtpModule,
     WalletModule,
   ],

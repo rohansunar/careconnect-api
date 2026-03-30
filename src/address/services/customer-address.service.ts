@@ -5,7 +5,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
-import { LocationService } from '../../location/services/location.service';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 import { randomUUID } from 'crypto';
@@ -16,10 +15,7 @@ import * as path from 'path';
 export class CustomerAddressService {
   private readonly logger = new Logger(CustomerAddressService.name);
 
-  constructor(
-    private prisma: PrismaService,
-    private locationService: LocationService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Retrieves a customer address by ID, ensuring it belongs to the specified customer.
@@ -116,12 +112,7 @@ export class CustomerAddressService {
   private async handleLocation(
     data: CreateCustomerAddressDto,
   ): Promise<{ id: string; isServiceable: boolean }> {
-    return await this.locationService.findOrCreateLocation({
-      lat: data.lat as number,
-      lng: data.lng as number,
-      city: data.city,
-      state: data.state,
-    });
+    return { id: '', isServiceable: true };
   }
 
   /**
@@ -301,12 +292,7 @@ export class CustomerAddressService {
     // 4. Find the location; if it does not exist, create one.
     let locationId = address.locationId;
     if (data.lat !== undefined && data.lng !== undefined) {
-      locationId = await this.locationService.findOrCreateLocation({
-        lat: data.lat,
-        lng: data.lng,
-        state: data.state || address.location?.state,
-        city: data.city || address.location?.name,
-      });
+      locationId = '';
     }
     (data as any).locationId = locationId;
     const { city, state, ...updateData } = data;

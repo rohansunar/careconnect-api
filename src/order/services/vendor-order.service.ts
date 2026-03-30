@@ -10,7 +10,6 @@ import {
 import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from './order.service';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CartService } from '../../cart/services/cart.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import type { User } from '../../common/interfaces/user.interface';
 import { PaymentMode, PaymentStatus } from '@prisma/client';
@@ -134,11 +133,10 @@ export class VendorOrderService extends OrderService {
 
   constructor(
     protected prisma: PrismaService,
-    protected cartService: CartService,
     private readonly notificationOrchestrator: OrderNotificationOrchestrator,
     private readonly eventBus: EventBus,
   ) {
-    super(prisma, cartService, {} as any);
+    super(prisma);
   }
 
   private buildIncludeQuery() {

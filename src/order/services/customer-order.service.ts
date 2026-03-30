@@ -9,7 +9,6 @@ import { EventBus } from '@nestjs/cqrs';
 import { OrderService } from './order.service';
 import { OrderNumberService } from './order-number.service';
 import { PrismaService } from '../../common/database/prisma.service';
-import { CartService } from '../../cart/services/cart.service';
 import { CancelOrderDto } from '../dto/cancel-order.dto';
 import {
   CreateOrderFromCartDto,
@@ -30,19 +29,6 @@ import { PaymentService } from '../../payment/services/payment.service';
 import { OrderNotificationOrchestrator } from '../../notification/services/orchestrators/order-notification.orchestrator';
 import { OrderDeliveredEvent } from '../events/order-delivered.event';
 import { Decimal } from '@prisma/client/runtime/library';
-
-/**
- * Interface for cart items with product details
- */
-interface CartItemWithDetails {
-  id: string;
-  price: Decimal;
-  quantity: number;
-  product: {
-    vendorId: string;
-    vendor: { id: string };
-  };
-}
 
 interface OrderWithRelations extends Order {
   customer: Customer | null;
@@ -67,13 +53,12 @@ export class CustomerOrderService extends OrderService {
 
   constructor(
     prisma: PrismaService,
-    cartService: CartService,
     orderNumberService: OrderNumberService,
     private paymentService: PaymentService,
     private orderNotificationOrchestrator: OrderNotificationOrchestrator,
     private eventBus: EventBus,
   ) {
-    super(prisma, cartService, orderNumberService);
+    super(prisma, orderNumberService);
   }
 
   /**
@@ -95,10 +80,32 @@ export class CustomerOrderService extends OrderService {
     this.logger.log(`Starting order creation for cart: ${dto.cartId}`);
 
     try {
-      // Retrieve and validate cart details
-      const cart = await this.cartService.validateCart(dto.cartId);
+      const cart = await this.prisma.cart.findUnique({
+        where: { id: dto.cartId },
+        include: {
+          cartItems: {
+            include: {
+              product: {
+                select: { vendorId: true, vendor: { select: { id: true } } },
+              },
+            },
+          },
+          customer: true,
+        },
+      });
 
-      // Verify cart belongs to the authenticated customer
+      if (!cart) {
+        throw new NotFoundException('Cart not found');
+      }
+
+      if (cart.status !== 'ACTIVE') {
+        throw new BadRequestException('Cart is not active');
+      }
+
+      if (cart.cartItems.length === 0) {
+        throw new BadRequestException('Cart is empty');
+      }
+
       if (cart.customerId !== user.id) {
         throw new ForbiddenException(
           'You are not authorized to create an order from this cart',
@@ -210,7 +217,7 @@ export class CustomerOrderService extends OrderService {
    * @param cartItems - The cart items
    * @returns The total amount
    */
-  private calculateTotalAmount(cartItems: CartItemWithDetails[]): number {
+  private calculateTotalAmount(cartItems: any[]): number {
     return cartItems.reduce(
       (sum, item) => sum + item.price.toNumber() * item.quantity,
       0,
