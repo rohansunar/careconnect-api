@@ -1,4 +1,4 @@
-model Customer {
+model User {
   id         String   @id @default(uuid())
   name       String
   phone      String   @unique
@@ -7,11 +7,7 @@ model Customer {
   updated_at DateTime @default(now())
   is_active Boolean @default(true)
 
-  addresses CustomerAddress[]
-  subscription Subscription[]
-  carts Cart[]
-  orders Order[] @relation("orders")
-  monthlyBills MonthlyBill[]
+  addresses      Address[]
   notifications  Notification[]
-  wallet        CustomerWallet?
+  wallet         Wallet?
 }

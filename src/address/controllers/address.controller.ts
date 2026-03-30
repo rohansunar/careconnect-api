@@ -1,32 +1,31 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
-  UseGuards,
+  Post,
+  Put
 } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
   ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
-import { CustomerAddressService } from '../services/customer-address.service';
-import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
 import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
+import { AddressService } from '../services/address.service';
 
-@ApiTags('Customer Addresses')
-@Controller('customer/addresses')
-@Roles('customer')
-export class CustomerAddressController {
+@ApiTags('Addresses')
+@Controller('addresses')
+@Roles('user')
+export class AddressController {
   constructor(
-    private readonly customerAddressService: CustomerAddressService,
+    private readonly AddressService: AddressService,
   ) {}
 
   @Get()
@@ -43,7 +42,7 @@ export class CustomerAddressController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'Customer not found.' })
   async findAll(@CurrentUser() customer: any) {
-    return this.customerAddressService.findAll(customer.id);
+    return this.AddressService.findAll(customer.id);
   }
 
   @Get(':id')
@@ -64,7 +63,7 @@ export class CustomerAddressController {
     description: 'Address not found or customer not found.',
   })
   async findOne(@Param('id') id: string, @CurrentUser() customer: any) {
-    return this.customerAddressService.findOne(customer.id, id);
+    return this.AddressService.findOne(customer.id, id);
   }
 
   @Post()
@@ -108,7 +107,7 @@ export class CustomerAddressController {
     createDto: CreateCustomerAddressDto,
     @CurrentUser() customer: any,
   ) {
-    return this.customerAddressService.create(customer.id, createDto);
+    return this.AddressService.create(customer.id, createDto);
   }
 
   @Put(':id')
@@ -157,7 +156,7 @@ export class CustomerAddressController {
     updateDto: UpdateCustomerAddressDto,
     @CurrentUser() customer: any,
   ) {
-    return this.customerAddressService.update(customer.id, id, updateDto);
+    return this.AddressService.update(customer.id, id, updateDto);
   }
 
   @Delete(':id')
@@ -181,7 +180,7 @@ export class CustomerAddressController {
     description: 'Address not found or customer not found.',
   })
   async delete(@Param('id') id: string, @CurrentUser() customer: any) {
-    return this.customerAddressService.delete(customer.id, id);
+    return this.AddressService.delete(customer.id, id);
   }
 
   @Put(':id/set-default')
@@ -208,6 +207,6 @@ export class CustomerAddressController {
     @Param('id') id: string,
     @CurrentUser() customer: any,
   ) {
-    return this.customerAddressService.setDefaultAddress(customer.id, id);
+    return this.AddressService.setDefaultAddress(customer.id, id);
   }
 }

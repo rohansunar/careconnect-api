@@ -1,9 +1,9 @@
-model CustomerWallet {
+model allet {
   /// Primary identifier
   id         String   @id @default(uuid())
 
   /// Foreign key to Customer (unique - one wallet per customer)
-  customerId String   @unique
+  userId String   @unique
 
   /// Current wallet balance
   balance    Decimal  @db.Decimal(14, 2) @default(0)
@@ -15,15 +15,15 @@ model CustomerWallet {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   /// Relation to Customer (cascade delete)
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   /// All transactions for this wallet
   transactions WalletTransaction[]
 
   /// Index for efficient queries by customer
-  @@index([customerId])
+  @@index([userId])
 
-  @@map("CustomerWallet")
+  @@map("Wallet")
 }
 
 

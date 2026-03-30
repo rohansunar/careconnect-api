@@ -1,16 +1,13 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../common/database/prisma.module';
-import { CustomerAddressController } from './controllers/customer-address.controller';
-import { CustomerAddressService } from './services/customer-address.service';
-import { VendorAddressController } from './controllers/vendor-address.controller';
-import { VendorAddressService } from './services/vendor-address.service';
+import { AddressController } from './controllers/address.controller';
+import { AddressService } from './services/address.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [CustomerAddressController, VendorAddressController],
+  controllers: [AddressController],
   providers: [
-    CustomerAddressService,
-    VendorAddressService,
+    AddressService,
   ],
   exports: [],
 })

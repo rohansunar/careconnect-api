@@ -27,8 +27,8 @@ enum CancellationOrigin {
 model Order {
   id                    String   @id @default(uuid())
   orderNo               String   @unique
-  customerId            String
-  customer              Customer @relation("orders", fields: [customerId], references: [id])
+  userId            String
+  customer              Customer @relation("orders", fields: [userId], references: [id])
   vendorId              String
   vendor                Vendor @relation("orders", fields: [vendorId], references: [id])
   addressId             String

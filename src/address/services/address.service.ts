@@ -1,19 +1,19 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
-import { PrismaService } from '../../common/database/prisma.service';
-import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
-import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 import { randomUUID } from 'crypto';
 import { promises as fs } from 'fs';
 import * as path from 'path';
+import { PrismaService } from '../../common/database/prisma.service';
+import { CreateCustomerAddressDto } from '../dto/create-customer-address.dto';
+import { UpdateCustomerAddressDto } from '../dto/update-customer-address.dto';
 
 @Injectable()
-export class CustomerAddressService {
-  private readonly logger = new Logger(CustomerAddressService.name);
+export class AddressService {
+  private readonly logger = new Logger(AddressService.name);
 
   constructor(private prisma: PrismaService) {}
 
