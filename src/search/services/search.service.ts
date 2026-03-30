@@ -18,9 +18,6 @@ export class SearchService {
     this.logger.log(
       `Product Search Request with Query: ${query.limit} ${query.page}`,
     );
-    return this.proximitySearchService.searchProducts(
-      query,
-      String(user.id),
-    );
+    return this.proximitySearchService.searchProducts(query, String(user.id));
   }
 }

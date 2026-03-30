@@ -6,9 +6,7 @@ import { AddressService } from './services/address.service';
 @Module({
   imports: [PrismaModule],
   controllers: [AddressController],
-  providers: [
-    AddressService,
-  ],
+  providers: [AddressService],
   exports: [],
 })
 export class AddressModule {}

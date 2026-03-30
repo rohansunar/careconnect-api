@@ -1,13 +1,12 @@
-import { IsEnum, IsOptional } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { UpdateAddressDto } from './update-address.dto';
 
 export enum AddressLabel {
   Home = 'Home',
   Office = 'Office',
-  Restaurant = 'Restaurant',
-  Shop = 'Shop',
-  Institution = 'Institution',
+  Clinic = 'Clinic',
+  Hospital = 'Hospital',
 }
 
 export class UpdateUserAddressDto extends UpdateAddressDto {

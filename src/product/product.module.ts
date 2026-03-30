@@ -6,14 +6,8 @@ import { S3Service } from '../common/services/s3.service';
 
 @Module({
   imports: [],
-  controllers: [
-    CategoriesController,
-  ],
-  providers: [
-    CategoriesService,
-    ImageProcessingService,
-    S3Service,
-  ],
+  controllers: [CategoriesController],
+  providers: [CategoriesService, ImageProcessingService, S3Service],
   exports: [],
 })
 export class ProductModule {}

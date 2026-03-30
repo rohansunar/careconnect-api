@@ -20,7 +20,5 @@ model Payment {
   metadata              Json?
   created_at            DateTime @default(now())
   updated_at            DateTime @default(now())
-
-  orders                Order[] @relation("orderPayment")
 }
 

@@ -1,4 +1,3 @@
 /**
  * Email templates exports
  */
-

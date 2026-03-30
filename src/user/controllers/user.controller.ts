@@ -1,23 +1,25 @@
 import {
-  Controller,
-  Get,
-  Put,
-  Delete,
   Body,
-  Req,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
+  Post,
+  Put,
+  Req,
 } from '@nestjs/common';
 import {
-  ApiTags,
+  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
-  ApiBearerAuth,
+  ApiTags,
 } from '@nestjs/swagger';
-import { UserService } from '../services/user.service';
-import { Roles } from '../../auth/decorators/roles.decorator';
-import { UpdateProfileDto } from '../dto/update-profile.dto';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
+import { ToggleIsProviderDto } from '../dto/toggle-is-provider.dto';
+import { UpdateProfileDto } from '../dto/update-profile.dto';
+import { UserService } from '../services/user.service';
 
 @ApiTags('User Profile')
 @ApiBearerAuth()
@@ -35,8 +37,8 @@ export class UserController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @Get('')
-  async getProfile(@Req() req: any, @CurrentUser() vendor: any) {
-    const { id } = vendor;
+  async getProfile(@Req() req: any, @CurrentUser() user: any) {
+    const { id } = user;
     return this.userService.getProfile(id);
   }
 
@@ -59,8 +61,7 @@ export class UserController {
 
   @ApiOperation({
     summary: 'Delete user profile (soft delete)',
-    description:
-      'Soft delete user profile by setting isActive flag to false.',
+    description: 'Soft delete user profile by setting isActive flag to false.',
   })
   @ApiResponse({ status: 200, description: 'Profile deleted successfully.' })
   @ApiResponse({ status: 400, description: 'Bad request.' })
@@ -71,5 +72,30 @@ export class UserController {
   async deleteProfile(@CurrentUser() vendor: any) {
     const { id } = vendor;
     return this.userService.deleteProfile(id);
+  }
+
+  @ApiOperation({
+    summary: 'Toggle provider status',
+    description:
+      'Toggle the isProvider boolean field for the authenticated user using the JWT token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Provider status toggled successfully.',
+  })
+  @ApiResponse({ status: 400, description: 'Bad request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Post('toggle-provider')
+  @HttpCode(HttpStatus.OK)
+  async toggleIsProvider(
+    @CurrentUser() vendor: any,
+    @Body() dto: ToggleIsProviderDto,
+  ) {
+    const userId = vendor.id;
+    return this.userService.toggleIsProvider({
+      userId,
+      isProvider: dto.isProvider,
+    });
   }
 }

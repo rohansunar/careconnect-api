@@ -39,11 +39,7 @@ export class ProximitySearchService {
     };
   }> {
     // Input validation
-    if (
-      !userId ||
-      typeof userId !== 'string' ||
-      userId.trim() === ''
-    ) {
+    if (!userId || typeof userId !== 'string' || userId.trim() === '') {
       throw new HttpException('Invalid userId', HttpStatus.BAD_REQUEST);
     }
     if (
@@ -65,21 +61,16 @@ export class ProximitySearchService {
       );
     }
 
-    const user =
-      await this.userAddressRetriever.getUser(userId);
+    const user = await this.userAddressRetriever.getUser(userId);
 
     if (!user) {
       throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
-    const address =
-      await this.userAddressRetriever.getUserAddress(userId);
+    const address = await this.userAddressRetriever.getUserAddress(userId);
 
     if (!address) {
-      throw new HttpException(
-        'USER_ADDRESS_NOT_FOUND',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('USER_ADDRESS_NOT_FOUND', HttpStatus.NOT_FOUND);
     }
 
     if (!address.isServiceable) {

@@ -5,7 +5,13 @@ model User {
   email      String?
   created_at DateTime @default(now())
   updated_at DateTime @default(now())
-  is_active Boolean @default(true)
+  is_active   Boolean  @default(true)
+  is_provider Boolean  @default(false)
+  categoryID     String
+  bio            String?
+  radiusKm       Int      @default(50)
+  is_verified    Boolean  @default(false)
+  hasActivePlan  Boolean  @default(false)
 
   addresses      Address[]
   notifications  Notification[]

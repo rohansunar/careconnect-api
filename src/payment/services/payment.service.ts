@@ -1,23 +1,20 @@
 import {
-  Injectable,
   BadRequestException,
-  NotFoundException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
+import { PaymentStatus, ReferenceType } from '@prisma/client';
 import { PrismaService } from '../../common/database/prisma.service';
+import { WalletService } from '../../wallet/services/wallet.service';
 import { PaymentProviderService } from './payment-provider.service';
 import { WebhookIdempotencyService } from './webhook-idempotency.service';
-import {
-  PaymentStatus,
-  ReferenceType,
-} from '@prisma/client';
-import { WalletService } from '../../wallet/services/wallet.service';
 
+import { EventBus } from '@nestjs/cqrs';
 import {
   InitiatePaymentData,
   PaymentProviderResponse,
 } from '../../payment/interfaces/payment.interface';
-import { EventBus } from '@nestjs/cqrs';
 import { PaymentSucceededEvent } from './payment-succeeded.event';
 
 /**
@@ -78,9 +75,6 @@ export class PaymentService {
 
     const payment = await this.prisma.payment.findUnique({
       where: { id },
-      include: {
-        orders: true,
-      },
     });
 
     if (!payment) {
@@ -120,7 +114,6 @@ export class PaymentService {
       // Find and update payment status
       const payment = await this.prisma.payment.findFirst({
         where: { provider_payment_id: verifiedData.providerPaymentId },
-        include: { orders: true },
       });
 
       if (!payment) {
@@ -231,14 +224,6 @@ export class PaymentService {
           provider_payload: webhookData,
         },
       });
-
-      // Update Order payment status
-      if (notes.orderId) {
-        await this.prisma.order.update({
-          where: { id: notes.orderId },
-          data: { payment_status: 'FAILED' },
-        });
-      }
 
       this.logger.log(`Payment failure processed: ${payment.id}`);
       return { success: true, action: 'payment_failed' };
@@ -356,12 +341,6 @@ export class PaymentService {
 
       // Update Order payment status
       const refundedOrderId = payment.orders?.[0]?.id;
-      if (refundedOrderId) {
-        await this.prisma.order.update({
-          where: { id: refundedOrderId },
-          data: { payment_status: 'REFUNDED' },
-        });
-      }
 
       this.logger.log(`Payment refund processed: ${payment.id}`);
       return { success: true, action: 'payment_refunded' };
@@ -387,7 +366,6 @@ export class PaymentService {
     try {
       const payment = await this.prisma.payment.findUnique({
         where: { id: paymentId },
-        include: { orders: true },
       });
 
       if (!payment) {
@@ -419,19 +397,7 @@ export class PaymentService {
             refund: refundResult as any,
           },
         },
-        include: {
-          orders: true,
-        },
       });
-
-      // Update order payment status
-      const refundOrderId = payment.orders?.[0]?.id;
-      if (refundOrderId) {
-        await this.prisma.order.update({
-          where: { id: refundOrderId },
-          data: { payment_status: 'REFUNDED' },
-        });
-      }
 
       this.logger.log(`Refund initiated successfully: ${paymentId}`);
       return updatedPayment;

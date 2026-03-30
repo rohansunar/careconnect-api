@@ -5,7 +5,7 @@ import {
   Get,
   Param,
   Post,
-  Put
+  Put,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -24,9 +24,7 @@ import { AddressService } from '../services/address.service';
 @Controller('addresses')
 @Roles('user')
 export class AddressController {
-  constructor(
-    private readonly AddressService: AddressService,
-  ) {}
+  constructor(private readonly AddressService: AddressService) {}
 
   @Get()
   @ApiOperation({
@@ -203,10 +201,7 @@ export class AddressController {
     status: 404,
     description: 'Address not found or user not found.',
   })
-  async setDefaultAddress(
-    @Param('id') id: string,
-    @CurrentUser() user: any,
-  ) {
+  async setDefaultAddress(@Param('id') id: string, @CurrentUser() user: any) {
     return this.AddressService.setDefaultAddress(user.id, id);
   }
 }

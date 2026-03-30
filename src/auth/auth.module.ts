@@ -45,10 +45,7 @@ import { JwtTokenService } from './services/jwt-token.service';
     JwtTokenService,
     RolesGuard,
   ],
-  controllers: [
-    AdminAuthController,
-    UserAuthController,
-  ],
+  controllers: [AdminAuthController, UserAuthController],
   exports: [JwtAuthGuard, RolesGuard, JwtTokenService],
 })
 export class AuthModule {}

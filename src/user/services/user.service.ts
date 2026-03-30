@@ -1,8 +1,8 @@
 import {
-  Injectable,
   BadRequestException,
-  NotFoundException,
+  Injectable,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 
@@ -38,33 +38,42 @@ export class UserService {
         throw new NotFoundException('User not found');
       }
 
-      return {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-        isActive: user.is_active,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
-        wallet: user.wallet
-          ? {
-              id: user.wallet.id,
-              balance: user.wallet.balance,
-              currency: 'INR',
-              recentTransactions: user.wallet.transactions.map((tx) => ({
-                id: tx.id,
-                amount: tx.amount,
-                type: tx.type,
-                status: tx.status,
-                referenceId: tx.referenceId,
-                referenceType: tx.referenceType,
-                description: tx.description,
-                createdAt: tx.createdAt,
-                completedAt: tx.completedAt,
-              })),
-            }
-          : null,
-      };
+      if (user.is_provider) {
+        return {
+          id: user.id,
+          name: user.name,
+          phone: user.phone,
+          email: user.email,
+          isActive: user.is_active,
+          is_provider: user.is_provider,
+          createdAt: user.created_at,
+          updatedAt: user.updated_at,
+          wallet: user.wallet
+            ? {
+                id: user.wallet.id,
+                balance: user.wallet.balance,
+                currency: 'INR',
+                recentTransactions: user.wallet.transactions.map((tx) => ({
+                  id: tx.id,
+                  amount: tx.amount,
+                  type: tx.type,
+                  status: tx.status,
+                  referenceId: tx.referenceId,
+                  referenceType: tx.referenceType,
+                  description: tx.description,
+                  createdAt: tx.createdAt,
+                  completedAt: tx.completedAt,
+                })),
+              }
+            : null,
+        };
+      } else {
+        return {
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+        };
+      }
     } catch (error) {
       this.logger.error(`Failed to get user profile: ${error.message}`);
       if (
@@ -85,6 +94,9 @@ export class UserService {
       name?: string;
       phone?: string;
       email?: string;
+      categoryID?: string;
+      bio?: string;
+      radiusKm?: number;
     },
   ) {
     try {
@@ -96,6 +108,10 @@ export class UserService {
         throw new BadRequestException('Invalid phone number format');
       }
 
+      if (data.radiusKm !== undefined && (typeof data.radiusKm !== 'number' || data.radiusKm <= 0 || !Number.isInteger(data.radiusKm))) {
+        throw new BadRequestException('radiusKm must be a positive integer');
+      }
+
       const user = await this.prisma.user.update({
         where: { id: userId },
         data,
@@ -104,6 +120,9 @@ export class UserService {
           name: true,
           phone: true,
           email: true,
+          categoryID: true,
+          bio: true,
+          radiusKm: true,
         },
       });
 
@@ -184,6 +203,54 @@ export class UserService {
       }
       throw new BadRequestException(
         'Failed to validate user. Please try again later.',
+      );
+    }
+  }
+
+  async toggleIsProvider({
+    userId,
+    isProvider,
+  }: {
+    userId: string;
+    isProvider: boolean;
+  }) {
+    try {
+      if (!userId || userId.trim() === '') {
+        throw new BadRequestException('User ID is required');
+      }
+
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!existingUser) {
+        throw new NotFoundException('User not found');
+      }
+
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          is_provider: isProvider,
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Provider status updated successfully',
+      };
+    } catch (error) {
+      this.logger.error(`Failed to update is_provider: ${error.message}`);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      if (error.code === 'P2025') {
+        throw new NotFoundException('User not found');
+      }
+      throw new BadRequestException(
+        'Failed to toggle provider status. Please try again later.',
       );
     }
   }

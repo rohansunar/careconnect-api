@@ -35,9 +35,7 @@ export class UserAddressRetriever implements IUserAddressRetriever {
    * @param userId The user's ID
    * @returns User's address or null if not found
    */
-  async getUserAddress(
-    userId: string,
-  ): Promise<IUserAddress | null> {
+  async getUserAddress(userId: string): Promise<IUserAddress | null> {
     try {
       const address = await this.prisma.$queryRaw<IUserAddress[]>`
         SELECT

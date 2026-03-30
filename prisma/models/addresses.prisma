@@ -1,9 +1,8 @@
 enum AddressLabel {
   Home
   Office
-  Restaurant
-  Shop
-  Institution
+  Clinic
+  Hospital
 }
 
 model Address {
@@ -12,6 +11,8 @@ model Address {
   user          User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   label         AddressLabel?
   address       String?
+  state         String?
+  country       String?
   pincode       String?
   geopoint      Unsupported("geography(Point,4326)")
   created_at    DateTime  @default(now())

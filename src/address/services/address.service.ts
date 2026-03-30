@@ -207,9 +207,7 @@ export class AddressService {
         );
       });
 
-      this.logger.log(
-        `Address created successfully for user ${userId}`,
-      );
+      this.logger.log(`Address created successfully for user ${userId}`);
 
       return result;
     } catch (error) {
@@ -269,11 +267,7 @@ export class AddressService {
    * @param data - The fields to update.
    * @returns The updated user address with location relation.
    */
-  async update(
-    userId: string,
-    addressId: string,
-    data: UpdateUserAddressDto,
-  ) {
+  async update(userId: string, addressId: string, data: UpdateUserAddressDto) {
     // 1. Validate the user.
     await this.validateUserExists(userId);
 
